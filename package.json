@@ -1,0 +1,29 @@
+{
+  "name": "ecommerce-store",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^1.0.2",
+    "@primeuix/themes": "^3.0.0",
+    "@primevue/nuxt-module": "^5.0.1",
+    "@supabase/supabase-js": "^2.112.4",
+    "@tailwindcss/vite": "^4.3.3",
+    "nuxt": "^4.5.2",
+    "pinia": "^4.0.3",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "primeicons": "^8.0.0",
+    "primevue": "^5.0.1",
+    "resend": "^6.25.0",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0",
+    "zod": "^4.5.4"
+  }
+}

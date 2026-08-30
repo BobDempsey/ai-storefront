@@ -1,0 +1,28 @@
+schema: spec-driven
+
+context: |
+  Ecommerce Store Template — a Nuxt 4 (SSR) storefront with a request-an-order
+  checkout: customers build a cart and submit it, staff receive the order by
+  email and arrange payment off-app. Payment processing is deliberately out of
+  scope.
+
+  Tech stack:
+    - Nuxt 4 (SSR) + Vue 3 + TypeScript, Nitro server routes under server/
+    - PrimeVue 5 (Aura theme) + Tailwind CSS 4 for UI
+    - Pinia for state; cart persisted to localStorage via pinia-plugin-persistedstate
+    - Supabase (Postgres + RLS) for data; schema in supabase/schema.sql
+    - Resend for transactional email
+    - Zod for validation
+
+  Conventions:
+    - App code lives in app/, server code in server/, SQL in supabase/.
+    - Secrets come from .env (see .env.example); never hardcode credentials.
+    - npm install needs --legacy-peer-deps on this Nuxt version.
+    - See handoff.md for full project background and current status.
+
+rules:
+  proposal:
+    - Always include a "Non-goals" section.
+    - Call out any change that touches Supabase schema or RLS policies.
+  tasks:
+    - Note when a task requires a Supabase migration or a new env var.

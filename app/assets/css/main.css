@@ -1,0 +1,4 @@
+/* Layer order so Tailwind utilities can override PrimeVue component styles. */
+@layer theme, base, primevue, components, utilities;
+
+@import "tailwindcss";
