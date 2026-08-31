@@ -184,8 +184,10 @@ NUXT_RESEND_API_KEY         PLACEHOLDER — needs a real re_... key
 NUXT_ORDER_FROM_EMAIL       onboarding@resend.dev until a domain is verified
 NUXT_ORDER_ADMIN_EMAIL      PLACEHOLDER — where staff receive orders
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
-NUXT_PUBLIC_CONTACT_EMAIL   Optional — renders a mailto link in the navbar when
-                            set; leave blank to hide the icon entirely
+NUXT_PUBLIC_CONTACT_EMAIL   SET — currently the owner's personal address, which
+                            renders as a public mailto link in the navbar. Swap it
+                            for a store address before deploying; leave it blank to
+                            hide the icon entirely
 ```
 
 Nuxt maps these to `runtimeConfig` automatically via the `NUXT_` prefix. The URL
@@ -232,8 +234,9 @@ deliver to the email address on the Resend account.
   `@primevue/nuxt-module@4.5.5`, `@primeuix/themes@1.2.5`. Use **v4** docs for
   component APIs. The `@primeuix/themes/aura` import in `nuxt.config.ts` is
   correct for 4.3+ and did not need changing.
-- **Zod 4 is installed.** `z.string().email()` in `server/utils/schemas.ts` is
-  the deprecated v3 spelling; v4 prefers `z.email()`. It still works today.
+- **Zod 4 is installed.** `z.string().email()` and `z.string().uuid()` in
+  `server/utils/schemas.ts` are the deprecated v3 spellings; v4 prefers `z.email()`
+  and `z.uuid()`. Both still work today.
 - **`ClientOnly` wraps cart-dependent UI.** The cart hydrates from its persisted
   store after mount, so rendering it during SSR causes hydration mismatches. Keep
   that wrapper on anything reading `useCartStore()` state.
@@ -243,6 +246,12 @@ deliver to the email address on the Resend account.
   `storage: piniaPluginPersistedstate.localStorage()`, which it must: the
   pre-paint theme script in `nuxt.config.ts` reads `localStorage` directly.
   Whether the cart should move to localStorage too is an open question.
+  Beware two stale comments that claim otherwise: the docstring in
+  `app/stores/cart.ts` and the `onMounted` comment in `app/pages/cart.vue` both
+  say the cart lives in localStorage. It does not. Because the cookie is sent
+  with every request, the cart is in fact available during SSR, so the
+  `ClientOnly` wrappers guard against the mismatch between an empty server-side
+  Pinia store and a hydrated client one rather than against a missing store.
 - **Tailwind/PrimeVue layer order** is set in two places. They are deliberately
   **not identical** and should not be "fixed" to match: `app/assets/css/main.css`
   declares the full page order `@layer theme, base, primevue, components,
@@ -263,7 +272,8 @@ deliver to the email address on the Resend account.
 ## 9. Known problems, not yet fixed
 
 Found by an audit of the code against this document. The three that lived in
-the order-notification path have since been fixed; the rest are still open.
+the order-notification path have since been fixed; the rest are still open and
+were re-verified against the code on 2026-08-31.
 
 - ~~Order email is injectable.~~ **Fixed.** `server/utils/email.ts` now escapes
   every interpolated value through `esc()` / `escMultiline()`. Anything new added
@@ -289,6 +299,15 @@ the order-notification path have since been fixed; the rest are still open.
   raises `unavailable_item` and the customer gets a 409 with no way to clear it.
 - **`rate-limit.ts` is a sliding window**, not the "fixed-window" its own
   docstring and section 4 claim. Behaviour differs at window boundaries.
+- **`/api/cart/preview` leaks raw database errors.**
+  `server/api/cart/preview.post.ts:18` puts Postgres's `error.message` straight
+  into the 502 `statusMessage`, which reaches the browser. Every other route
+  returns a generic string and logs the detail; this one should too.
+- **A failed re-read reaches the customer as `$0.00`, not just the email.**
+  `server/api/orders.post.ts` returns `totalCents: order?.total_cents ?? 0`, so
+  when the re-read fails the confirmation response carries a zero total. The
+  staff email gets an `incomplete` warning banner; the customer-facing value has
+  no equivalent guard.
 
 ## 10. Not done yet
 
