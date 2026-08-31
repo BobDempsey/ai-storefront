@@ -20,6 +20,12 @@ Status: **the storefront is live against a real database.** A Supabase project
 have been run, and `/api/products` returns 6 products. `create_order` has been
 executed against the real database and passes a 7-case regression suite.
 
+The demo catalog is **finished 3D-printed goods** — articulated dragon, cable
+organizer, self-watering planter, lithophane lamp, dice tower, drawer bins —
+chosen by researching what actually sells on Etsy and Printables. Their photos
+are free-licensed Pexels images committed to `public/images/<slug>.jpg` and
+referenced as root-relative paths, so the catalog has no external image host.
+
 Still placeholder: **Resend**. `NUXT_RESEND_API_KEY` and the two email addresses
 in `.env` are fake, so the staff notification at the end of the order flow has
 never actually sent. That is the one untested leg of the order path.
@@ -87,11 +93,15 @@ app/
   pages/checkout.vue             guest details form + summary
   pages/order-received.vue       confirmation, shows order id
   stores/cart.ts                 IDs + quantities only, persisted
+  stores/color-mode.ts           light/dark/system, owns the .dark class
   types/index.ts                 Product, CartLine, CartPreview
   utils/money.ts                 formatMoney()
   assets/css/main.css            layer order + Tailwind import
 
-Also present, not listed above: README.md, package.json, tsconfig.json, public/
+public/
+  images/                   6 product photos, <slug>.jpg, free-licensed Pexels
+
+Also present, not listed above: README.md, package.json, tsconfig.json
 ```
 
 ---
@@ -133,7 +143,9 @@ NUXT_SUPABASE_SERVICE_KEY   SET — an sb_secret_... key. SERVER ONLY, never exp
 NUXT_RESEND_API_KEY         PLACEHOLDER — needs a real re_... key
 NUXT_ORDER_FROM_EMAIL       onboarding@resend.dev until a domain is verified
 NUXT_ORDER_ADMIN_EMAIL      PLACEHOLDER — where staff receive orders
-NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not the real store name
+NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
+NUXT_PUBLIC_CONTACT_EMAIL   Optional — renders a mailto link in the navbar when
+                            set; leave blank to hide the icon entirely
 ```
 
 Nuxt maps these to `runtimeConfig` automatically via the `NUXT_` prefix. The URL
@@ -196,6 +208,12 @@ deliver to the email address on the Resend account.
   declares the full page order `@layer theme, base, primevue, components,
   utilities;`, while `cssLayer` in `nuxt.config.ts` declares only PrimeVue's own
   `theme, base, primevue`. This is PrimeVue's documented pairing.
+- **Never hardcode `bg-white` on a surface.** Dark mode is class-driven, and the
+  layout sets `dark:text-surface-0` on the body, so a white card renders white
+  text on white and the content looks like it is simply missing. Follow the
+  layout's convention instead: `bg-surface-0 dark:bg-surface-900` with
+  `border-surface-200 dark:border-surface-800`. This bit the product, cart and
+  checkout cards; check any new card against dark mode before calling it done.
 - **Windows dev-server lock.** `npm run dev` refuses to start if another Nuxt dev
   process holds the lock; kill it by PID first. Note `taskkill` fails under Git
   Bash (path mangling) — use PowerShell `Stop-Process -Id <pid> -Force`.
@@ -204,24 +222,27 @@ deliver to the email address on the Resend account.
 
 ## 8. Known problems, not yet fixed
 
-Found by an audit of the code against this document. Ranked; none are fixed.
+Found by an audit of the code against this document. The three that lived in
+the order-notification path have since been fixed; the rest are still open.
 
-- **Order email is injectable.** `server/utils/email.ts` interpolates the
-  customer's `name`, `phone`, `notes` and the product `name_snapshot` raw into
-  the HTML. An unauthenticated public form can therefore inject markup into
-  staff inboxes. Escape these before trusting the email.
+- ~~Order email is injectable.~~ **Fixed.** `server/utils/email.ts` now escapes
+  every interpolated value through `esc()` / `escMultiline()`. Anything new added
+  to that template must go through them too — the customer fields come from a
+  public, unauthenticated form.
 - **Rate limiting is bypassable.** `server/api/orders.post.ts:5` calls
   `getRequestIP(event, { xForwardedFor: true })`, which trusts a client-supplied
   `X-Forwarded-For`. A new header value per request defeats the 5-per-10-minutes
   limit — which is also the stated reason phase 1 skips a captcha. Once a deploy
   target is chosen, trust only that platform's forwarded header. Separately,
   when no IP resolves at all, every caller collapses into one `'unknown'` bucket.
-- **A thrown email error 500s the customer after the order is committed.**
-  Section 4 says email failure is logged, not surfaced. That is only true for the
-  `{ error }` Resend returns; `sendOrderEmail` is awaited with no `try`/`catch`,
-  so a network or bad-key throw propagates. Wrap it.
-- **The post-insert re-read ignores its errors** (`orders.post.ts:33-36`). If it
-  fails, the staff email reports `Total $0.00` with no line items.
+- ~~A thrown email error 500s the customer after the order is committed.~~
+  **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
+  `server/api/orders.post.ts`, so section 4's promise actually holds: the
+  committed order is returned to the customer whatever the notification does.
+- ~~The post-insert re-read ignores its errors.~~ **Fixed.** Both queries' errors
+  are logged, and an `incomplete` flag puts a visible warning banner at the top
+  of the staff email telling them to check the dashboard instead of trusting a
+  `$0.00` total.
 - **Out-of-stock lines are a checkout dead end.** `cart.vue` auto-removes only
   `missing[]` (deleted products). An out-of-stock line stays in the cart and is
   excluded from the subtotal, but checkout still submits it, so `create_order`
