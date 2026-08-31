@@ -32,7 +32,43 @@ never actually sent. That is the one untested leg of the order path.
 
 ---
 
-## 2. Stack, and why
+## 2. How work is done here — OpenSpec
+
+**Read `AGENTS.md` before writing code.** This repository runs spec-driven
+development through OpenSpec, and it is the default workflow, not an option:
+anything beyond a trivial fix gets a written, agreed spec before implementation.
+
+```
+AGENTS.md                 the working agreement, applies to every AI agent
+CLAUDE.md                 points Claude Code at AGENTS.md
+openspec/
+  config.yaml             schema: spec-driven, plus project context and rules
+  specs/                  accepted specs, by capability (theming/color-mode)
+  changes/                in-flight changes; archive/ holds completed ones
+.agents/skills/           tool-neutral copies of the openspec-* skills
+.claude/skills/           the same skills for Claude Code
+```
+
+The cycle is **explore -> propose -> apply -> archive**. In Claude Code those are
+`/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`, plus
+`/opsx:update` and `/opsx:sync`. Other tools use the `openspec-*` names.
+
+`config.yaml` sets two project rules worth knowing up front: every proposal must
+carry a **Non-goals** section, and any change touching **Supabase schema or RLS**
+must say so explicitly. Tasks must flag when they need a migration or a new env
+var.
+
+One change has been through the full cycle already —
+`openspec/changes/archive/2026-08-30-add-dark-mode-toggle/` — and its accepted
+spec now lives at `openspec/specs/theming/color-mode/spec.md`. Read that pair
+first to see the expected shape of a proposal, design, tasks and spec.
+
+Note that most of the work recorded in this document predates OpenSpec being
+added, so the rest of the repo is not yet backed by specs. New work should be.
+
+---
+
+## 3. Stack, and why
 
 | Concern | Choice | Reason it was chosen |
 | --- | --- | --- |
@@ -65,7 +101,7 @@ never actually sent. That is the one untested leg of the order path.
 
 ---
 
-## 3. Layout
+## 4. Layout
 
 ```
 nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtimeConfig
@@ -101,12 +137,16 @@ app/
 public/
   images/                   6 product photos, <slug>.jpg, free-licensed Pexels
 
+openspec/                 specs and changes -- see section 2
+.agents/, .claude/        openspec skills; .claude also holds slash commands
+AGENTS.md, CLAUDE.md      the working agreement for AI agents
+
 Also present, not listed above: README.md, package.json, tsconfig.json
 ```
 
 ---
 
-## 4. Order flow (the core of the app)
+## 5. Order flow (the core of the app)
 
 1. Browser stores `{ productId, quantity }` in the Pinia cart — **never prices**.
 2. `POST /api/cart/preview` resolves those IDs against the catalog and returns
@@ -132,7 +172,7 @@ Also present, not listed above: README.md, package.json, tsconfig.json
 
 ---
 
-## 5. Environment
+## 6. Environment
 
 `.env` holds real Supabase credentials and placeholder Resend ones. `.env.example`
 still holds placeholders for everything, as intended.
@@ -158,7 +198,7 @@ works with `@supabase/supabase-js` unchanged.
 
 ---
 
-## 6. Getting it running
+## 7. Getting it running
 
 ```bash
 npm install --legacy-peer-deps     # the flag is required, see gotchas
@@ -178,7 +218,7 @@ deliver to the email address on the Resend account.
 
 ---
 
-## 7. Gotchas discovered during setup
+## 8. Gotchas discovered during setup
 
 - **`npm install` fails without `--legacy-peer-deps`.** npm 10.9.3 throws
   `Cannot read properties of null (reading 'edgesOut')` (an arborist peer-set
@@ -220,7 +260,7 @@ deliver to the email address on the Resend account.
 
 ---
 
-## 8. Known problems, not yet fixed
+## 9. Known problems, not yet fixed
 
 Found by an audit of the code against this document. The three that lived in
 the order-notification path have since been fixed; the rest are still open.
@@ -237,7 +277,7 @@ the order-notification path have since been fixed; the rest are still open.
   when no IP resolves at all, every caller collapses into one `'unknown'` bucket.
 - ~~A thrown email error 500s the customer after the order is committed.~~
   **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
-  `server/api/orders.post.ts`, so section 4's promise actually holds: the
+  `server/api/orders.post.ts`, so section 5's promise actually holds: the
   committed order is returned to the customer whatever the notification does.
 - ~~The post-insert re-read ignores its errors.~~ **Fixed.** Both queries' errors
   are logged, and an `incomplete` flag puts a visible warning banner at the top
@@ -248,9 +288,9 @@ the order-notification path have since been fixed; the rest are still open.
   excluded from the subtotal, but checkout still submits it, so `create_order`
   raises `unavailable_item` and the customer gets a 409 with no way to clear it.
 - **`rate-limit.ts` is a sliding window**, not the "fixed-window" its own
-  docstring and section 3 claim. Behaviour differs at window boundaries.
+  docstring and section 4 claim. Behaviour differs at window boundaries.
 
-## 9. Not done yet
+## 10. Not done yet
 
 Known gaps, roughly in the order they were prioritized with the user:
 
@@ -274,7 +314,7 @@ Known gaps, roughly in the order they were prioritized with the user:
 
 ---
 
-## 10. Working style notes for the next agent
+## 11. Working style notes for the next agent
 
 - The user prefers **one decision at a time** and pushed back on long
   recommendation lists. Ask, get an answer, move on.
@@ -284,6 +324,6 @@ Known gaps, roughly in the order they were prioritized with the user:
   ask, not an assumption.
 - They prefer verification work to run in **background agents** so the main
   conversation stays short. The `create_order` suite and the audit behind
-  section 8 were both run that way.
+  section 9 were both run that way.
 - When a SQL snippet needs running, they would rather have it **copied to their
   clipboard** than pasted into chat to select by hand.
