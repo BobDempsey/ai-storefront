@@ -247,8 +247,9 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
 - **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
-- **Not a git repo at all.** There is no `.git` directory — `git status` fails.
-  Version control was never initialized, so there is no history to fall back on.
+- ~~Not a git repo.~~ **Done.** `main` has history back to the initial commit;
+  `.env` is correctly untracked while `.env.example` is committed. No remote is
+  configured yet, so the history exists only on this machine.
 
 ---
 
