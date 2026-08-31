@@ -24,7 +24,9 @@ watch(preview, value => {
 
 function updateQuantity(productId: string, quantity: number) {
   cart.setQuantity(productId, quantity)
-  refresh()
+  // Removing the last line empties the cart, and the preview endpoint rejects an
+  // empty items array. Nothing needs pricing at that point, so skip the fetch.
+  if (!cart.isEmpty) refresh()
 }
 
 useSeoMeta({ title: 'Your cart', robots: 'noindex' })
