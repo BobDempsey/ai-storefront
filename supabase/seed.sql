@@ -1,6 +1,11 @@
+-- Demo catalog: finished 3D-printed goods.
+-- Images live in public/images/ and are served by Nuxt from the site root.
+
 insert into public.products (slug, name, description, price_cents, image_url) values
-  ('walnut-serving-board', 'Walnut Serving Board', 'Hand-finished black walnut, 18" x 10".', 8900, 'https://picsum.photos/seed/board/800/800'),
-  ('linen-apron',          'Linen Apron',          'Heavyweight washed linen with brass hardware.', 6400, 'https://picsum.photos/seed/apron/800/800'),
-  ('stoneware-mug',        'Stoneware Mug',        'Wheel-thrown, 12oz, dishwasher safe.', 2800, 'https://picsum.photos/seed/mug/800/800'),
-  ('copper-measuring-set', 'Copper Measuring Set', 'Four nesting cups, unlacquered copper.', 5200, 'https://picsum.photos/seed/copper/800/800')
+  ('articulated-dragon',    'Articulated Dragon',    'Print-in-place PLA, 92 links, 11" nose to tail.', 2400, '/images/articulated-dragon.jpg'),
+  ('desk-cable-organizer',  'Desk Cable Organizer',  'Weighted PETG base, five channels, non-slip pads.', 1600, '/images/desk-cable-organizer.jpg'),
+  ('self-watering-planter', 'Self-Watering Planter', 'Two-part PETG shell, wicking reservoir, 5" pot.', 3200, '/images/self-watering-planter.jpg'),
+  ('lithophane-night-lamp', 'Lithophane Night Lamp', 'Translucent PLA panel, warm LED, USB-C powered.', 4800, '/images/lithophane-night-lamp.jpg'),
+  ('hex-dice-tower',        'Hex Dice Tower',        'Matte PLA, felt-lined tray, folds flat for travel.', 5400, '/images/hex-dice-tower.jpg'),
+  ('stackable-drawer-bins', 'Stackable Drawer Bins', 'Six nesting PETG bins, ribbed walls, 2" deep.', 2900, '/images/stackable-drawer-bins.jpg')
 on conflict (slug) do nothing;
