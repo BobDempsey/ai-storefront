@@ -43,7 +43,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
         <div
           v-for="line in preview?.lines"
           :key="line.id"
-          class="flex items-center gap-4 rounded-lg border border-surface-200 bg-white p-4"
+          class="flex items-center gap-4 rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900 p-4"
         >
           <img v-if="line.image_url" :src="line.image_url" :alt="line.name" class="size-16 rounded object-cover">
 
@@ -68,7 +68,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
           <Button icon="pi pi-times" text severity="secondary" aria-label="Remove" @click="updateQuantity(line.id, 0)" />
         </div>
 
-        <div class="flex items-center justify-between border-t border-surface-200 pt-4">
+        <div class="flex items-center justify-between border-t border-surface-200 pt-4 dark:border-surface-800">
           <span class="text-lg">Subtotal</span>
           <span class="text-lg font-semibold">{{ formatMoney(preview?.subtotalCents ?? 0) }}</span>
         </div>

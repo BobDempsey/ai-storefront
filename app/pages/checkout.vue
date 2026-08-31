@@ -78,7 +78,7 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
       </form>
     </div>
 
-    <aside class="h-fit rounded-lg border border-surface-200 bg-white p-4">
+    <aside class="h-fit rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900 p-4">
       <h2 class="mb-4 font-medium">Order summary</h2>
 
       <ClientOnly>
@@ -89,7 +89,7 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
           </li>
         </ul>
 
-        <div class="mt-4 flex justify-between border-t border-surface-200 pt-4 font-medium">
+        <div class="mt-4 flex justify-between border-t border-surface-200 pt-4 dark:border-surface-800 font-medium">
           <span>Total</span>
           <span>{{ formatMoney(preview?.subtotalCents ?? 0) }}</span>
         </div>

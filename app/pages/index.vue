@@ -23,7 +23,7 @@ useSeoMeta({
       <article
         v-for="product in products"
         :key="product.id"
-        class="flex flex-col overflow-hidden rounded-lg border border-surface-200 bg-white"
+        class="flex flex-col overflow-hidden rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900"
       >
         <NuxtLink :to="`/products/${product.slug}`">
           <img
