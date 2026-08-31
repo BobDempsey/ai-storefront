@@ -44,11 +44,22 @@ const themeIcon = computed(() => {
             </template>
           </ClientOnly>
 
-          <NuxtLink to="/cart" class="relative inline-flex items-center gap-2 text-sm">
+          <NuxtLink
+            to="/cart"
+            class="relative inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+            aria-label="Cart"
+          >
             <i class="pi pi-shopping-cart" />
-            <span>Cart</span>
             <ClientOnly>
-              <Badge v-if="cart.count" :value="cart.count" severity="contrast" />
+              <Badge
+                v-if="cart.count"
+                :value="cart.count"
+                severity="contrast"
+                size="small"
+                class="absolute -right-1 -top-1"
+              />
+              <!-- The badge is decorative markup, so state the count for screen readers. -->
+              <span v-if="cart.count" class="sr-only">{{ cart.count }} items</span>
             </ClientOnly>
           </NuxtLink>
         </div>
