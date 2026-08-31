@@ -11,7 +11,8 @@ useSeoMeta({ title: 'Order received', robots: 'noindex' })
 
     <p class="text-surface-600">
       Thanks — our team has your request and will email you shortly to confirm
-      availability and arrange payment.
+      availability and the amount, and to arrange payment. Nothing has been
+      charged.
     </p>
 
     <p v-if="orderId" class="mt-4 text-sm text-surface-500">

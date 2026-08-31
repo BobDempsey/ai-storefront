@@ -14,7 +14,15 @@ export default defineEventHandler(async event => {
     .select('id, slug, name, price_cents, image_url, in_stock')
     .in('id', merged.map(i => i.product_id))
 
-  if (error) throw createError({ statusCode: 502, statusMessage: error.message })
+  // Never forward the database's own message: this endpoint is public and
+  // unauthenticated, and the detail belongs in the server log.
+  if (error) {
+    console.error('[cart] could not price the cart:', error)
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Could not price your cart right now. Please try again.'
+    })
+  }
 
   const lines = merged
     .map(item => {

@@ -113,7 +113,7 @@ supabase/
 
 server/
   utils/supabase.ts       memoized service-role client (bypasses RLS)
-  utils/rate-limit.ts     in-memory fixed-window limiter
+  utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
   utils/email.ts          Resend send + HTML order table
   api/products.get.ts     catalog list
@@ -304,17 +304,18 @@ were re-verified against the code on 2026-08-31.
   waiting for a later fetch, which previously left the deleted id in the cart
   and in the header count. See
   `openspec/changes/fix-out-of-stock-checkout-block/`.
-- **`rate-limit.ts` is a sliding window**, not the "fixed-window" its own
-  docstring and section 4 claim. Behaviour differs at window boundaries.
-- **`/api/cart/preview` leaks raw database errors.**
-  `server/api/cart/preview.post.ts:18` puts Postgres's `error.message` straight
-  into the 502 `statusMessage`, which reaches the browser. Every other route
-  returns a generic string and logs the detail; this one should too.
-- **A failed re-read reaches the customer as `$0.00`, not just the email.**
-  `server/api/orders.post.ts` returns `totalCents: order?.total_cents ?? 0`, so
-  when the re-read fails the confirmation response carries a zero total. The
-  staff email gets an `incomplete` warning banner; the customer-facing value has
-  no equivalent guard.
+- ~~`rate-limit.ts` is described as a fixed window.~~ **Fixed** — the docstring
+  and section 4 now say sliding window. Whether a sliding window is the right
+  choice is still open, alongside the `X-Forwarded-For` issue above.
+- ~~`/api/cart/preview` leaks raw database errors.~~ **Fixed.** The 502 now
+  carries a generic sentence and the underlying error goes to the server log
+  under a `[cart]` prefix, matching the other routes.
+- ~~A failed re-read reaches the customer as `$0.00`.~~ **Fixed.** It was a
+  latent contract bug rather than a visible figure — nothing rendered
+  `totalCents` — but `/api/orders` no longer defaults it: the response is
+  `{ orderId }` alone when the re-read failed and `{ orderId, totalCents }` when
+  it succeeded, typed as optional in `app/types/index.ts` so a consumer has to
+  check. The staff email keeps its `incomplete` banner.
 
 ## 10. Not done yet
 

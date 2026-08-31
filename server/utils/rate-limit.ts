@@ -1,8 +1,11 @@
 const hits = new Map<string, number[]>()
 
 /**
- * In-memory fixed-window limiter. Fine for a single low-traffic instance;
- * swap for a shared store if the app is ever scaled horizontally.
+ * In-memory sliding-window limiter: each call keeps only the timestamps inside
+ * the last `windowMs`, so the window moves with the caller rather than resetting
+ * on a fixed boundary. A caller who spends their allowance cannot send again
+ * until their oldest hit ages out. Fine for a single low-traffic instance; swap
+ * for a shared store if the app is ever scaled horizontally.
  */
 export function rateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now()

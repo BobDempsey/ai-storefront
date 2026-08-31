@@ -91,5 +91,8 @@ export default defineEventHandler(async event => {
     console.error(`[orders] email threw for ${orderId}:`, err)
   }
 
-  return { orderId, totalCents: order?.total_cents ?? 0 }
+  // The order is committed either way, so the id is always returned. The total
+  // is omitted rather than defaulted when the re-read failed: a zero here reads
+  // as a real amount to anything that displays it.
+  return incomplete ? { orderId } : { orderId, totalCents: order?.total_cents }
 })

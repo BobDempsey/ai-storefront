@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CartPreview, OrderConflictData } from '~/types'
+import type { CartPreview, OrderConflictData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 const cart = useCartStore()
@@ -43,7 +43,7 @@ async function submitOrder() {
       return
     }
 
-    const { orderId } = await $fetch<{ orderId: string }>('/api/orders', {
+    const { orderId } = await $fetch<OrderResponse>('/api/orders', {
       method: 'POST',
       body: { customer: form, items: cart.items }
     })

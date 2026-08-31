@@ -19,6 +19,15 @@ export interface CartPreview {
   missing: string[]
 }
 
+/**
+ * What POST /api/orders returns. `totalCents` is absent when the committed
+ * order could not be read back — never assume a total, and never default it.
+ */
+export interface OrderResponse {
+  orderId: string
+  totalCents?: number
+}
+
 /** Body of the 409 returned when an order contains an unavailable product. */
 export interface OrderConflictData {
   unavailableProductIds: string[]
