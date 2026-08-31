@@ -153,7 +153,10 @@ Also present, not listed above: README.md, package.json, tsconfig.json
    priced lines, a subtotal, and a `missing[]` of IDs no longer in the catalog
    (the cart page removes those automatically).
 3. `POST /api/orders` rate-limits by IP (5 per 10 min), Zod-validates the body,
-   merges duplicate lines, then calls the `create_order` Postgres RPC.
+   merges duplicate lines, then calls the `create_order` Postgres RPC. On
+   `unavailable_item` the route re-queries `products` and returns the offending
+   ids as `data.unavailableProductIds` on the 409, so the checkout page can name
+   them; that lookup is best-effort and returns an empty array if it fails.
 4. `create_order` (SECURITY DEFINER, one transaction) validates the payload,
    inserts the order, joins `products` to price each line and snapshot its name,
    then writes the total. **This is the single source of truth for pricing.**
@@ -293,10 +296,14 @@ were re-verified against the code on 2026-08-31.
   are logged, and an `incomplete` flag puts a visible warning banner at the top
   of the staff email telling them to check the dashboard instead of trusting a
   `$0.00` total.
-- **Out-of-stock lines are a checkout dead end.** `cart.vue` auto-removes only
-  `missing[]` (deleted products). An out-of-stock line stays in the cart and is
-  excluded from the subtotal, but checkout still submits it, so `create_order`
-  raises `unavailable_item` and the customer gets a 409 with no way to clear it.
+- ~~Out-of-stock lines are a checkout dead end.~~ **Fixed.** An out-of-stock
+  line is now marked in the cart, offered a Remove button, excluded from the
+  subtotal with a note saying so, and blocks checkout on both the cart and
+  checkout pages until it is removed. Deleted products (`missing[]`) are still
+  removed automatically — and that removal now runs immediately rather than
+  waiting for a later fetch, which previously left the deleted id in the cart
+  and in the header count. See
+  `openspec/changes/fix-out-of-stock-checkout-block/`.
 - **`rate-limit.ts` is a sliding window**, not the "fixed-window" its own
   docstring and section 4 claim. Behaviour differs at window boundaries.
 - **`/api/cart/preview` leaks raw database errors.**

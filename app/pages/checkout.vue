@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CartPreview } from '~/types'
+import type { CartPreview, OrderConflictData } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 const cart = useCartStore()
@@ -19,11 +19,30 @@ onMounted(() => {
   else refresh()
 })
 
+// Products the server named in a 409. Kept alongside the preview's own stock
+// flags because the server is the authority and may have seen a stock change
+// this page has not.
+const conflictIds = ref<string[]>([])
+
+const unavailableLines = computed(
+  () => preview.value?.lines.filter(line => !line.in_stock || conflictIds.value.includes(line.id)) ?? []
+)
+const unavailableNames = computed(() => unavailableLines.value.map(line => line.name).join(', '))
+
 async function submitOrder() {
   errorMessage.value = ''
+  conflictIds.value = []
   submitting.value = true
 
   try {
+    // Re-price immediately before submitting, so a page left open while stock
+    // changed does not send a line the server is about to refuse.
+    await refresh()
+    if (unavailableLines.value.length) {
+      errorMessage.value = `${unavailableNames.value} is no longer available. Remove it from your cart to continue.`
+      return
+    }
+
     const { orderId } = await $fetch<{ orderId: string }>('/api/orders', {
       method: 'POST',
       body: { customer: form, items: cart.items }
@@ -32,7 +51,17 @@ async function submitOrder() {
     cart.clear()
     await navigateTo({ path: '/order-received', query: { id: orderId } })
   } catch (error: any) {
-    errorMessage.value = error?.data?.statusMessage ?? 'Something went wrong. Please try again.'
+    // The cart and the form are deliberately left untouched: a rejected order
+    // must leave the customer somewhere they can act, not start again.
+    const conflict = error?.data?.data as OrderConflictData | undefined
+    if (error?.statusCode === 409) {
+      conflictIds.value = conflict?.unavailableProductIds ?? []
+      await refresh()
+    }
+
+    errorMessage.value = unavailableLines.value.length
+      ? `${unavailableNames.value} is no longer available. Remove it from your cart to continue.`
+      : error?.data?.statusMessage ?? 'Something went wrong. Please try again.'
   } finally {
     submitting.value = false
   }
@@ -46,7 +75,15 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
     <div>
       <h1 class="mb-8 text-2xl font-semibold tracking-tight">Your details</h1>
 
-      <Message v-if="errorMessage" severity="error" class="mb-6">{{ errorMessage }}</Message>
+      <Message v-if="errorMessage" severity="error" class="mb-6">
+        {{ errorMessage }}
+        <NuxtLink v-if="unavailableLines.length" to="/cart" class="underline">Back to your cart</NuxtLink>
+      </Message>
+
+      <Message v-else-if="unavailableLines.length" severity="warn" class="mb-6">
+        {{ unavailableNames }} cannot be ordered at the moment. Remove it in
+        <NuxtLink to="/cart" class="underline">your cart</NuxtLink> to continue.
+      </Message>
 
       <form class="flex flex-col gap-5" @submit.prevent="submitOrder">
         <div class="flex flex-col gap-2">
@@ -69,7 +106,13 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
           <Textarea id="notes" v-model="form.notes" rows="4" auto-resize />
         </div>
 
-        <Button type="submit" label="Submit order" :loading="submitting" class="self-start" />
+        <Button
+          type="submit"
+          label="Submit order"
+          :loading="submitting"
+          :disabled="unavailableLines.length > 0"
+          class="self-start"
+        />
 
         <p class="text-sm text-surface-500">
           Submitting sends your order to our team. We will reply by email to confirm
@@ -84,8 +127,13 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
       <ClientOnly>
         <ul class="flex flex-col gap-2 text-sm">
           <li v-for="line in preview?.lines" :key="line.id" class="flex justify-between gap-4">
-            <span>{{ line.name }} &times; {{ line.quantity }}</span>
-            <span>{{ formatMoney(line.price_cents * line.quantity) }}</span>
+            <span>
+              {{ line.name }} &times; {{ line.quantity }}
+              <span v-if="!line.in_stock" class="block text-red-600 dark:text-red-400">Out of stock</span>
+            </span>
+            <span :class="{ 'text-surface-400 line-through': !line.in_stock }">
+              {{ formatMoney(line.price_cents * line.quantity) }}
+            </span>
           </li>
         </ul>
 

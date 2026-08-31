@@ -15,5 +15,11 @@ export interface CartLine extends Omit<Product, 'description'> {
 export interface CartPreview {
   lines: CartLine[]
   subtotalCents: number
+  /** Ids the browser still holds whose product has left the catalogue. */
   missing: string[]
+}
+
+/** Body of the 409 returned when an order contains an unavailable product. */
+export interface OrderConflictData {
+  unavailableProductIds: string[]
 }
