@@ -56,7 +56,9 @@ export default defineNuxtConfig({
     orderFromEmail: 'onboarding@resend.dev',
     orderAdminEmail: '',
     public: {
-      storeName: 'Store'
+      storeName: 'Store',
+      // Rendered into the page as a mailto link, so public by design.
+      contactEmail: ''
     }
   }
 })

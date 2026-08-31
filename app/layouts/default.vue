@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const cart = useCartStore()
 const colorMode = useColorModeStore()
-const { storeName } = useRuntimeConfig().public
+const { storeName, contactEmail } = useRuntimeConfig().public
 
 // Client-only; starts the watcher that owns the `.dark` class on <html>.
 colorMode.init()
@@ -19,6 +19,16 @@ const themeIcon = computed(() => {
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>
 
         <div class="flex items-center gap-4">
+          <a
+            v-if="contactEmail"
+            :href="`mailto:${contactEmail}`"
+            class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+            :aria-label="`Email us at ${contactEmail}`"
+            :title="contactEmail"
+          >
+            <i class="pi pi-envelope" />
+          </a>
+
           <ClientOnly>
             <button
               type="button"
