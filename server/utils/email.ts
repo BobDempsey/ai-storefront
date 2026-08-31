@@ -5,15 +5,33 @@ export interface OrderEmailPayload {
   customer: { name: string; email: string; phone?: string; notes?: string }
   items: Array<{ name_snapshot: string; unit_price_cents: number; quantity: number }>
   totalCents: number
+  /** Set when the order could not be re-read, so the figures below are unreliable. */
+  incomplete?: boolean
 }
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
+
+/**
+ * Everything interpolated below is attacker-controlled: the customer fields come
+ * straight from a public, unauthenticated form. Escape before interpolating so a
+ * submission cannot inject markup into a staff inbox.
+ */
+const esc = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+/** Escaped, with newlines preserved as line breaks. */
+const escMultiline = (value: string) => esc(value).replace(/\r?\n/g, '<br>')
 
 function renderHtml(order: OrderEmailPayload) {
   const rows = order.items
     .map(
       i => `<tr>
-        <td style="padding:6px 12px;border-bottom:1px solid #eee">${i.name_snapshot}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #eee">${esc(i.name_snapshot)}</td>
         <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td>
         <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right">${money(i.unit_price_cents * i.quantity)}</td>
       </tr>`
@@ -23,9 +41,10 @@ function renderHtml(order: OrderEmailPayload) {
   return `
     <h2>New order ${order.orderId}</h2>
     <p>
-      <strong>${order.customer.name}</strong><br>
-      ${order.customer.email}${order.customer.phone ? `<br>${order.customer.phone}` : ''}
+      <strong>${esc(order.customer.name)}</strong><br>
+      ${esc(order.customer.email)}${order.customer.phone ? `<br>${esc(order.customer.phone)}` : ''}
     </p>
+    ${order.incomplete ? '<p style="padding:8px 12px;background:#fff4e5;border-left:3px solid #d97706"><strong>Heads up:</strong> the order could not be read back after saving, so the items and total below may be incomplete. Check the Supabase dashboard for the authoritative record.</p>' : ''}
     <table style="border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14px">
       <thead>
         <tr>
@@ -42,7 +61,7 @@ function renderHtml(order: OrderEmailPayload) {
         </tr>
       </tfoot>
     </table>
-    ${order.customer.notes ? `<p><strong>Notes:</strong><br>${order.customer.notes}</p>` : ''}
+    ${order.customer.notes ? `<p><strong>Notes:</strong><br>${escMultiline(order.customer.notes)}</p>` : ''}
     <p style="color:#666;font-size:12px">Payment is handled off-app. Reply to this email to reach the customer.</p>
   `
 }
@@ -64,7 +83,7 @@ export async function sendOrderEmail(order: OrderEmailPayload) {
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: order.customer.email,
-    subject: `New order from ${order.customer.name} — ${money(order.totalCents)}`,
+    subject: `New order from ${order.customer.name.replace(/\s+/g, ' ').trim()} — ${money(order.totalCents)}`,
     html: renderHtml(order)
   })
 
