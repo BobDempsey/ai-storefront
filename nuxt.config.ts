@@ -14,6 +14,24 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css', 'primeicons/primeicons.css'],
 
+  app: {
+    head: {
+      script: [
+        {
+          // Runs synchronously in <head>, before first paint, so a returning
+          // dark-mode visitor never sees a flash of the light theme. A Nuxt
+          // plugin would be too late. The 'color-mode' key and its bare-string
+          // value must match STORAGE_KEY in app/stores/color-mode.ts.
+          innerHTML:
+            "try{var m=localStorage.getItem('color-mode');" +
+            "if(m==='dark'||((!m||m==='system')&&matchMedia('(prefers-color-scheme: dark)').matches))" +
+            "document.documentElement.classList.add('dark')}catch(e){}",
+          tagPosition: 'head'
+        }
+      ]
+    }
+  },
+
   vite: {
     plugins: [tailwindcss()]
   },

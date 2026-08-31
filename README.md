@@ -8,11 +8,12 @@ submit it, staff receive the order by email and arrange payment off-app.
 | Concern | Choice |
 | --- | --- |
 | Framework | Nuxt 4 (SSR) + Vue 3 + TypeScript |
-| UI | PrimeVue 5 (Aura theme) + Tailwind CSS 4 |
-| State | Pinia, cart persisted to `localStorage` |
+| UI | PrimeVue 4.5.5 (Aura theme) + Tailwind CSS 4 |
+| State | Pinia, persisted by `pinia-plugin-persistedstate` (cart to a cookie, theme to `localStorage`) |
 | Data | Supabase (Postgres + RLS) |
 | Email | Resend |
 | Validation | Zod |
+| Theming | Light/dark/system toggle in the navbar, applied before first paint |
 
 ## Setup
 

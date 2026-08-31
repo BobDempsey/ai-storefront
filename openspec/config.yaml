@@ -8,8 +8,11 @@ context: |
 
   Tech stack:
     - Nuxt 4 (SSR) + Vue 3 + TypeScript, Nitro server routes under server/
-    - PrimeVue 5 (Aura theme) + Tailwind CSS 4 for UI
-    - Pinia for state; cart persisted to localStorage via pinia-plugin-persistedstate
+    - PrimeVue 4.5.5 (Aura theme) + Tailwind CSS 4 for UI; pinned to 4.x
+      because 5.x is commercially licensed
+    - Pinia for state, persisted by pinia-plugin-persistedstate. Its Nuxt
+      module defaults to COOKIE storage: the cart uses that default, the
+      colour-mode store opts into localStorage explicitly.
     - Supabase (Postgres + RLS) for data; schema in supabase/schema.sql
     - Resend for transactional email
     - Zod for validation

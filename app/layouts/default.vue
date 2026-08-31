@@ -1,21 +1,47 @@
 <script setup lang="ts">
 const cart = useCartStore()
+const colorMode = useColorModeStore()
 const { storeName } = useRuntimeConfig().public
+
+// Client-only; starts the watcher that owns the `.dark` class on <html>.
+colorMode.init()
+
+const themeIcon = computed(() => {
+  if (colorMode.mode === 'system') return 'pi pi-desktop'
+  return colorMode.mode === 'dark' ? 'pi pi-moon' : 'pi pi-sun'
+})
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-surface-50 text-surface-900">
-    <header class="border-b border-surface-200 bg-white">
+  <div class="min-h-screen flex flex-col bg-surface-50 text-surface-900 dark:bg-surface-950 dark:text-surface-0">
+    <header class="border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
       <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>
 
-        <NuxtLink to="/cart" class="relative inline-flex items-center gap-2 text-sm">
-          <i class="pi pi-shopping-cart" />
-          <span>Cart</span>
+        <div class="flex items-center gap-4">
           <ClientOnly>
-            <Badge v-if="cart.count" :value="cart.count" severity="contrast" />
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+              :aria-label="`Change theme (currently ${colorMode.mode})`"
+              :title="colorMode.label"
+              @click="colorMode.cycle()"
+            >
+              <i :class="themeIcon" />
+            </button>
+            <template #fallback>
+              <span class="size-8" />
+            </template>
           </ClientOnly>
-        </NuxtLink>
+
+          <NuxtLink to="/cart" class="relative inline-flex items-center gap-2 text-sm">
+            <i class="pi pi-shopping-cart" />
+            <span>Cart</span>
+            <ClientOnly>
+              <Badge v-if="cart.count" :value="cart.count" severity="contrast" />
+            </ClientOnly>
+          </NuxtLink>
+        </div>
       </nav>
     </header>
 
@@ -23,7 +49,7 @@ const { storeName } = useRuntimeConfig().public
       <slot />
     </main>
 
-    <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500">
+    <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500 dark:border-surface-800 dark:text-surface-400">
       Orders are confirmed by email — payment is arranged separately.
     </footer>
   </div>

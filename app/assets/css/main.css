@@ -2,3 +2,35 @@
 @layer theme, base, primevue, components, utilities;
 
 @import "tailwindcss";
+
+/*
+ * Tailwind 4 drives `dark:` from prefers-color-scheme by default. PrimeVue is
+ * configured with darkModeSelector: '.dark' (nuxt.config.ts), so point Tailwind
+ * at the same class and both sides flip together.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * PrimeVue emits its Aura palette as --p-surface-* custom properties at
+ * runtime. Re-expose them to Tailwind so `bg-surface-50`, `border-surface-200`
+ * and friends resolve to real rules — without them these utilities generate no
+ * CSS at all. The scale is identical in both schemes, so light/dark comes from
+ * explicit `dark:` pairs in the markup, not from the tokens flipping.
+ *
+ * Note: opacity modifiers (bg-surface-50/50) do not work on var()-backed
+ * colours.
+ */
+@theme {
+  --color-surface-0: var(--p-surface-0);
+  --color-surface-50: var(--p-surface-50);
+  --color-surface-100: var(--p-surface-100);
+  --color-surface-200: var(--p-surface-200);
+  --color-surface-300: var(--p-surface-300);
+  --color-surface-400: var(--p-surface-400);
+  --color-surface-500: var(--p-surface-500);
+  --color-surface-600: var(--p-surface-600);
+  --color-surface-700: var(--p-surface-700);
+  --color-surface-800: var(--p-surface-800);
+  --color-surface-900: var(--p-surface-900);
+  --color-surface-950: var(--p-surface-950);
+}
