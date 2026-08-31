@@ -35,17 +35,37 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 502, statusMessage: 'Could not submit the order. Please try again.' })
   }
 
-  const [{ data: order }, { data: orderItems }] = await Promise.all([
+  // Read back what Postgres actually stored, so the email quotes the priced
+  // lines rather than anything the client sent.
+  const [
+    { data: order, error: orderError },
+    { data: orderItems, error: itemsError }
+  ] = await Promise.all([
     supabase.from('orders').select('total_cents').eq('id', orderId).single(),
     supabase.from('order_items').select('name_snapshot, unit_price_cents, quantity').eq('order_id', orderId)
   ])
 
-  await sendOrderEmail({
-    orderId,
-    customer,
-    items: orderItems ?? [],
-    totalCents: order?.total_cents ?? 0
-  })
+  // A failed re-read must not be silent: without this the staff email would
+  // quietly report a $0.00 order with no line items.
+  const incomplete = Boolean(orderError || itemsError)
+  if (incomplete) {
+    console.error(`[orders] could not re-read ${orderId}:`, orderError ?? itemsError)
+  }
+
+  // The order row is committed and is the real record, so nothing about the
+  // notification is allowed to fail the request. `send` returns errors for a
+  // rejected send, but still throws on network failures or a bad API key.
+  try {
+    await sendOrderEmail({
+      orderId,
+      customer,
+      items: orderItems ?? [],
+      totalCents: order?.total_cents ?? 0,
+      incomplete
+    })
+  } catch (err) {
+    console.error(`[orders] email threw for ${orderId}:`, err)
+  }
 
   return { orderId, totalCents: order?.total_cents ?? 0 }
 })
