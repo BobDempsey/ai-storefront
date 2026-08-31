@@ -26,6 +26,11 @@ export default defineEventHandler(async event => {
         statusMessage: 'One or more items are no longer available. Please review your cart.'
       })
     }
+    // create_order re-checks what Zod already checked, so these only fire for
+    // callers that bypass this route.
+    if (error.message.includes('empty_order') || error.message.includes('invalid_item')) {
+      throw createError({ statusCode: 400, statusMessage: 'Your cart is empty or invalid.' })
+    }
     console.error('[orders] create_order failed:', error)
     throw createError({ statusCode: 502, statusMessage: 'Could not submit the order. Please try again.' })
   }

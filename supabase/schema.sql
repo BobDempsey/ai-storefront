@@ -61,7 +61,27 @@ as $$
 declare
   v_order_id uuid;
   v_matched  integer;
+  v_wanted   integer;
 begin
+  -- An order with no lines is never valid, and the row-count guard below cannot
+  -- catch it (0 matched = 0 wanted), so reject it up front.
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    raise exception 'empty_order';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)
+    where i.product_id is null or i.quantity is null or i.quantity < 1
+  ) then
+    raise exception 'invalid_item';
+  end if;
+
+  -- Distinct products asked for. Duplicate ids are summed rather than rejected,
+  -- so this count -- not the raw array length -- is what the join must match.
+  select count(distinct i.product_id) into v_wanted
+  from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer);
+
   insert into orders (customer_name, customer_email, customer_phone, notes)
   values (
     p_customer->>'name',
@@ -72,12 +92,16 @@ begin
   returning id into v_order_id;
 
   insert into order_items (order_id, product_id, name_snapshot, unit_price_cents, quantity)
-  select v_order_id, p.id, p.name, p.price_cents, i.quantity
-  from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)
-  join products p on p.id = i.product_id and p.in_stock;
+  select v_order_id, p.id, p.name, p.price_cents, w.quantity
+  from (
+    select i.product_id, sum(i.quantity)::integer as quantity
+    from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)
+    group by i.product_id
+  ) w
+  join products p on p.id = w.product_id and p.in_stock;
 
   get diagnostics v_matched = row_count;
-  if v_matched <> jsonb_array_length(p_items) then
+  if v_matched <> v_wanted then
     raise exception 'unavailable_item';
   end if;
 
