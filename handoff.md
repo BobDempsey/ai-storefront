@@ -26,9 +26,14 @@ chosen by researching what actually sells on Etsy and Printables. Their photos
 are free-licensed Pexels images committed to `public/images/<slug>.jpg` and
 referenced as root-relative paths, so the catalog has no external image host.
 
-Still placeholder: **Resend**. `NUXT_RESEND_API_KEY` and the two email addresses
-in `.env` are fake, so the staff notification at the end of the order flow has
-never actually sent. That is the one untested leg of the order path.
+**Resend now works.** A real `re_...` key is in `.env`, `NUXT_ORDER_ADMIN_EMAIL`
+is the owner's own address (the sandbox sender can only deliver there), and two
+orders placed on 2026-08-31 arrived in that inbox with correct line items,
+total, reply-to and escaping — including a deliberately awkward payload of
+accents, curly quotes, an em dash and raw `<b>` markup, which rendered as text.
+The whole order path has now run end to end. Still outstanding for email: no
+domain, so no SPF/DKIM, and the sandbox sender delivers only to that one
+address.
 
 ---
 
@@ -183,9 +188,11 @@ still holds placeholders for everything, as intended.
 ```
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
 NUXT_SUPABASE_SERVICE_KEY   SET — an sb_secret_... key. SERVER ONLY, never expose
-NUXT_RESEND_API_KEY         PLACEHOLDER — needs a real re_... key
+NUXT_RESEND_API_KEY         SET — a real re_... key, verified sending
 NUXT_ORDER_FROM_EMAIL       onboarding@resend.dev until a domain is verified
-NUXT_ORDER_ADMIN_EMAIL      PLACEHOLDER — where staff receive orders
+NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resend
+                            account address. The sandbox sender will not deliver
+                            anywhere else until a domain is verified
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
 NUXT_PUBLIC_CONTACT_EMAIL   SET — currently the owner's personal address, which
                             renders as a public mailto link in the navbar. Swap it
@@ -218,8 +225,9 @@ then `supabase/seed.sql` in the SQL editor and repoint `.env`.
 Env changes are not hot-reloaded; restart `npm run dev` after editing `.env`. The
 dev server binds IPv6, so if `curl 127.0.0.1:3000` hangs, use `http://[::1]:3000`.
 
-To test the email path end to end, note the Resend sandbox sender can only
-deliver to the email address on the Resend account.
+The email path works end to end; the Resend sandbox sender can only deliver to
+the email address on the Resend account, so changing `NUXT_ORDER_ADMIN_EMAIL` to
+a different staff address will silently fail until a domain is verified.
 
 ---
 
@@ -321,8 +329,8 @@ were re-verified against the code on 2026-08-31.
 
 Known gaps, roughly in the order they were prioritized with the user:
 
-- **The email leg has never run.** Resend credentials are still placeholders, so
-  no order notification has ever been sent. This is the last untested step.
+- ~~The email leg has never run.~~ **Done** — verified 2026-08-31, see section 1.
+  Still nothing sends to an arbitrary staff address until a domain is verified.
 - **No tests of any kind.** The `create_order` regression suite was run ad hoc
   against the live database by an agent and is not committed anywhere.
 - **No SPF/DKIM**, because no domain. Admin mail will land in junk until the
