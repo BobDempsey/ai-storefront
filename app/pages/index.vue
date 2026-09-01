@@ -5,6 +5,40 @@ import { formatMoney } from '~/utils/money'
 const { data: products, error } = await useFetch<Product[]>('/api/products')
 const cart = useCartStore()
 
+/**
+ * Demo listing only. These are not stored anywhere and nothing is downloadable
+ * yet; the tab exists so the layout can be reviewed before the real files land.
+ */
+const demoFiles = [
+  {
+    name: 'Articulated Dragon',
+    file: 'articulated-dragon.3mf',
+    format: '3MF',
+    size: '24.8 MB',
+    icon: 'pi pi-palette',
+    description:
+      'Slicer project with the print settings, supports and two filament colours already set up. Open it in PrusaSlicer, Orca or Bambu Studio.'
+  },
+  {
+    name: 'Hex Dice Tower',
+    file: 'hex-dice-tower.stl',
+    format: 'STL',
+    size: '8.2 MB',
+    icon: 'pi pi-box',
+    description:
+      'Plain triangle mesh, the format every desktop printer accepts. Slice it yourself and pick your own layer height and infill.'
+  },
+  {
+    name: 'Self-Watering Planter',
+    file: 'self-watering-planter.step',
+    format: 'STEP',
+    size: '3.1 MB',
+    icon: 'pi pi-compass',
+    description:
+      'CAD source with exact surfaces rather than triangles. Use this one if you want to change a dimension before printing.'
+  }
+]
+
 useSeoMeta({
   title: 'Shop',
   description: 'Browse the catalogue and submit an order request.'
@@ -67,9 +101,31 @@ useSeoMeta({
           </div>
         </TabPanel>
 
-        <!-- Empty by design: the tab is scaffolding, the listing comes later. -->
         <TabPanel value="files" class="pt-6">
-          <p class="text-surface-500">No files yet.</p>
+          <Message severity="info" class="mb-6">
+            Sample listing while we set this up. Downloads are not live yet.
+          </Message>
+
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <article
+              v-for="file in demoFiles"
+              :key="file.file"
+              class="flex flex-col gap-2 rounded-lg border border-surface-200 bg-surface-0 p-4 dark:border-surface-800 dark:bg-surface-900"
+            >
+              <div class="flex items-center gap-3">
+                <i :class="file.icon" class="text-xl text-surface-500" />
+                <div>
+                  <p class="font-medium">{{ file.name }}</p>
+                  <p class="text-sm text-surface-500">{{ file.format }}, {{ file.size }}</p>
+                </div>
+              </div>
+
+              <p class="text-sm text-surface-600 dark:text-surface-400">{{ file.description }}</p>
+              <code class="text-xs text-surface-500">{{ file.file }}</code>
+
+              <Button class="mt-auto" label="Download" icon="pi pi-download" size="small" disabled />
+            </article>
+          </div>
         </TabPanel>
       </TabPanels>
     </Tabs>
