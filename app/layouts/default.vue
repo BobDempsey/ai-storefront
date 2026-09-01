@@ -70,7 +70,7 @@ const themeIcon = computed(() => {
     </main>
 
     <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500 dark:border-surface-800 dark:text-surface-400">
-      Orders are confirmed by email — payment is arranged separately.
+      Orders are confirmed by email. Payment is arranged separately.
     </footer>
   </div>
 </template>

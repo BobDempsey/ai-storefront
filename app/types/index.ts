@@ -21,7 +21,7 @@ export interface CartPreview {
 
 /**
  * What POST /api/orders returns. `totalCents` is absent when the committed
- * order could not be read back — never assume a total, and never default it.
+ * order could not be read back. Never assume a total, and never default it.
  */
 export interface OrderResponse {
   orderId: string

@@ -7,7 +7,13 @@ export default defineEventHandler(async event => {
     .eq('slug', slug)
     .maybeSingle()
 
-  if (error) throw createError({ statusCode: 502, statusMessage: error.message })
+  if (error) {
+    console.error('[products] could not load the product:', error)
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Could not load this product right now. Please try again.'
+    })
+  }
   if (!data) throw createError({ statusCode: 404, statusMessage: 'Product not found' })
   return data
 })

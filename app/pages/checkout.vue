@@ -115,8 +115,8 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
         />
 
         <p class="text-sm text-surface-500">
-          Submitting sends your order to our team. We will reply by email to confirm
-          availability and arrange payment — nothing is charged here.
+          Submitting sends your order to our team. We reply by email to confirm
+          availability and arrange payment. Nothing is charged here.
         </p>
       </form>
     </div>

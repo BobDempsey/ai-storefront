@@ -4,6 +4,12 @@ export default defineEventHandler(async () => {
     .select('id, slug, name, description, price_cents, image_url, in_stock')
     .order('created_at', { ascending: true })
 
-  if (error) throw createError({ statusCode: 502, statusMessage: error.message })
+  if (error) {
+    console.error('[products] could not load the catalogue:', error)
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Could not load products right now. Please try again.'
+    })
+  }
   return data
 })

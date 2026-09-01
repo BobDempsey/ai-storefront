@@ -17,13 +17,13 @@ const isColorMode = (value: unknown): value is ColorMode =>
 
 /**
  * Single source of truth for the colour scheme. The `.dark` class on <html> is
- * written here and nowhere else — components call actions, they never touch
+ * written here and nowhere else. Components call actions, they never touch
  * the DOM.
  */
 export const useColorModeStore = defineStore('color-mode', {
   state: () => ({
     mode: 'system' as ColorMode,
-    /** What the OS reported at load. Not tracked live — see design.md. */
+    /** What the OS reported at load. Not tracked live; see design.md. */
     systemPrefersDark: false,
     /** Guards the client bootstrap so the watcher is only ever created once. */
     initialised: false

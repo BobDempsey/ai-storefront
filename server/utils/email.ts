@@ -83,7 +83,7 @@ export async function sendOrderEmail(order: OrderEmailPayload) {
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: order.customer.email,
-    subject: `New order from ${order.customer.name.replace(/\s+/g, ' ').trim()} — ${money(order.totalCents)}`,
+    subject: `New order from ${order.customer.name.replace(/\s+/g, ' ').trim()} (${money(order.totalCents)})`,
     html: renderHtml(order)
   })
 
@@ -113,7 +113,7 @@ export async function sendContactEmail(contact: ContactEmailPayload) {
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: contact.email,
-    subject: `Contact form — ${contact.name.replace(/\s+/g, ' ').trim()}`,
+    subject: `Contact form: ${contact.name.replace(/\s+/g, ' ').trim()}`,
     html: `
       <h2>Message from the contact form</h2>
       <p>

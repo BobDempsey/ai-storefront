@@ -10,9 +10,8 @@ useSeoMeta({ title: 'Order received', robots: 'noindex' })
     <h1 class="mb-3 text-2xl font-semibold tracking-tight">Order received</h1>
 
     <p class="text-surface-600">
-      Thanks — our team has your request and will email you shortly to confirm
-      availability and the amount, and to arrange payment. Nothing has been
-      charged.
+      We have your request. We will email you shortly to confirm availability
+      and the amount, and to arrange payment. Nothing has been charged.
     </p>
 
     <p v-if="orderId" class="mt-4 text-sm text-surface-500">

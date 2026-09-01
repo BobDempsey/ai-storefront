@@ -6,8 +6,8 @@ interface StoredLine {
 }
 
 /**
- * Holds IDs and quantities only — never prices. Totals are always resolved
- * server-side so a tampered localStorage cannot change what is ordered.
+ * Holds IDs and quantities only, never prices. Totals are always resolved
+ * server-side, so a tampered cart cookie cannot change what is ordered.
  */
 export const useCartStore = defineStore('cart', {
   state: () => ({

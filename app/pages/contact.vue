@@ -34,7 +34,7 @@ useSeoMeta({
       <i class="pi pi-check-circle mb-3 block text-3xl text-green-600" />
       <h2 class="mb-2 text-lg font-medium">Message sent</h2>
       <p class="text-surface-600 dark:text-surface-400">
-        Thanks — we have your message and will reply to {{ form.email }}.
+        We have your message and will reply to {{ form.email }}.
       </p>
       <Button class="mt-6" label="Continue shopping" outlined @click="navigateTo('/')" />
     </div>
@@ -43,7 +43,7 @@ useSeoMeta({
       <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
 
       <p class="text-surface-600 dark:text-surface-400">
-        Ask us anything about a product or an order. We reply by email.
+        Ask us about a product or an order. We reply by email.
       </p>
 
       <div class="flex flex-col gap-2">

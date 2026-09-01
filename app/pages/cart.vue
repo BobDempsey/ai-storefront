@@ -27,7 +27,7 @@ watch(preview, value => {
 }, { immediate: true })
 
 // Lines still in the catalogue that cannot currently be ordered. Unlike deleted
-// products these are never removed automatically — the customer decides.
+// products these are never removed automatically. The customer decides.
 const unavailableLines = computed(() => preview.value?.lines.filter(line => !line.in_stock) ?? [])
 const unavailableNames = computed(() => unavailableLines.value.map(line => line.name).join(', '))
 const everythingUnavailable = computed(
@@ -74,7 +74,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
             <NuxtLink :to="`/products/${line.slug}`" class="font-medium hover:underline">{{ line.name }}</NuxtLink>
             <p class="text-sm text-surface-500">{{ formatMoney(line.price_cents) }} each</p>
             <p v-if="!line.in_stock" class="text-sm font-medium text-red-600 dark:text-red-400">
-              Out of stock — remove it to continue
+              Out of stock. Remove it to continue.
             </p>
           </div>
 
@@ -122,7 +122,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
         </div>
 
         <Message v-if="everythingUnavailable" severity="warn">
-          Nothing in your cart can be ordered at the moment. Remove these items and
+          Nothing in your cart is available right now. Remove these items, then
           <NuxtLink to="/" class="underline">browse the catalogue</NuxtLink>.
         </Message>
         <Message v-else-if="unavailableLines.length" severity="warn">

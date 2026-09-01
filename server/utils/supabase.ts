@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 let client: SupabaseClient | null = null
 
-/** Service-role client. Server-only — it bypasses RLS. */
+/** Service-role client. Server-only, because it bypasses RLS. */
 export function useSupabase(): SupabaseClient {
   if (client) return client
 
