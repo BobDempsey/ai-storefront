@@ -7,12 +7,17 @@ const hits = new Map<string, number[]>()
  * until their oldest hit ages out. Fine for a single low-traffic instance; swap
  * for a shared store if the app is ever scaled horizontally.
  */
-export function rateLimit(key: string, limit: number, windowMs: number) {
+export function rateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+  message = 'Too many requests. Please try again later.'
+) {
   const now = Date.now()
   const recent = (hits.get(key) ?? []).filter(t => now - t < windowMs)
 
   if (recent.length >= limit) {
-    throw createError({ statusCode: 429, statusMessage: 'Too many orders. Please try again later.' })
+    throw createError({ statusCode: 429, statusMessage: message })
   }
 
   recent.push(now)

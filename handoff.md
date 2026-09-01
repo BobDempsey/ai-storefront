@@ -120,11 +120,13 @@ server/
   utils/supabase.ts       memoized service-role client (bypasses RLS)
   utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
-  utils/email.ts          Resend send + HTML order table
+  utils/email.ts          Resend sends: order notification + contact message
   api/products.get.ts     catalog list
   api/products/[slug].get.ts
   api/cart/preview.post.ts  resolves cart IDs -> current prices + subtotal
   api/orders.post.ts        rate limit -> validate -> create_order -> email
+  api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
+                            so a failed send is reported to the sender
 
 app/
   app.vue, layouts/default.vue   header w/ cart badge, footer
@@ -133,6 +135,7 @@ app/
   pages/cart.vue                 quantities, server-priced subtotal
   pages/checkout.vue             guest details form + summary
   pages/order-received.vue       confirmation, shows order id
+  pages/contact.vue              contact form; replaced the navbar mailto link
   stores/cart.ts                 IDs + quantities only, persisted
   stores/color-mode.ts           light/dark/system, owns the .dark class
   types/index.ts                 Product, CartLine, CartPreview
@@ -194,10 +197,10 @@ NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resen
                             account address. The sandbox sender will not deliver
                             anywhere else until a domain is verified
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
-NUXT_PUBLIC_CONTACT_EMAIL   SET — currently the owner's personal address, which
-                            renders as a public mailto link in the navbar. Swap it
-                            for a store address before deploying; leave it blank to
-                            hide the icon entirely
+
+`NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link was replaced by
+the `/contact` form, which delivers to `NUXT_ORDER_ADMIN_EMAIL`, so no address
+is rendered into the page or shipped to the browser.
 ```
 
 Nuxt maps these to `runtimeConfig` automatically via the `NUXT_` prefix. The URL
@@ -290,12 +293,17 @@ were re-verified against the code on 2026-08-31.
   every interpolated value through `esc()` / `escMultiline()`. Anything new added
   to that template must go through them too — the customer fields come from a
   public, unauthenticated form.
-- **Rate limiting is bypassable.** `server/api/orders.post.ts:5` calls
+- **Rate limiting is bypassable.** `server/api/orders.post.ts` and
+  `server/api/contact.post.ts` both call
   `getRequestIP(event, { xForwardedFor: true })`, which trusts a client-supplied
-  `X-Forwarded-For`. A new header value per request defeats the 5-per-10-minutes
-  limit — which is also the stated reason phase 1 skips a captcha. Once a deploy
-  target is chosen, trust only that platform's forwarded header. Separately,
-  when no IP resolves at all, every caller collapses into one `'unknown'` bucket.
+  `X-Forwarded-For`. A new header value per request defeats both limits —
+  5 orders and 3 contact messages per 10 minutes — which is also the stated
+  reason phase 1 skips a captcha. Once a deploy target is chosen, trust only
+  that platform's forwarded header. Separately, when no IP resolves at all,
+  every caller collapses into one `'unknown'` bucket. The two routes use
+  separate buckets (`contact:` prefixed), so exhausting one does not block the
+  other, and the contact form is the more attractive target: it sends mail with
+  no order behind it.
 - ~~A thrown email error 500s the customer after the order is committed.~~
   **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
   `server/api/orders.post.ts`, so section 5's promise actually holds: the

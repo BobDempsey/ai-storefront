@@ -89,3 +89,41 @@ export async function sendOrderEmail(order: OrderEmailPayload) {
 
   if (error) console.error(`[orders] email failed for ${order.orderId}:`, error)
 }
+
+export interface ContactEmailPayload {
+  name: string
+  email: string
+  message: string
+}
+
+/**
+ * Sends a contact message to staff. Unlike an order, nothing is stored before
+ * this runs, so a failure is thrown rather than logged: the sender has to be
+ * told, or the message is simply gone.
+ */
+export async function sendContactEmail(contact: ContactEmailPayload) {
+  const { resendApiKey, orderFromEmail, orderAdminEmail } = useRuntimeConfig()
+
+  if (!resendApiKey || !orderAdminEmail) {
+    throw new Error('email is not configured')
+  }
+
+  const resend = new Resend(resendApiKey)
+  const { error } = await resend.emails.send({
+    from: orderFromEmail,
+    to: orderAdminEmail,
+    replyTo: contact.email,
+    subject: `Contact form — ${contact.name.replace(/\s+/g, ' ').trim()}`,
+    html: `
+      <h2>Message from the contact form</h2>
+      <p>
+        <strong>${esc(contact.name)}</strong><br>
+        ${esc(contact.email)}
+      </p>
+      <p style="white-space:normal">${escMultiline(contact.message)}</p>
+      <p style="color:#666;font-size:12px">Reply to this email to reach the sender.</p>
+    `
+  })
+
+  if (error) throw new Error(error.message ?? 'the message could not be sent')
+}

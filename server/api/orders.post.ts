@@ -19,7 +19,12 @@ async function findUnavailableIds(supabase: ReturnType<typeof useSupabase>, ids:
 }
 
 export default defineEventHandler(async event => {
-  rateLimit(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown', 5, 10 * 60_000)
+  rateLimit(
+    getRequestIP(event, { xForwardedFor: true }) ?? 'unknown',
+    5,
+    10 * 60_000,
+    'Too many orders. Please try again later.'
+  )
 
   const parsed = orderSchema.safeParse(await readBody(event))
   if (!parsed.success) {
