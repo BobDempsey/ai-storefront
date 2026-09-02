@@ -3,6 +3,10 @@ import type { CartPreview, OrderConflictData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 const cart = useCartStore()
+// Matches the server's cap in server/utils/schemas.ts, so the field cannot
+// accept text the order endpoint would reject.
+const NOTES_MAX = 500
+
 const form = reactive({ name: '', email: '', phone: '', notes: '' })
 const submitting = ref(false)
 const errorMessage = ref('')
@@ -106,7 +110,17 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
 
         <div class="flex flex-col gap-2">
           <label for="notes">Notes <span class="text-surface-400">(optional)</span></label>
-          <Textarea id="notes" v-model="form.notes" rows="4" auto-resize />
+          <Textarea
+            id="notes"
+            v-model="form.notes"
+            rows="4"
+            auto-resize
+            :maxlength="NOTES_MAX"
+            aria-describedby="notes-count"
+          />
+          <p id="notes-count" class="text-right text-xs text-surface-500">
+            {{ form.notes.length }} / {{ NOTES_MAX }}
+          </p>
         </div>
 
         <Button

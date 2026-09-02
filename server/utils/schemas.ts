@@ -15,7 +15,7 @@ export const orderSchema = z.object({
     name: z.string().trim().min(1).max(120),
     email: z.string().trim().email().max(200),
     phone: z.string().trim().max(40).optional().default(''),
-    notes: z.string().trim().max(2000).optional().default('')
+    notes: z.string().trim().max(500).optional().default('')
   }),
   items: cartItemsSchema
 })
