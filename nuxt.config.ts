@@ -58,6 +58,7 @@ export default defineNuxtConfig({
     supabaseUrl: '',
     supabaseServiceKey: '',
     resendApiKey: '',
+    openaiApiKey: '',
     orderFromEmail: 'onboarding@resend.dev',
     orderAdminEmail: '',
     public: {

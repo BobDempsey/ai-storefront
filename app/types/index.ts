@@ -56,3 +56,37 @@ export interface OrderResponse {
 export interface OrderConflictData {
   unavailableProductIds: string[]
 }
+
+// --- assistant ------------------------------------------------------------
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/** A cart change the assistant proposed. The storefront applies it. */
+export interface CartIntent {
+  action: 'add' | 'remove' | 'set'
+  productId: string
+  quantity: number
+  name: string
+  /** True for a file, which the cart holds only one of. */
+  single: boolean
+}
+
+export interface OrderDraft {
+  customer: { name: string; email: string; phone?: string; notes?: string }
+  lines: Array<{ name: string; quantity: number; amountCents: number }>
+  totalCents: number
+  /**
+   * Issued by the server beside the draft and never shown to the model. It is
+   * spent when the visitor confirms, and it is not part of the conversation.
+   */
+  confirmation: string
+}
+
+export interface ChatResponse {
+  reply: string
+  intents: CartIntent[]
+  draft: OrderDraft | null
+}

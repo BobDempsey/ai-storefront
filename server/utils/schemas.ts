@@ -17,7 +17,10 @@ export const orderSchema = z.object({
     phone: z.string().trim().max(40).optional().default(''),
     notes: z.string().trim().max(500).optional().default('')
   }),
-  items: cartItemsSchema
+  items: cartItemsSchema,
+  // Present only on a submission from an assistant draft. The checkout page
+  // sends none, and always has.
+  confirmation: z.string().uuid().optional()
 })
 
 /** Collapse duplicate lines so quantities are summed rather than rejected. */
@@ -33,4 +36,47 @@ export const contactSchema = z.object({
   name: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(200),
   message: z.string().trim().min(1).max(4000)
+})
+
+// --- assistant ------------------------------------------------------------
+
+/** One turn of a conversation. The browser holds the history and sends it back. */
+export const chatMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().trim().min(1).max(2000)
+})
+
+/** A conversation is capped at 25 messages, so the array is capped with it. */
+export const chatRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1).max(25),
+  // The cart travels with the request the same way it travels to the order and
+  // preview routes: ids and quantities the browser holds, never prices.
+  items: cartItemsSchema.optional()
+})
+
+/**
+ * Tool arguments, validated before a handler runs. The model names an item by
+ * slug and never handles a product id, so an id it invented cannot reach the
+ * catalogue.
+ */
+export const searchCatalogueArgs = z.object({
+  query: z.string().trim().max(200).optional(),
+  kind: z.enum(['physical', 'digital']).optional()
+})
+
+export const getProductArgs = z.object({
+  slug: z.string().trim().min(1).max(120)
+})
+
+export const proposeCartChangeArgs = z.object({
+  action: z.enum(['add', 'remove', 'set']),
+  slug: z.string().trim().min(1).max(120),
+  quantity: z.number().int().min(0).max(99).optional()
+})
+
+export const draftOrderArgs = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().max(40).optional(),
+  notes: z.string().trim().max(2000).optional()
 })

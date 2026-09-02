@@ -1,5 +1,6 @@
 import { orderSchema, mergeItems } from '~~/server/utils/schemas'
 import { sendOrderEmail } from '~~/server/utils/email'
+import { spendConfirmation } from '~~/server/utils/confirmations'
 
 /**
  * `create_order` raises a bare `unavailable_item`, so the route works out which
@@ -31,7 +32,18 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, statusMessage: 'Please check the form and try again.' })
   }
 
-  const { customer, items } = parsed.data
+  const { customer, items, confirmation } = parsed.data
+
+  // A submission carrying a confirmation says it came from an assistant draft,
+  // so the confirmation has to be one this server issued and has not spent.
+  // Nothing else changes: the checkout page sends none and is unaffected.
+  if (confirmation !== undefined && !spendConfirmation(confirmation)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'That confirmation is no longer valid. Please draft the order again.'
+    })
+  }
+
   const merged = mergeItems(items)
   const supabase = useSupabase()
 

@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.112.4",
     "@tailwindcss/vite": "^4.3.3",
     "nuxt": "^4.5.2",
+    "openai": "^7.9.0",
     "pinia": "^4.0.3",
     "pinia-plugin-persistedstate": "^4.7.1",
     "primeicons": "^8.0.0",

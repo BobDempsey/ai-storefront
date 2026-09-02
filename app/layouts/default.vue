@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const cart = useCartStore()
 const colorMode = useColorModeStore()
+const assistant = useAssistantStore()
 const { storeName } = useRuntimeConfig().public
 
 // Client-only; starts the watcher that owns the `.dark` class on <html>.
@@ -19,6 +20,21 @@ const themeIcon = computed(() => {
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>
 
         <div class="flex items-center gap-4">
+          <ClientOnly>
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+              aria-label="Open the shop assistant"
+              title="Shop assistant"
+              @click="assistant.openDrawer()"
+            >
+              <i class="pi pi-comments" />
+            </button>
+            <template #fallback>
+              <span class="size-8" />
+            </template>
+          </ClientOnly>
+
           <NuxtLink
             to="/contact"
             class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
@@ -68,6 +84,10 @@ const themeIcon = computed(() => {
     <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
       <slot />
     </main>
+
+    <ClientOnly>
+      <AssistantDrawer />
+    </ClientOnly>
 
     <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500 dark:border-surface-800 dark:text-surface-400">
       Orders are confirmed by email. Payment is arranged separately.
