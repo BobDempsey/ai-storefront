@@ -28,6 +28,14 @@ chosen by researching what actually sells on Etsy and Printables. Their photos
 are free-licensed Pexels images committed to `public/images/<slug>.jpg` and
 referenced as root-relative paths, so the catalog has no external image host.
 
+**The shopping assistant works.** Verified 2026-09-02 against `gpt-5-mini`: it
+answers from the catalogue, declines off-topic questions, adds items through the
+ordinary cart store, and drafts an order the visitor confirms. A real order was
+placed from the drawer end to end, and the address typed into the draft card is
+the one recorded, not the one the assistant had collected. Asked for the draft's
+confirmation it says it has none, which is true: the server mints it outside
+everything the model sees.
+
 **Resend now works.** A real `re_...` key is in `.env`, `NUXT_ORDER_ADMIN_EMAIL`
 is the owner's own address (the sandbox sender can only deliver there), and two
 orders placed on 2026-08-31 arrived in that inbox with correct line items,
@@ -112,6 +120,16 @@ New work should be.
   No domain exists yet; the user buys one at deploy time.
 - **Traffic will be very low during MVP** — in-memory rate limiting is
   sufficient, no Redis.
+- **The assistant's permissions are its tool list.** The chat model can search
+  the catalogue, read a product, read the priced cart, propose a cart change and
+  draft an order. There is no tool that writes anything, and deliberately no
+  submit tool.
+- **A draft carries a one-time confirmation the model never sees.** The server
+  mints it beside the draft, the drawer holds it, and the visitor's Confirm
+  click spends it. This does not lock down `/api/orders`, which is public and
+  which the checkout page posts to without one. It means a future tool that
+  submits for the visitor still cannot: the value submission needs is the one
+  value the model was never given.
 - **Files are catalogue rows, not a second table.** A downloadable file is a
   `products` row with `kind = 'digital'`, so `create_order` keeps its single
   join and stays the only place a price comes from.
@@ -148,6 +166,10 @@ server/
   api/orders.post.ts        rate limit -> validate -> create_order -> email
   api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
                             so a failed send is reported to the sender
+  api/chat.get.ts           whether the assistant is configured, no key shipped
+  api/chat.post.ts          rate limit -> validate -> gpt-5-mini tool loop
+  utils/assistant.ts        the five tools, their handlers and the system prompt
+  utils/confirmations.ts    one-time draft confirmations, in memory, 15 min TTL
 
 app/
   app.vue, layouts/default.vue   header w/ cart badge, footer
@@ -157,6 +179,8 @@ app/
   pages/checkout.vue             guest details form + summary
   pages/order-received.vue       confirmation, shows order id
   pages/contact.vue              contact form; replaced the navbar mailto link
+  components/AssistantDrawer.vue chat drawer: messages, cart strip, order draft
+  stores/assistant.ts            the conversation; NOT persisted, fresh per load
   stores/cart.ts                 IDs + quantities only, persisted
   stores/color-mode.ts           light/dark/system, owns the .dark class
   types/index.ts                 Product, CartLine, CartPreview
@@ -221,6 +245,9 @@ NUXT_ORDER_FROM_EMAIL       onboarding@resend.dev until a domain is verified
 NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resend
                             account address. The sandbox sender will not deliver
                             anywhere else until a domain is verified
+NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
+                            SERVER ONLY. Blank it and the drawer reports the
+                            assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
 
 `NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link was replaced by
@@ -381,6 +408,14 @@ Known gaps, roughly in the order they were prioritized with the user:
   files were added: when staff mark an order paid, the app emails the customer a
   time-limited link. That needs the file in storage and an order status the
   dashboard can set, neither of which exists.
+- **The assistant's daily cap is unproven.** The 25-message cap is verified; the
+  75-requests-a-day limit was left untested rather than spend 75 provider calls,
+  and it rides on the same limiter as the order and contact routes.
+- **The assistant has no transcript.** Nothing about a conversation is stored,
+  so when a visitor says the bot ordered the wrong thing there is nothing to
+  read. Deliberate, and the open question recorded in the change's design.
+- **The assistant does not stream.** A reply lands whole, after a pause of a few
+  seconds while the tool loop runs.
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
 - **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
