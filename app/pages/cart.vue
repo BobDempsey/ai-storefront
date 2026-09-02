@@ -57,7 +57,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
         <div
           v-for="line in preview?.lines"
           :key="line.id"
-          class="flex items-center gap-4 rounded-lg border bg-surface-0 dark:bg-surface-900 p-4"
+          class="flex flex-wrap items-center gap-4 rounded-lg border bg-surface-0 dark:bg-surface-900 p-4"
           :class="line.in_stock
             ? 'border-surface-200 dark:border-surface-800'
             : 'border-red-300 dark:border-red-800'"
@@ -66,17 +66,17 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
             v-if="line.image_url"
             :src="line.image_url"
             :alt="line.name"
-            class="size-16 rounded object-cover"
+            class="size-16 shrink-0 rounded object-cover"
             :class="{ 'opacity-50': !line.in_stock }"
           >
           <div
             v-else-if="line.kind === 'digital'"
-            class="flex size-16 items-center justify-center rounded bg-surface-100 dark:bg-surface-800"
+            class="flex size-16 shrink-0 items-center justify-center rounded bg-surface-100 dark:bg-surface-800"
           >
             <i class="pi pi-file text-xl text-surface-500" />
           </div>
 
-          <div class="flex-1">
+          <div class="min-w-0 flex-1 basis-40">
             <NuxtLink :to="`/products/${line.slug}`" class="font-medium hover:underline">{{ line.name }}</NuxtLink>
             <p class="text-sm text-surface-500">{{ formatMoney(line.price_cents) }} each</p>
             <p v-if="line.kind === 'digital'" class="text-sm text-surface-500">
@@ -87,43 +87,47 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
             </p>
           </div>
 
-          <!-- A file is emailed once, so its quantity is fixed and it gets no
-               control to change. Physical lines keep theirs. -->
-          <p v-if="line.kind === 'digital'" class="w-24 text-center text-sm text-surface-500">
-            Quantity 1
-          </p>
-          <InputNumber
-            v-else
-            :model-value="line.quantity"
-            :min="1"
-            :max="99"
-            :disabled="!line.in_stock"
-            show-buttons
-            button-layout="horizontal"
-            input-class="w-12 text-center"
-            @update:model-value="updateQuantity(line.id, $event)"
-          />
+          <!-- Quantity, price and remove travel together: on a narrow screen they
+               drop onto their own row rather than pushing the card sideways. -->
+          <div class="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
+            <!-- A file is emailed once, so its quantity is fixed and it gets no
+                 control to change. Physical lines keep theirs. -->
+            <p v-if="line.kind === 'digital'" class="text-sm text-surface-500">
+              Quantity 1
+            </p>
+            <InputNumber
+              v-else
+              :model-value="line.quantity"
+              :min="1"
+              :max="99"
+              :disabled="!line.in_stock"
+              show-buttons
+              button-layout="horizontal"
+              input-class="w-12 text-center"
+              @update:model-value="updateQuantity(line.id, $event)"
+            />
 
-          <p class="w-24 text-right font-medium" :class="{ 'text-surface-400 line-through': !line.in_stock }">
-            {{ formatMoney(line.price_cents * line.quantity) }}
-          </p>
+            <p class="text-right font-medium sm:w-24" :class="{ 'text-surface-400 line-through': !line.in_stock }">
+              {{ formatMoney(line.price_cents * line.quantity) }}
+            </p>
 
-          <Button
-            v-if="line.in_stock"
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            aria-label="Remove"
-            @click="updateQuantity(line.id, 0)"
-          />
-          <Button
-            v-else
-            label="Remove"
-            icon="pi pi-times"
-            severity="danger"
-            outlined
-            @click="updateQuantity(line.id, 0)"
-          />
+            <Button
+              v-if="line.in_stock"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              aria-label="Remove"
+              @click="updateQuantity(line.id, 0)"
+            />
+            <Button
+              v-else
+              label="Remove"
+              icon="pi pi-times"
+              severity="danger"
+              outlined
+              @click="updateQuantity(line.id, 0)"
+            />
+          </div>
         </div>
 
         <div class="flex items-center justify-between border-t border-surface-200 pt-4 dark:border-surface-800">
