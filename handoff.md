@@ -1,8 +1,9 @@
 # Handoff
 
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
-the initial scaffold; updated the same day after the Supabase project was created
-and the order path was tested end to end.
+the initial scaffold, updated the same day after the Supabase project was created,
+then revised on 2026-08-31 once the order and email paths had run end to end.
+Last reviewed against the code on 2026-09-02.
 
 ---
 
@@ -63,13 +64,22 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-One change has been through the full cycle already —
-`openspec/changes/archive/2026-08-30-add-dark-mode-toggle/` — and its accepted
-spec now lives at `openspec/specs/theming/color-mode/spec.md`. Read that pair
-first to see the expected shape of a proposal, design, tasks and spec.
+Four changes have been through the full cycle, all in
+`openspec/changes/archive/`:
 
-Note that most of the work recorded in this document predates OpenSpec being
-added, so the rest of the repo is not yet backed by specs. New work should be.
+| Change | Accepted spec |
+| --- | --- |
+| `2026-08-30-add-dark-mode-toggle` | `specs/theming/color-mode/` |
+| `2026-08-31-add-contact-form` | `specs/contact/contact-message/` |
+| `2026-08-31-fix-out-of-stock-checkout-block` | `specs/ordering/cart-availability/` |
+| `2026-08-31-harden-order-error-paths` | `specs/ordering/failure-reporting/` |
+
+Read the dark-mode pair first to see the expected shape of a proposal, design,
+tasks and spec. No change is currently in flight.
+
+Specs cover theming, contact and the two ordering capabilities above. Everything
+else in this document predates OpenSpec and is not backed by a spec, including
+the storefront tabs added on 2026-09-01. New work should be.
 
 ---
 
@@ -110,6 +120,7 @@ added, so the rest of the repo is not yet backed by specs. New work should be.
 
 ```
 nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtimeConfig
+                          (uncommitted: vite.server.allowedHosts for tunnels)
 .env / .env.example       secrets (.env is gitignored)
 
 supabase/
@@ -130,7 +141,7 @@ server/
 
 app/
   app.vue, layouts/default.vue   header w/ cart badge, footer
-  pages/index.vue                product grid
+  pages/index.vue                Products and Files tabs; Files is demo data
   pages/products/[slug].vue      product detail
   pages/cart.vue                 quantities, server-priced subtotal
   pages/checkout.vue             guest details form + summary
@@ -185,8 +196,8 @@ Also present, not listed above: README.md, package.json, tsconfig.json
 
 ## 6. Environment
 
-`.env` holds real Supabase credentials and placeholder Resend ones. `.env.example`
-still holds placeholders for everything, as intended.
+`.env` holds real Supabase and Resend credentials. `.env.example` still holds
+placeholders for everything, as intended.
 
 ```
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
@@ -259,13 +270,13 @@ a different staff address will silently fail until a domain is verified.
   to the server on every request. `app/stores/color-mode.ts` opts out with
   `storage: piniaPluginPersistedstate.localStorage()`, which it must: the
   pre-paint theme script in `nuxt.config.ts` reads `localStorage` directly.
-  Whether the cart should move to localStorage too is an open question.
-  Beware two stale comments that claim otherwise: the docstring in
-  `app/stores/cart.ts` and the `onMounted` comment in `app/pages/cart.vue` both
-  say the cart lives in localStorage. It does not. Because the cookie is sent
-  with every request, the cart is in fact available during SSR, so the
-  `ClientOnly` wrappers guard against the mismatch between an empty server-side
-  Pinia store and a hydrated client one rather than against a missing store.
+  Whether the cart should move to localStorage too is an open question. Two
+  comments in `app/stores/cart.ts` and `app/pages/cart.vue` used to claim the
+  cart lived in localStorage; both now say cookie, checked 2026-09-02. Because
+  the cookie is sent with every request, the cart is in fact available during
+  SSR, so the `ClientOnly` wrappers guard against the mismatch between an empty
+  server-side Pinia store and a hydrated client one rather than against a
+  missing store.
 - **Tailwind/PrimeVue layer order** is set in two places. They are deliberately
   **not identical** and should not be "fixed" to match: `app/assets/css/main.css`
   declares the full page order `@layer theme, base, primevue, components,
@@ -348,9 +359,15 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
   them. The schema will need real work to add variants.
+- **The Files tab is a mock.** `app/pages/index.vue` renders three hardcoded
+  entries with invented sizes. There is no table, no storage bucket, no download
+  and no API behind it; the tab exists so the layout can be reviewed.
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
 - **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
+  `nuxt.config.ts` carries an uncommitted `vite.server.allowedHosts` entry for
+  `.trycloudflare.com`, added to share the dev server through a quick tunnel.
+  Commit it or drop it; it does nothing in production.
 - ~~Not a git repo.~~ **Done.** `main` has history back to the initial commit;
   `.env` is correctly untracked while `.env.example` is committed. No remote is
   configured yet, so the history exists only on this machine.
