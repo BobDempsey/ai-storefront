@@ -3,7 +3,8 @@
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
 then revised on 2026-08-31 once the order and email paths had run end to end.
-Last reviewed against the code on 2026-09-02.
+Last reviewed against the code on 2026-09-02, then revised the same day when
+files became sellable catalogue rows.
 
 ---
 
@@ -64,7 +65,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Four changes have been through the full cycle, all in
+Five changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -73,13 +74,15 @@ Four changes have been through the full cycle, all in
 | `2026-08-31-add-contact-form` | `specs/contact/contact-message/` |
 | `2026-08-31-fix-out-of-stock-checkout-block` | `specs/ordering/cart-availability/` |
 | `2026-08-31-harden-order-error-paths` | `specs/ordering/failure-reporting/` |
+| `2026-09-02-add-digital-file-products` | `specs/catalog/digital-product/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec. No change is currently in flight.
 
-Specs cover theming, contact and the two ordering capabilities above. Everything
-else in this document predates OpenSpec and is not backed by a spec, including
-the storefront tabs added on 2026-09-01. New work should be.
+Specs cover theming, contact, the two ordering capabilities above and the
+catalogue's file products. Everything else in this document predates OpenSpec
+and is not backed by a spec, including the storefront tabs added on 2026-09-01.
+New work should be.
 
 ---
 
@@ -109,6 +112,13 @@ the storefront tabs added on 2026-09-01. New work should be.
   No domain exists yet; the user buys one at deploy time.
 - **Traffic will be very low during MVP** — in-memory rate limiting is
   sufficient, no Redis.
+- **Files are catalogue rows, not a second table.** A downloadable file is a
+  `products` row with `kind = 'digital'`, so `create_order` keeps its single
+  join and stays the only place a price comes from.
+- **Files are delivered by hand, outside the app.** Staff email the file after
+  payment. Automating that was explicitly deferred, not forgotten.
+- **A file is ordered once.** Cart and `create_order` both cap a file line at
+  quantity 1.
 - **PrimeVue 4, not 5.** PrimeVue 5 ships under the commercial PrimeUI licence
   and renders an "Invalid PrimeUI License" banner without a key. The free
   Community License would have covered this project, but 4.5.5 is MIT with no
@@ -125,7 +135,7 @@ nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtime
 
 supabase/
   schema.sql              tables, RLS policies, create_order() function
-  seed.sql                6 demo products
+  seed.sql                6 physical products and 3 downloadable files
 
 server/
   utils/supabase.ts       memoized service-role client (bypasses RLS)
@@ -141,7 +151,7 @@ server/
 
 app/
   app.vue, layouts/default.vue   header w/ cart badge, footer
-  pages/index.vue                Products and Files tabs; Files is demo data
+  pages/index.vue                Products and Files tabs, both from the catalogue
   pages/products/[slug].vue      product detail
   pages/cart.vue                 quantities, server-priced subtotal
   pages/checkout.vue             guest details form + summary
@@ -151,6 +161,7 @@ app/
   stores/color-mode.ts           light/dark/system, owns the .dark class
   types/index.ts                 Product, CartLine, CartPreview
   utils/money.ts                 formatMoney()
+  utils/bytes.ts                 formatBytes(), for file sizes
   assets/css/main.css            layer order + Tailwind import
 
 public/
@@ -187,6 +198,9 @@ Also present, not listed above: README.md, package.json, tsconfig.json
    Duplicate product ids are summed into one line inside the function, so
    `mergeItems()` in `server/utils/schemas.ts` is now belt-and-braces rather
    than the only thing preventing duplicate lines.
+   A file line above quantity 1 also raises `invalid_item`: a file is emailed
+   once, so a second copy delivers nothing. The storefront caps it too, so only
+   a client that bypasses the page reaches that guard.
 5. The route re-reads the order + items and emails staff via Resend, with
    `reply-to` set to the customer. Email failure is logged, not surfaced — the
    order row is already committed and is the real record.
@@ -359,9 +373,14 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
   them. The schema will need real work to add variants.
-- **The Files tab is a mock.** `app/pages/index.vue` renders three hardcoded
-  entries with invented sizes. There is no table, no storage bucket, no download
-  and no API behind it; the tab exists so the layout can be reviewed.
+- ~~The Files tab is a mock.~~ **Done** — verified 2026-09-02. Files are ordinary
+  catalogue rows with `kind = 'digital'`, sold through the same cart and order
+  path, and staff email the file by hand after payment. There is still no
+  storage bucket and no download route, by decision.
+- **Files are delivered by hand.** The next step here is the one deferred when
+  files were added: when staff mark an order paid, the app emails the customer a
+  time-limited link. That needs the file in storage and an order status the
+  dashboard can set, neither of which exists.
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
 - **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
