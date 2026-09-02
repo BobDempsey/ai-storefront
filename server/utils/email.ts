@@ -3,7 +3,13 @@ import { Resend } from 'resend'
 export interface OrderEmailPayload {
   orderId: string
   customer: { name: string; email: string; phone?: string; notes?: string }
-  items: Array<{ name_snapshot: string; unit_price_cents: number; quantity: number }>
+  items: Array<{
+    name_snapshot: string
+    /** Set on a file line, null on a physical one: the file staff owe the buyer. */
+    file_name_snapshot?: string | null
+    unit_price_cents: number
+    quantity: number
+  }>
   totalCents: number
   /** Set when the order could not be re-read, so the figures below are unreliable. */
   incomplete?: boolean
@@ -28,10 +34,17 @@ const esc = (value: string) =>
 const escMultiline = (value: string) => esc(value).replace(/\r?\n/g, '<br>')
 
 function renderHtml(order: OrderEmailPayload) {
+  // An order of physical goods says nothing about files.
+  const files = order.items.map(i => i.file_name_snapshot).filter((f): f is string => Boolean(f))
+
   const rows = order.items
     .map(
       i => `<tr>
-        <td style="padding:6px 12px;border-bottom:1px solid #eee">${esc(i.name_snapshot)}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #eee">${esc(i.name_snapshot)}${
+          i.file_name_snapshot
+            ? `<br><span style="color:#666;font-size:12px">File to send: ${esc(i.file_name_snapshot)}</span>`
+            : ''
+        }</td>
         <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td>
         <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right">${money(i.unit_price_cents * i.quantity)}</td>
       </tr>`
@@ -61,6 +74,7 @@ function renderHtml(order: OrderEmailPayload) {
         </tr>
       </tfoot>
     </table>
+    ${files.length ? `<p style="padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb"><strong>This order owes ${files.length === 1 ? 'a file' : 'files'}.</strong> Email ${files.map(esc).join(', ')} to the customer once payment is arranged.</p>` : ''}
     ${order.customer.notes ? `<p><strong>Notes:</strong><br>${escMultiline(order.customer.notes)}</p>` : ''}
     <p style="color:#666;font-size:12px">Payment is handled off-app. Reply to this email to reach the customer.</p>
   `

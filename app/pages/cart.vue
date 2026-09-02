@@ -69,16 +69,31 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
             class="size-16 rounded object-cover"
             :class="{ 'opacity-50': !line.in_stock }"
           >
+          <div
+            v-else-if="line.kind === 'digital'"
+            class="flex size-16 items-center justify-center rounded bg-surface-100 dark:bg-surface-800"
+          >
+            <i class="pi pi-file text-xl text-surface-500" />
+          </div>
 
           <div class="flex-1">
             <NuxtLink :to="`/products/${line.slug}`" class="font-medium hover:underline">{{ line.name }}</NuxtLink>
             <p class="text-sm text-surface-500">{{ formatMoney(line.price_cents) }} each</p>
+            <p v-if="line.kind === 'digital'" class="text-sm text-surface-500">
+              {{ line.file_name }}, emailed to you once payment is arranged.
+            </p>
             <p v-if="!line.in_stock" class="text-sm font-medium text-red-600 dark:text-red-400">
               Out of stock. Remove it to continue.
             </p>
           </div>
 
+          <!-- A file is emailed once, so its quantity is fixed and it gets no
+               control to change. Physical lines keep theirs. -->
+          <p v-if="line.kind === 'digital'" class="w-24 text-center text-sm text-surface-500">
+            Quantity 1
+          </p>
           <InputNumber
+            v-else
             :model-value="line.quantity"
             :min="1"
             :max="99"

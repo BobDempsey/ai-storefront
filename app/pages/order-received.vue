@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const orderId = useRoute().query.id as string | undefined
+const route = useRoute()
+const orderId = route.query.id as string | undefined
+const owedFiles = route.query.files === '1'
 
 useSeoMeta({ title: 'Order received', robots: 'noindex' })
 </script>
@@ -12,6 +14,10 @@ useSeoMeta({ title: 'Order received', robots: 'noindex' })
     <p class="text-surface-600">
       We have your request. We will email you shortly to confirm availability
       and the amount, and to arrange payment. Nothing has been charged.
+    </p>
+
+    <p v-if="owedFiles" class="mt-4 text-surface-600 dark:text-surface-400">
+      Your file is emailed to you once payment is arranged.
     </p>
 
     <p v-if="orderId" class="mt-4 text-sm text-surface-500">

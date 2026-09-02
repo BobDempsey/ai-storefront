@@ -11,7 +11,7 @@ export default defineEventHandler(async event => {
   const merged = mergeItems(parsed.data)
   const { data, error } = await useSupabase()
     .from('products')
-    .select('id, slug, name, price_cents, image_url, in_stock')
+    .select('id, slug, name, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
     .in('id', merged.map(i => i.product_id))
 
   // Never forward the database's own message: this endpoint is public and

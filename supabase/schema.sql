@@ -34,6 +34,41 @@ create table if not exists public.order_items (
   quantity         integer not null check (quantity > 0)
 );
 
+-- Product kinds -----------------------------------------------------------
+-- A catalogue row is either a physical object or a downloadable file. Added by
+-- alter so this file still stands up a fresh project and upgrades an existing
+-- one. The default is what lets rows written before kinds existed keep their
+-- meaning.
+alter table public.products add column if not exists kind            text not null default 'physical';
+alter table public.products add column if not exists file_name       text;
+alter table public.products add column if not exists file_format     text;
+alter table public.products add column if not exists file_size_bytes bigint;
+
+alter table public.products drop constraint if exists products_kind_check;
+alter table public.products add  constraint products_kind_check
+  check (kind in ('physical', 'digital'));
+
+-- A file row carries all three file facts and a physical row carries none, so
+-- the storefront can show them without testing each one separately.
+alter table public.products drop constraint if exists products_file_fields_check;
+alter table public.products add  constraint products_file_fields_check
+  check (
+    (kind = 'digital'  and file_name is not null and file_format is not null and file_size_bytes is not null)
+    or
+    (kind = 'physical' and file_name is null     and file_format is null     and file_size_bytes is null)
+  );
+
+-- Supply of a file never runs out. Holding that here means create_order's
+-- `and p.in_stock` join, the cart and the checkout block all keep working
+-- unchanged for both kinds and cannot disagree with each other.
+alter table public.products drop constraint if exists products_digital_in_stock_check;
+alter table public.products add  constraint products_digital_in_stock_check
+  check (kind = 'physical' or in_stock);
+
+-- Which file an order owes, snapshotted like the name and price beside it, so
+-- the record survives a rename or a deletion in the catalogue.
+alter table public.order_items add column if not exists file_name_snapshot text;
+
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
 
 -- Row Level Security ------------------------------------------------------
@@ -82,6 +117,23 @@ begin
   select count(distinct i.product_id) into v_wanted
   from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer);
 
+  -- A file is emailed once, so a second copy is nothing the buyer does not
+  -- already have. The storefront caps this as well; only a client that bypasses
+  -- it reaches here, which is why this reuses invalid_item rather than adding a
+  -- fourth error the route would have to map.
+  if exists (
+    select 1
+    from (
+      select i.product_id, sum(i.quantity)::integer as quantity
+      from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)
+      group by i.product_id
+    ) w
+    join products p on p.id = w.product_id
+    where p.kind = 'digital' and w.quantity > 1
+  ) then
+    raise exception 'invalid_item';
+  end if;
+
   insert into orders (customer_name, customer_email, customer_phone, notes)
   values (
     p_customer->>'name',
@@ -91,8 +143,8 @@ begin
   )
   returning id into v_order_id;
 
-  insert into order_items (order_id, product_id, name_snapshot, unit_price_cents, quantity)
-  select v_order_id, p.id, p.name, p.price_cents, w.quantity
+  insert into order_items (order_id, product_id, name_snapshot, file_name_snapshot, unit_price_cents, quantity)
+  select v_order_id, p.id, p.name, p.file_name, p.price_cents, w.quantity
   from (
     select i.product_id, sum(i.quantity)::integer as quantity
     from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)

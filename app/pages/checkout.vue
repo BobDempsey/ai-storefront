@@ -49,7 +49,10 @@ async function submitOrder() {
     })
 
     cart.clear()
-    await navigateTo({ path: '/order-received', query: { id: orderId } })
+    // The cart is cleared on the way out, so the confirmation cannot work out
+    // for itself whether a file is owed. Carry it across.
+    const files = preview.value?.lines.some(line => line.kind === 'digital') ? '1' : undefined
+    await navigateTo({ path: '/order-received', query: { id: orderId, files } })
   } catch (error: any) {
     // The cart and the form are deliberately left untouched: a rejected order
     // must leave the customer somewhere they can act, not start again.

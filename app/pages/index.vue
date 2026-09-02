@@ -1,43 +1,26 @@
 <script setup lang="ts">
-import type { Product } from '~/types'
+import type { DigitalProduct, Product } from '~/types'
 import { formatMoney } from '~/utils/money'
+import { formatBytes } from '~/utils/bytes'
 
 const { data: products, error } = await useFetch<Product[]>('/api/products')
 const cart = useCartStore()
 
-/**
- * Demo listing only. These are not stored anywhere and nothing is downloadable
- * yet; the tab exists so the layout can be reviewed before the real files land.
- */
-const demoFiles = [
-  {
-    name: 'Articulated Dragon',
-    file: 'articulated-dragon.3mf',
-    format: '3MF',
-    size: '24.8 MB',
-    icon: 'pi pi-palette',
-    description:
-      'Slicer project with the print settings, supports and two filament colours already set up. Open it in PrusaSlicer, Orca or Bambu Studio.'
-  },
-  {
-    name: 'Hex Dice Tower',
-    file: 'hex-dice-tower.stl',
-    format: 'STL',
-    size: '8.2 MB',
-    icon: 'pi pi-box',
-    description:
-      'Plain triangle mesh, the format every desktop printer accepts. Slice it yourself and pick your own layer height and infill.'
-  },
-  {
-    name: 'Self-Watering Planter',
-    file: 'self-watering-planter.step',
-    format: 'STEP',
-    size: '3.1 MB',
-    icon: 'pi pi-compass',
-    description:
-      'CAD source with exact surfaces rather than triangles. Use this one if you want to change a dimension before printing.'
-  }
-]
+const physical = computed(() => products.value?.filter(p => p.kind !== 'digital') ?? [])
+const files = computed(
+  () => products.value?.filter((p): p is DigitalProduct => p.kind === 'digital') ?? []
+)
+
+// Icon classes are presentation, so the format maps to one here rather than
+// tying the catalogue to PrimeVue's icon set.
+const FORMAT_ICONS: Record<string, string> = {
+  '3MF': 'pi pi-palette',
+  STL: 'pi pi-box',
+  STEP: 'pi pi-sliders-h',
+  OBJ: 'pi pi-box',
+  ZIP: 'pi pi-folder'
+}
+const iconFor = (format: string) => FORMAT_ICONS[format.toUpperCase()] ?? 'pi pi-file'
 
 useSeoMeta({
   title: 'Shop',
@@ -69,7 +52,7 @@ useSeoMeta({
 
           <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <article
-              v-for="product in products"
+              v-for="product in physical"
               :key="product.id"
               class="flex flex-col overflow-hidden rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900"
             >
@@ -102,31 +85,48 @@ useSeoMeta({
         </TabPanel>
 
         <TabPanel value="files" class="pt-6">
-          <Message severity="info" class="mb-6">
-            Sample listing while we set this up. Downloads are not live yet.
+          <Message v-if="error" severity="error">
+            Could not load files. Check the Supabase configuration in <code>.env</code>.
           </Message>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <p v-else-if="!files.length" class="text-sm text-surface-500">
+            No files are listed yet.
+          </p>
+
+          <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <article
-              v-for="file in demoFiles"
-              :key="file.file"
+              v-for="file in files"
+              :key="file.id"
               class="flex flex-col gap-2 rounded-lg border border-surface-200 bg-surface-0 p-4 dark:border-surface-800 dark:bg-surface-900"
             >
               <div class="flex items-center gap-3">
-                <i :class="file.icon" class="text-xl text-surface-500" />
+                <i :class="iconFor(file.file_format)" class="text-xl text-surface-500" />
                 <div>
-                  <p class="font-medium">{{ file.name }}</p>
-                  <p class="text-sm text-surface-500">{{ file.format }}, {{ file.size }}</p>
+                  <NuxtLink :to="`/products/${file.slug}`" class="font-medium hover:underline">
+                    {{ file.name }}
+                  </NuxtLink>
+                  <p class="text-sm text-surface-500">
+                    {{ file.file_format }}, {{ formatBytes(file.file_size_bytes) }}
+                  </p>
                 </div>
               </div>
 
               <p class="text-sm text-surface-600 dark:text-surface-400">{{ file.description }}</p>
-              <code class="text-xs text-surface-500">{{ file.file }}</code>
+              <code class="text-xs text-surface-500">{{ file.file_name }}</code>
+              <p class="text-sm font-medium">{{ formatMoney(file.price_cents) }}</p>
+              <p class="text-xs text-surface-500">Emailed to you once payment is arranged.</p>
 
-              <Button class="mt-auto" label="Download" icon="pi pi-download" size="small" disabled />
+              <Button
+                class="mt-auto"
+                :label="cart.quantityOf(file.id) ? 'In cart' : 'Add to cart'"
+                :disabled="Boolean(cart.quantityOf(file.id))"
+                size="small"
+                @click="cart.add(file.id, 1, { single: true })"
+              />
             </article>
           </div>
         </TabPanel>
+
       </TabPanels>
     </Tabs>
   </section>

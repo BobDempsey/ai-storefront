@@ -71,7 +71,10 @@ export default defineEventHandler(async event => {
     { data: orderItems, error: itemsError }
   ] = await Promise.all([
     supabase.from('orders').select('total_cents').eq('id', orderId).single(),
-    supabase.from('order_items').select('name_snapshot, unit_price_cents, quantity').eq('order_id', orderId)
+    supabase
+      .from('order_items')
+      .select('name_snapshot, file_name_snapshot, unit_price_cents, quantity')
+      .eq('order_id', orderId)
   ])
 
   // A failed re-read must not be silent: without this the staff email would

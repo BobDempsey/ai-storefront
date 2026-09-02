@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
 
   const { data, error } = await useSupabase()
     .from('products')
-    .select('id, slug, name, description, price_cents, image_url, in_stock')
+    .select('id, slug, name, description, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
     .eq('slug', slug)
     .maybeSingle()
 
