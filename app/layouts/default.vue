@@ -13,7 +13,7 @@ const themeIcon = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-surface-50 text-surface-900 dark:bg-surface-950 dark:text-surface-0">
+  <div class="min-h-screen flex flex-col bg-surface-100 text-surface-900 dark:bg-surface-950 dark:text-surface-0">
     <header class="border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
       <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>

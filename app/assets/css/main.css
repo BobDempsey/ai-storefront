@@ -34,3 +34,15 @@
   --color-surface-900: var(--p-surface-900);
   --color-surface-950: var(--p-surface-950);
 }
+
+/*
+ * The layout paints the page background, but overscroll past its edges shows
+ * the body. Match the two so a rubber-band scroll never flashes white.
+ */
+body {
+  background-color: var(--p-surface-100);
+}
+
+.dark body {
+  background-color: var(--p-surface-950);
+}
