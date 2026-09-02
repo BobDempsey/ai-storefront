@@ -33,7 +33,12 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    server: {
+      // Vite refuses requests whose Host header it does not know, which blocks
+      // sharing the dev server through a Cloudflare quick tunnel.
+      allowedHosts: ['.trycloudflare.com']
+    }
   },
 
   primevue: {
