@@ -73,7 +73,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Five changes have been through the full cycle, all in
+Six changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -83,12 +83,13 @@ Five changes have been through the full cycle, all in
 | `2026-08-31-fix-out-of-stock-checkout-block` | `specs/ordering/cart-availability/` |
 | `2026-08-31-harden-order-error-paths` | `specs/ordering/failure-reporting/` |
 | `2026-09-02-add-digital-file-products` | `specs/catalog/digital-product/` |
+| `2026-09-02-add-shopping-assistant` | `specs/assistant/shopping-assistant/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec. No change is currently in flight.
 
-Specs cover theming, contact, the two ordering capabilities above and the
-catalogue's file products. Everything else in this document predates OpenSpec
+Specs cover theming, contact, the two ordering capabilities above, the
+catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
 and is not backed by a spec, including the storefront tabs added on 2026-09-01.
 New work should be.
 
