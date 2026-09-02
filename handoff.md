@@ -56,6 +56,8 @@ anything beyond a trivial fix gets a written, agreed spec before implementation.
 ```
 AGENTS.md                 the working agreement, applies to every AI agent
 CLAUDE.md                 points Claude Code at AGENTS.md
+.mcp.json                 Supabase MCP server, scoped to this project and to
+                          the database and docs tools. See AGENTS.md
 openspec/
   config.yaml             schema: spec-driven, plus project context and rules
   specs/                  accepted specs, by capability (theming/color-mode)
@@ -277,6 +279,11 @@ The database is already provisioned and seeded, and `.env` already points at it,
 so this should just work — the homepage shows six demo products. Only if you are
 standing up a **fresh** Supabase project do you need to run `supabase/schema.sql`
 then `supabase/seed.sql` in the SQL editor and repoint `.env`.
+
+An agent can now run that SQL itself through the Supabase MCP server configured
+in `.mcp.json`, rather than asking you to paste it. The first use needs a
+browser OAuth flow. See the database section of `AGENTS.md` for what it is
+scoped to and what to watch for.
 
 Env changes are not hot-reloaded; restart `npm run dev` after editing `.env`. The
 dev server binds IPv6, so if `curl 127.0.0.1:3000` hangs, use `http://[::1]:3000`.
