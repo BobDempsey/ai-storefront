@@ -129,8 +129,8 @@ New work should be.
 ## 4. Layout
 
 ```
-nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtimeConfig
-                          (uncommitted: vite.server.allowedHosts for tunnels)
+nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtimeConfig,
+                          vite.server.allowedHosts for quick tunnels
 .env / .env.example       secrets (.env is gitignored)
 
 supabase/
@@ -384,9 +384,8 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
 - **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
-  `nuxt.config.ts` carries an uncommitted `vite.server.allowedHosts` entry for
-  `.trycloudflare.com`, added to share the dev server through a quick tunnel.
-  Commit it or drop it; it does nothing in production.
+  `nuxt.config.ts` allows `.trycloudflare.com` through Vite so the dev server can
+  be shared through a quick tunnel. That setting does nothing in production.
 - ~~Not a git repo.~~ **Done.** `main` has history back to the initial commit;
   `.env` is correctly untracked while `.env.example` is committed. No remote is
   configured yet, so the history exists only on this machine.
