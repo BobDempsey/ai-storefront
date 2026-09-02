@@ -46,7 +46,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <section>
+  <section class="rounded-xl border border-surface-200 bg-surface-0 p-6 dark:border-surface-800 dark:bg-surface-900">
     <h1 class="mb-8 text-2xl font-semibold tracking-tight">Shop</h1>
 
     <Tabs value="products">
