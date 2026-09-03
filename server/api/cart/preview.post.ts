@@ -9,10 +9,13 @@ export default defineEventHandler(async event => {
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid cart' })
 
   const merged = mergeItems(parsed.data)
-  const { data, error } = await useSupabase()
-    .from('products')
-    .select('id, slug, name, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
-    .in('id', merged.map(i => i.product_id))
+  const [{ data, error }, sale] = await Promise.all([
+    useSupabase()
+      .from('products')
+      .select('id, slug, name, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
+      .in('id', merged.map(i => i.product_id)),
+    getSaleState()
+  ])
 
   // Never forward the database's own message: this endpoint is public and
   // unauthenticated, and the detail belongs in the server log.
@@ -27,7 +30,7 @@ export default defineEventHandler(async event => {
   const lines = merged
     .map(item => {
       const product = data?.find(p => p.id === item.product_id)
-      return product ? { ...product, quantity: item.quantity } : null
+      return product ? { ...withSalePricing(product, sale), quantity: item.quantity } : null
     })
     .filter((line): line is NonNullable<typeof line> => line !== null)
 

@@ -6,6 +6,7 @@ import {
   type cartItemsSchema
 } from '~~/server/utils/schemas'
 import type { z } from 'zod'
+import type { SaleState } from '~~/server/utils/pricing'
 
 /**
  * The assistant's tool list is its whole permission model. Nothing here writes
@@ -163,12 +164,16 @@ const CATALOGUE_COLUMNS =
   'id, slug, name, description, price_cents, in_stock, kind, file_name, file_format, file_size_bytes'
 
 /** What the model is allowed to see about an item. No ids: it names items by slug. */
-function present(product: Record<string, any>) {
+function present(product: Record<string, any>, sale: SaleState) {
+  const priceCents = salePriceCents(product.price_cents, sale)
   return {
     slug: product.slug,
     name: product.name,
     description: product.description,
-    price: `$${(product.price_cents / 100).toFixed(2)}`,
+    price: `$${(priceCents / 100).toFixed(2)}`,
+    ...(sale.saleActive
+      ? { originalPrice: `$${(product.price_cents / 100).toFixed(2)}`, salePercent: sale.salePercent }
+      : {}),
     kind: product.kind,
     available: product.kind === 'digital' ? true : product.in_stock,
     ...(product.kind === 'digital'
@@ -183,9 +188,10 @@ function present(product: Record<string, any>) {
 
 /**
  * Prices the cart exactly as `/api/cart/preview` does, so the figure the model
- * is given is the figure the cart page shows.
+ * is given is the figure the cart page shows. Each line's `product.price_cents`
+ * comes back already discounted, same as that route.
  */
-async function priceCart(items: CartItems) {
+async function priceCart(items: CartItems, sale: SaleState) {
   if (!items.length) return { lines: [], subtotalCents: 0 }
 
   const merged = mergeItems(items)
@@ -202,7 +208,9 @@ async function priceCart(items: CartItems) {
   const lines = merged
     .map(item => {
       const product = data?.find(p => p.id === item.product_id)
-      return product ? { product, quantity: item.quantity } : null
+      return product
+        ? { product: { ...product, price_cents: salePriceCents(product.price_cents, sale) }, quantity: item.quantity }
+        : null
     })
     .filter((line): line is NonNullable<typeof line> => line !== null)
 
@@ -249,7 +257,10 @@ export async function runTool(name: string, rawArgs: string, context: ToolContex
       let query = useSupabase().from('products').select(CATALOGUE_COLUMNS)
       if (parsed.data.kind) query = query.eq('kind', parsed.data.kind)
 
-      const { data, error } = await query.order('created_at', { ascending: true })
+      const [{ data, error }, sale] = await Promise.all([
+        query.order('created_at', { ascending: true }),
+        getSaleState()
+      ])
       if (error) {
         console.error('[chat] could not search the catalogue:', error)
         return { error: 'The catalogue could not be read.' }
@@ -264,19 +275,19 @@ export async function runTool(name: string, rawArgs: string, context: ToolContex
 
       // A term that matches nothing still gets the catalogue, so the assistant
       // can say what the shop does have instead of only what it does not.
-      return { items: (matched.length ? matched : data).map(present) }
+      return { items: (matched.length ? matched : data).map(p => present(p, sale)) }
     }
 
     case 'get_product': {
       const parsed = getProductArgs.safeParse(args)
       if (!parsed.success) return { error: 'Invalid arguments.' }
 
-      const product = await findBySlug(parsed.data.slug)
-      return product ? present(product) : { error: 'The shop does not have that item.' }
+      const [product, sale] = await Promise.all([findBySlug(parsed.data.slug), getSaleState()])
+      return product ? present(product, sale) : { error: 'The shop does not have that item.' }
     }
 
     case 'get_cart': {
-      const { lines, subtotalCents } = await priceCart(context.items)
+      const { lines, subtotalCents } = await priceCart(context.items, await getSaleState())
       return {
         lines: lines.map(l => ({
           name: l.product.name,
@@ -326,7 +337,7 @@ export async function runTool(name: string, rawArgs: string, context: ToolContex
       const parsed = draftOrderArgs.safeParse(args)
       if (!parsed.success) return { error: 'A name and a valid email address are needed.' }
 
-      const { lines, subtotalCents } = await priceCart(context.items)
+      const { lines, subtotalCents } = await priceCart(context.items, await getSaleState())
       if (!lines.length) return { error: 'The cart is empty, so there is nothing to order.' }
 
       const unavailable = lines.filter(l => l.product.kind !== 'digital' && !l.product.in_stock)

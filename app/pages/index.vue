@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { DigitalProduct, Product } from '~/types'
-import { formatMoney } from '~/utils/money'
 import { formatBytes } from '~/utils/bytes'
 
 const { data: products, error } = await useFetch<Product[]>('/api/products')
@@ -70,7 +69,13 @@ useSeoMeta({
                 <NuxtLink :to="`/products/${product.slug}`" class="font-medium hover:underline">
                   {{ product.name }}
                 </NuxtLink>
-                <p class="text-sm text-surface-500">{{ formatMoney(product.price_cents) }}</p>
+                <p class="text-sm text-surface-500">
+                  <SalePrice
+                    :price-cents="product.price_cents"
+                    :original-price-cents="product.originalPriceCents"
+                    :sale-percent="product.salePercent"
+                  />
+                </p>
 
                 <Button
                   class="mt-auto"
@@ -113,7 +118,13 @@ useSeoMeta({
 
               <p class="text-sm text-surface-600 dark:text-surface-400">{{ file.description }}</p>
               <code class="text-xs text-surface-500">{{ file.file_name }}</code>
-              <p class="text-sm font-medium">{{ formatMoney(file.price_cents) }}</p>
+              <p class="text-sm font-medium">
+                <SalePrice
+                  :price-cents="file.price_cents"
+                  :original-price-cents="file.originalPriceCents"
+                  :sale-percent="file.salePercent"
+                />
+              </p>
               <p class="text-xs text-surface-500">Emailed to you once payment is arranged.</p>
 
               <Button

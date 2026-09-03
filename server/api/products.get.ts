@@ -1,8 +1,11 @@
 export default defineEventHandler(async () => {
-  const { data, error } = await useSupabase()
-    .from('products')
-    .select('id, slug, name, description, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
-    .order('created_at', { ascending: true })
+  const [{ data, error }, sale] = await Promise.all([
+    useSupabase()
+      .from('products')
+      .select('id, slug, name, description, price_cents, image_url, in_stock, kind, file_name, file_format, file_size_bytes')
+      .order('created_at', { ascending: true }),
+    getSaleState()
+  ])
 
   if (error) {
     console.error('[products] could not load the catalogue:', error)
@@ -11,5 +14,5 @@ export default defineEventHandler(async () => {
       statusMessage: 'Could not load products right now. Please try again.'
     })
   }
-  return data
+  return data.map(product => withSalePricing(product, sale))
 })

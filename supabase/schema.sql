@@ -95,7 +95,36 @@ create policy "products are public"
   to anon, authenticated
   using (true);
 
--- Atomic order creation. Prices come from the products table, never the client.
+-- Store-wide sale --------------------------------------------------------
+-- A single row holding whether a sale is on and, if so, by how much. The `id`
+-- check is what makes it a singleton: a second insert can never satisfy it.
+create table if not exists public.store_settings (
+  id           boolean primary key default true,
+  sale_active  boolean not null default false,
+  sale_percent numeric not null default 0,
+  constraint store_settings_singleton check (id),
+  constraint store_settings_sale_percent_range check (
+    sale_active = false or (sale_percent > 0 and sale_percent <= 100)
+  )
+);
+
+insert into public.store_settings (id, sale_active, sale_percent)
+values (true, false, 0)
+on conflict (id) do nothing;
+
+alter table public.store_settings enable row level security;
+
+-- Readable by the storefront the same way products are; writes stay staff-only
+-- through the Supabase dashboard, which uses the service-role key.
+drop policy if exists "store settings are public" on public.store_settings;
+create policy "store settings are public"
+  on public.store_settings for select
+  to anon, authenticated
+  using (true);
+
+-- Rewritten to discount each line when a sale is active. The rounding rule
+-- (round half up, on integer cents) matches server/utils/pricing.ts, so the
+-- price shown to a buyer and the price create_order charges never disagree.
 create or replace function public.create_order(
   p_customer jsonb,
   p_items    jsonb
@@ -105,9 +134,11 @@ security definer
 set search_path = public
 as $$
 declare
-  v_order_id uuid;
-  v_matched  integer;
-  v_wanted   integer;
+  v_order_id     uuid;
+  v_matched      integer;
+  v_wanted       integer;
+  v_sale_active  boolean;
+  v_sale_percent numeric;
 begin
   -- An order with no lines is never valid, and the row-count guard below cannot
   -- catch it (0 matched = 0 wanted), so reject it up front.
@@ -145,6 +176,9 @@ begin
     raise exception 'invalid_item';
   end if;
 
+  select sale_active, sale_percent into v_sale_active, v_sale_percent
+  from store_settings where id = true;
+
   insert into orders (customer_name, customer_email, customer_phone, notes)
   values (
     p_customer->>'name',
@@ -155,7 +189,17 @@ begin
   returning id into v_order_id;
 
   insert into order_items (order_id, product_id, name_snapshot, file_name_snapshot, unit_price_cents, quantity)
-  select v_order_id, p.id, p.name, p.file_name, p.price_cents, w.quantity
+  select
+    v_order_id,
+    p.id,
+    p.name,
+    p.file_name,
+    case
+      when v_sale_active
+        then round(p.price_cents * (100 - v_sale_percent) / 100)::integer
+      else p.price_cents
+    end,
+    w.quantity
   from (
     select i.product_id, sum(i.quantity)::integer as quantity
     from jsonb_to_recordset(p_items) as i(product_id uuid, quantity integer)

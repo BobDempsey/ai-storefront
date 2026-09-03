@@ -28,6 +28,10 @@ onMounted(() => {
 // this page has not.
 const conflictIds = ref<string[]>([])
 
+// Store-wide, so any priced line's percentage speaks for the whole order.
+const salePercent = computed(() => preview.value?.lines[0]?.salePercent ?? 0)
+const saleActive = computed(() => salePercent.value > 0)
+
 const unavailableLines = computed(
   () => preview.value?.lines.filter(line => !line.in_stock || conflictIds.value.includes(line.id)) ?? []
 )
@@ -139,7 +143,10 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
     </div>
 
     <aside class="h-fit rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900 p-4">
-      <h2 class="mb-4 font-medium">Order summary</h2>
+      <h2 class="mb-4 flex items-center gap-2 font-medium">
+        Order summary
+        <Tag v-if="saleActive" severity="danger" :value="`${salePercent}% off`" />
+      </h2>
 
       <ClientOnly>
         <ul class="flex flex-col gap-2 text-sm">

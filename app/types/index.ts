@@ -3,7 +3,11 @@ interface CatalogItem {
   slug: string
   name: string
   description: string | null
+  /** Already discounted when a sale is active; the price to show and to sum. */
   price_cents: number
+  /** Set only while a sale is active, so a plain price never carries these. */
+  originalPriceCents?: number
+  salePercent: number
   image_url: string | null
   in_stock: boolean
 }
@@ -35,6 +39,12 @@ export type Product = PhysicalProduct | DigitalProduct
 export type CartLine =
   | (Omit<PhysicalProduct, 'description'> & { quantity: number })
   | (Omit<DigitalProduct, 'description'> & { quantity: number })
+
+/** Response of GET /api/store-settings. */
+export interface StoreSettings {
+  saleActive: boolean
+  salePercent: number
+}
 
 export interface CartPreview {
   lines: CartLine[]

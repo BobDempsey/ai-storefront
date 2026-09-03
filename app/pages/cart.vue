@@ -28,6 +28,10 @@ watch(preview, value => {
 
 // Lines still in the catalogue that cannot currently be ordered. Unlike deleted
 // products these are never removed automatically. The customer decides.
+// Store-wide, so any priced line's percentage speaks for the whole cart.
+const salePercent = computed(() => preview.value?.lines[0]?.salePercent ?? 0)
+const saleActive = computed(() => salePercent.value > 0)
+
 const unavailableLines = computed(() => preview.value?.lines.filter(line => !line.in_stock) ?? [])
 const unavailableNames = computed(() => unavailableLines.value.map(line => line.name).join(', '))
 const everythingUnavailable = computed(
@@ -78,7 +82,13 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
 
           <div class="min-w-0 flex-1 basis-40">
             <NuxtLink :to="`/products/${line.slug}`" class="font-medium hover:underline">{{ line.name }}</NuxtLink>
-            <p class="text-sm text-surface-500">{{ formatMoney(line.price_cents) }} each</p>
+            <p class="text-sm text-surface-500">
+              <SalePrice
+                :price-cents="line.price_cents"
+                :original-price-cents="line.originalPriceCents"
+                :sale-percent="line.salePercent"
+              /> each
+            </p>
             <p v-if="line.kind === 'digital'" class="text-sm text-surface-500">
               {{ line.file_name }}, emailed to you once payment is arranged.
             </p>
@@ -133,6 +143,7 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
         <div class="flex items-center justify-between border-t border-surface-200 pt-4 dark:border-surface-800">
           <div>
             <span class="text-lg">Subtotal</span>
+            <Tag v-if="saleActive" severity="danger" :value="`${salePercent}% off`" class="ml-2" />
             <p v-if="unavailableLines.length" class="text-sm text-surface-500">
               Out-of-stock items are not included in this total.
             </p>

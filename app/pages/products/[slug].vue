@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Product } from '~/types'
-import { formatMoney } from '~/utils/money'
 import { formatBytes } from '~/utils/bytes'
 
 const route = useRoute()
@@ -48,7 +47,13 @@ function addToCart() {
       <NuxtLink to="/" class="text-sm text-surface-500 hover:underline">&larr; All products</NuxtLink>
 
       <h1 class="text-2xl font-semibold tracking-tight">{{ product.name }}</h1>
-      <p class="text-xl">{{ formatMoney(product.price_cents) }}</p>
+      <p class="text-xl">
+        <SalePrice
+          :price-cents="product.price_cents"
+          :original-price-cents="product.originalPriceCents"
+          :sale-percent="product.salePercent"
+        />
+      </p>
       <p class="text-surface-600 dark:text-surface-400">{{ product.description }}</p>
 
       <dl v-if="product.kind === 'digital'" class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
