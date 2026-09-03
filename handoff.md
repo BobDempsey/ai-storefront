@@ -30,7 +30,16 @@ could not (section 8's gotcha), and closed them out: `add-promo-codes` is now
 39/39. Revised again on 2026-09-03 for a third, separate change
 (`show-promo-code-in-order-email`) that records which discount priced an order
 and shows it in the staff email, proposed, implemented and verified live in
-the same session; all 17 of its tasks are checked.
+the same session; all 17 of its tasks are checked. A sync on 2026-09-03 found
+that change, its archive and this document itself had since been committed
+(`808d678`, `093888e`, `a6fb5a2`, `40b0b0c`), plus an unrelated `.gitignore`
+addition for `.playwright-mcp` (`1b8ce86`); the working tree is clean. The same
+session then archived the two changes that were still sitting complete and
+unarchived, `add-store-wide-sale` and `add-promo-codes` (section 2), syncing
+their delta specs into a new `catalog/storefront-sale` capability, a new
+`promotions/promo-code` capability, and additions to `assistant/shopping-assistant`,
+`contact/contact-message` and `newsletter/email-optin`. `openspec validate
+--specs --strict` passes all 10 capabilities. Uncommitted as of this writing.
 
 ---
 
@@ -224,7 +233,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Eight changes have been through the full cycle, all in
+Ten changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -236,29 +245,31 @@ Eight changes have been through the full cycle, all in
 | `2026-09-02-add-digital-file-products` | `specs/catalog/digital-product/` |
 | `2026-09-02-add-shopping-assistant` | `specs/assistant/shopping-assistant/` |
 | `2026-09-03-add-email-optin` | `specs/newsletter/email-optin/` |
+| `2026-09-03-add-store-wide-sale` | `specs/catalog/storefront-sale/` |
+| `2026-09-03-add-promo-codes` | `specs/promotions/promo-code/`, plus additions folded into `specs/assistant/shopping-assistant/`, `specs/contact/contact-message/` and `specs/newsletter/email-optin/` |
 | `2026-09-03-show-promo-code-in-order-email` | `specs/ordering/order-notification/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
-Two changes are in flight, each with its own artifacts complete and
-`openspec validate` passing:
-
-- `openspec/changes/add-store-wide-sale/` — code complete and verified end to
-  end (section 1, section 10), committed as `de3f67d`, not yet archived.
-- `openspec/changes/add-promo-codes/` — 39 of 39 tasks done, verified end to
-  end (section 1). Committed as `fcb1216`; the `tasks.md` edit closing the
-  last three landed as `e4ca300`. Not yet archived.
+`add-store-wide-sale` (code complete and verified end to end, section 1,
+section 10, committed as `de3f67d`) and `add-promo-codes` (39 of 39 tasks,
+verified end to end, committed as `fcb1216` then `e4ca300`) sat archivable but
+un-archived for the rest of that session; both were archived on 2026-09-03 in
+a later sync, syncing their delta specs into the main tree (see the top of
+this document). Nothing about the archive move itself is committed yet.
 
 `show-promo-code-in-order-email` was proposed, implemented, verified live and
 archived in one session on 2026-09-03 (section 1); its spec is now
-`specs/ordering/order-notification/`. Nothing about it is committed yet,
-including this document.
+`specs/ordering/order-notification/`. It is committed: the feature as
+`808d678`, the archive as `093888e`, and this document's record of both as
+`a6fb5a2` and `40b0b0c`.
 
-Specs cover theming, contact, the two ordering capabilities above, the
-catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
-and is not backed by a spec, including the storefront tabs added on 2026-09-01.
-New work should be.
+Specs cover theming, contact, three ordering capabilities, the catalogue's
+file products and store-wide sale, the shopping assistant, the newsletter and
+promo codes. Everything else in this document predates OpenSpec and is not
+backed by a spec, including the storefront tabs added on 2026-09-01. New work
+should be.
 
 ---
 
