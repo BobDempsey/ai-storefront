@@ -27,7 +27,10 @@ commit hash. A further pass the same day found `.mcp.json` had gained a
 `playwright` MCP server (`db6cd90`) since this document was last written, used
 it to run the three browser-only promo-code checks the `puppeteer` MCP tool
 could not (section 8's gotcha), and closed them out: `add-promo-codes` is now
-39/39.
+39/39. Revised again on 2026-09-03 for a third, separate change
+(`show-promo-code-in-order-email`) that records which discount priced an order
+and shows it in the staff email, proposed, implemented and verified live in
+the same session; all 17 of its tasks are checked.
 
 ---
 
@@ -162,6 +165,33 @@ to clear the field first. The order then goes through fine without it
 redemption row were deleted afterwards; no subscriber rows were created by
 this pass. `add-promo-codes` `tasks.md` is now 39/39.
 
+**Order emails now show which discount priced an order, verified end to end.**
+`orders` gained four nullable columns — `discount_source` (`'sale'`, `'code'`,
+or null), `discount_percent`, `promo_code_snapshot`, `subtotal_cents` — written
+once by `create_order` in the same transaction that prices the lines. A later
+edit to the sale row or a promo code cannot rewrite what an already-committed
+order says it charged; a tie between the two is recorded as the code, so this
+record and `promo_redemptions` agree. `server/api/orders.post.ts` re-reads the
+four columns and passes them to `sendOrderEmail` only when the order was read
+and actually carries a discount; `renderHtml` in `server/utils/email.ts` adds a
+subtotal row and a discount row above the total, naming the code and its
+percentage or the store sale and its percentage. An undiscounted order's email
+is byte-for-byte what it was before this change.
+
+Verified 2026-09-03: `create_order` called directly for four cases (no
+discount, code only, sale only, and a deliberate tie — sale set to 25% against
+`WELCOME25`'s 25%) all recorded the right source, percentage, code and
+subtotal, with the tie resolving to the code as designed. Changing the sale
+percentage after an order was committed left that order's recorded percentage
+and subtotal unchanged. Three real orders placed through the checkout form
+(coded, sale-only, undiscounted) were confirmed by the user via inbox
+screenshot: the discount rows render exactly as designed, and the undiscounted
+order's email carries no subtotal or discount row at all. `npm run build`
+passes. Every test order, its items and its redemption were deleted afterward
+and the sale left at 20% active, matching the state before verification
+started. The change's `tasks.md` is 17/17 checked, not yet archived: see
+`openspec/changes/show-promo-code-in-order-email/`.
+
 ---
 
 ## 2. How work is done here — OpenSpec
@@ -208,14 +238,18 @@ Seven changes have been through the full cycle, all in
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
-Two changes are in flight, each with its own artifacts complete and
+Three changes are in flight, each with its own artifacts complete and
 `openspec validate` passing:
 
 - `openspec/changes/add-store-wide-sale/` — code complete and verified end to
   end (section 1, section 10), committed as `de3f67d`, not yet archived.
 - `openspec/changes/add-promo-codes/` — 39 of 39 tasks done, verified end to
   end (section 1). Committed as `fcb1216`; the `tasks.md` edit closing the
-  last three is uncommitted, along with this document. Not yet archived.
+  last three landed as `e4ca300`. Not yet archived.
+- `openspec/changes/show-promo-code-in-order-email/` — 17 of 17 tasks done,
+  verified end to end (section 1). Proposed, implemented and verified live in
+  one session on 2026-09-03; nothing about it is committed yet, including this
+  document. Not yet archived.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
@@ -707,15 +741,20 @@ Known gaps, roughly in the order they were prioritized with the user:
   right discounted total and redemption row, and a same-address repeat was
   refused with the "already been used" message. See section 1 for the full
   results, including the promo-field UX quirk this pass found (section 9).
-- **No one has read a promo-code welcome email.** The agent has no mailbox
-  access. Two welcome emails were sent to the owner's address on 2026-09-03,
-  one with `WELCOME25` active and one with every code deactivated, and both
-  sends were accepted by Resend. Whether the first reads "Your promo code:
-  WELCOME25 for 25% off your first order" and the second carries no code block
-  at all still needs a look in the inbox.
-- **Order emails don't show whether a promo code was used.** Neither the
-  staff notification nor a future customer confirmation email states the
-  applied code or the discount amount.
+- ~~No one has read a promo-code welcome email.~~ **Done, 2026-09-03.** The
+  user confirmed both by inbox screenshot: with `WELCOME25` active the email
+  is titled "You're subscribed, here's your promo code" and reads "Your promo
+  code: WELCOME25 for 25% off your first order"; with every code deactivated
+  it reverts to the plain "You're subscribed" / "Thanks for subscribing" copy,
+  no code block at all.
+- ~~Order emails don't show whether a promo code was used.~~ **Done,
+  2026-09-03.** `orders` gained four nullable columns (`discount_source`,
+  `discount_percent`, `promo_code_snapshot`, `subtotal_cents`), written once by
+  `create_order` in the same transaction that prices the lines, immune to a
+  later edit of the sale or the code table. On a tie between the two, the code
+  is recorded. The staff email now shows a subtotal and a discount row naming
+  the code or the store sale, above the total; an undiscounted order's email is
+  unchanged. See `openspec/changes/show-promo-code-in-order-email/`.
 
 ---
 
