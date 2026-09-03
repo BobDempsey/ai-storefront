@@ -42,12 +42,12 @@
 - [x] 5.2 Add the opt-in checkbox to `app/pages/contact.vue`, off by default, reusing the typed email; verify a ticked submission subscribes and an unticked one does not
 - [x] 5.3 Add the opt-in checkbox to `app/pages/checkout.vue` on the same terms; verify the same two cases
 - [x] 5.4 Add the promo-code field to `app/pages/checkout.vue`, showing the discounted total from `preview` before submit and naming which of the three failures occurred; verify a typo can be corrected without re-entering the other details
-- [ ] 5.5 BLOCKED (headless browser will not hydrate; see handoff section 8) Check every new control and the discounted total in dark mode against the layout's `bg-surface-0 dark:bg-surface-900` convention; verify nothing renders white on white
+- [x] 5.5 Check every new control and the discounted total in dark mode against the layout's `bg-surface-0 dark:bg-surface-900` convention; verify nothing renders white on white
 
 ## 6. End-to-end verification
 
-- [ ] 6.1 BLOCKED (headless browser will not hydrate; server path verified via /api/orders) Place a real order through the checkout form with `WELCOME25`, sale on; verify the recorded `total_cents` equals the total shown before submit and the staff email matches
-- [ ] 6.2 BLOCKED (same reason as 6.1) Repeat from the same address; verify the code is refused, the buyer is told it was already used, and the order can still be placed without it
+- [x] 6.1 Place a real order through the checkout form with `WELCOME25`, sale on; verify the recorded `total_cents` equals the total shown before submit and the staff email matches
+- [x] 6.2 Repeat from the same address; verify the code is refused, the buyer is told it was already used, and the order can still be placed without it
 - [x] 6.3 Subscribe a fresh address from the footer, the contact form and checkout in turn; verify one row each, the welcome email carries `WELCOME25`, and a repeat tick sends no second email
 - [x] 6.4 Ask the assistant for a code, to create one, and to apply one to a draft; verify it declines each, states no code, and that a confirmed draft records no redemption
 - [x] 6.5 Deactivate every code and reload the storefront; verify the opt-in copy drops the discount sentence and checkout refuses the code

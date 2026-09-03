@@ -23,7 +23,11 @@ further pass the same day corrected three more: which routes trust
 and the product count on the homepage in section 7. A sync later the same day
 found the promo-codes change had been committed as `fcb1216` after this
 document was last written; section 2 corrected from "Uncommitted" to that
-commit hash.
+commit hash. A further pass the same day found `.mcp.json` had gained a
+`playwright` MCP server (`db6cd90`) since this document was last written, used
+it to run the three browser-only promo-code checks the `puppeteer` MCP tool
+could not (section 8's gotcha), and closed them out: `add-promo-codes` is now
+39/39.
 
 ---
 
@@ -140,6 +144,24 @@ percentage with no code string anywhere in it. The assistant declined three
 separate attempts to get, create and apply a code, naming none. Every test row
 was deleted afterwards and the sale left on at 20%.
 
+**The three browser-only promo-code checks are done too, verified 2026-09-03
+against a real `npm run dev` through the new `playwright` MCP server** (see
+section 8: unlike `puppeteer`, it hydrates this app). Checkout in dark mode
+renders every new control correctly, including the promo field's green
+success text and the "25% off" order-summary tag: nothing white on white. A
+real order placed through the checkout form with `WELCOME25` while the 20%
+sale was on recorded `total_cents: 2175` against a $29 item, matching the
+total shown before submit, with a `promo_redemptions` row for it. Repeating
+from the same address showed "That promo code has already been used." and
+reverted the summary to the 20%-off price, confirming the reuse block works
+end to end, not just in the API tests above. One thing worth knowing:
+rejection doesn't clear the promo field, so clicking Submit right after a
+rejected Apply resends that same code and the order 400s again — the buyer has
+to clear the field first. The order then goes through fine without it
+(`total_cents: 1920`, no redemption row). Both test orders and their
+redemption row were deleted afterwards; no subscriber rows were created by
+this pass. `add-promo-codes` `tasks.md` is now 39/39.
+
 ---
 
 ## 2. How work is done here — OpenSpec
@@ -191,10 +213,9 @@ Two changes are in flight, each with its own artifacts complete and
 
 - `openspec/changes/add-store-wide-sale/` — code complete and verified end to
   end (section 1, section 10), committed as `de3f67d`, not yet archived.
-- `openspec/changes/add-promo-codes/` — 36 of 39 tasks done. The three left are
-  browser checks the headless browser on this machine could not run; see the
-  gotcha in section 8 and the open items in section 10. Committed as `fcb1216`,
-  not yet archived.
+- `openspec/changes/add-promo-codes/` — 39 of 39 tasks done, verified end to
+  end (section 1). Committed as `fcb1216`; the `tasks.md` edit closing the
+  last three is uncommitted, along with this document. Not yet archived.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
@@ -519,8 +540,17 @@ a different staff address will silently fail until a domain is verified.
   came back as 0, clicking "Add to cart" changed nothing, and `captureScreenshot`
   eventually timed out. Restarting it with different launch options changed
   nothing. So it is usable for checking server-rendered markup and useless for
-  anything needing a click. Verify interactive behaviour against the API, or by
-  hand in a real browser.
+  anything needing a click. **The `playwright` MCP server, added to
+  `.mcp.json` on 2026-09-03, does not have this problem** — it hydrates the
+  app normally, clicks and form fills work, and it was used the same day to
+  close out the three browser-only promo-code checks (section 1, section 10).
+  Prefer it over `puppeteer` for anything needing a click.
+- **The `playwright` MCP browser shows a Chrome infobar reading "You are using
+  an unsupported command-line flag: --disable-blink-features=AutomationControlled.
+  Stability and security will suffer."** on every page. Cosmetic only, from
+  the launch flag Playwright uses to avoid bot detection; every screenshot
+  taken with this tool carries it, so crop or ignore that banner rather than
+  treating it as an app error.
 - **`npm run dev` may attach to a port you did not expect.** A dev server was
   already holding 3000, so a second `npm run dev` silently took 3001 and its
   console output went to the new log while every `curl localhost:3000` hit the
@@ -594,6 +624,17 @@ were re-verified against the code on 2026-08-31.
   `{ orderId }` alone when the re-read failed and `{ orderId, totalCents }` when
   it succeeded, typed as optional in `app/types/index.ts` so a consumer has to
   check. The staff email keeps its `incomplete` banner.
+- **A rejected promo code stays in the field and gets resent.** Found
+  2026-09-03 verifying `add-promo-codes` in a real browser: clicking Apply on
+  an already-used code shows "That promo code has already been used." but
+  leaves the code text in `app/pages/checkout.vue`'s promo input. Clicking
+  Submit right after resends that same code, so `/api/orders` 400s again
+  instead of placing the order at the sale price. Clearing the field by hand
+  first works fine — the underlying reuse block and the sale-price fallback
+  are both correct — but a visitor who doesn't clear it gets stuck on a
+  confusing repeat rejection. The fix is client-side: clear or disable the
+  field on a rejected Apply, or drop the code from the submit payload when
+  its own status says rejected.
 
 ## 10. Not done yet
 
@@ -660,22 +701,21 @@ Known gaps, roughly in the order they were prioritized with the user:
   as part of `add-promo-codes`. Both forms carry a checkbox, off by default,
   reusing the email that form already collects, and a failed subscription is
   logged rather than allowed to fail the message or the order.
-- **Three promo-code checks are unverified, all of them browser-only.** The
-  `add-promo-codes` tasks left open are 5.5 (the new controls in dark mode),
-  6.1 and 6.2 (placing an order through the checkout form with a code, then
-  being refused on a second attempt). The headless browser here would not
-  hydrate the app, so no click could be driven; see the gotcha in section 8.
-  What that leaves untested is only the client wiring: the Apply button calling
-  `preview` with the code, the promo message rendering the four statuses, and
-  the checkbox reaching the request body. The server side of all three ran
-  through `/api/orders` and `/api/cart/preview` and passed. Someone should open
-  `/checkout` in a real browser and try it, in both colour modes.
+- ~~Three promo-code checks are unverified, all of them browser-only.~~ **Done,
+  2026-09-03**, using the new `playwright` MCP server (section 8). Checkout
+  renders correctly in dark mode, a real order with `WELCOME25` recorded the
+  right discounted total and redemption row, and a same-address repeat was
+  refused with the "already been used" message. See section 1 for the full
+  results, including the promo-field UX quirk this pass found (section 9).
 - **No one has read a promo-code welcome email.** The agent has no mailbox
   access. Two welcome emails were sent to the owner's address on 2026-09-03,
   one with `WELCOME25` active and one with every code deactivated, and both
   sends were accepted by Resend. Whether the first reads "Your promo code:
   WELCOME25 for 25% off your first order" and the second carries no code block
   at all still needs a look in the inbox.
+- **Order emails don't show whether a promo code was used.** Neither the
+  staff notification nor a future customer confirmation email states the
+  applied code or the discount amount.
 
 ---
 
