@@ -4,7 +4,13 @@ Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
 then revised on 2026-08-31 once the order and email paths had run end to end.
 Last reviewed against the code on 2026-09-02, then revised the same day when
-files became sellable catalogue rows.
+files became sellable catalogue rows. Revised again on 2026-09-03 for the
+email opt-in change, which is now migrated live and verified end to end, and
+again the same day for a second, separate in-flight change that adds a
+store-wide sale, also now migrated live and verified end to end. Checked against
+the code once more on 2026-09-03: every claim below still holds, and the sale
+change's last open task (writing this document) is now ticked, so its 20/20
+count is real rather than aspirational.
 
 ---
 
@@ -19,8 +25,10 @@ Project root: `C:\Users\bobde\Desktop\ecommerce-store`
 
 Status: **the storefront is live against a real database.** A Supabase project
 (`forged in filament`, ref `wfhhkdmgouyxnrxnbaeo`) exists, the schema and seed
-have been run, and `/api/products` returns 6 products. `create_order` has been
-executed against the real database and passes a 7-case regression suite.
+have been run, and `/api/products` returns all 9 catalogue rows (6 physical,
+3 digital) with no `kind` filter — the storefront splits them into tabs
+client-side. `create_order` has been executed against the real database and
+passes a 7-case regression suite.
 
 The demo catalog is **finished 3D-printed goods** — articulated dragon, cable
 organizer, self-watering planter, lithophane lamp, dice tower, drawer bins —
@@ -44,6 +52,51 @@ accents, curly quotes, an em dash and raw `<b>` markup, which rendered as text.
 The whole order path has now run end to end. Still outstanding for email: no
 domain, so no SPF/DKIM, and the sandbox sender delivers only to that one
 address.
+
+**Email opt-in is built and verified end to end.** A footer form
+(`EmailOptinForm.vue`) lets a visitor submit an email address; `POST
+/api/email-optin` validates it, upserts it into a new `email_subscribers`
+table with `ON CONFLICT DO NOTHING` so a duplicate address gets the same
+response as a new one, and sends a welcome email carrying a single static
+promo code (`NUXT_NEWSLETTER_PROMO_CODE`, same code for every subscriber).
+The `email_subscribers` migration was applied to the live Supabase project on
+2026-09-03 (RLS on, zero policies, matching task 1.1's intent). Verified the
+same day against a running `npm run dev`: a new address inserts one row and
+delivers the welcome email with the configured code; resubmitting the same
+address returns the identical response, inserts no second row, and sends no
+second email; an invalid address 400s before touching the database or Resend.
+The change's `tasks.md` is now 12/12 checked.
+
+**A store-wide sale is built and verified end to end.** A `store_settings`
+singleton table (`sale_active boolean`, `sale_percent numeric`) holds one
+on/off switch and one percentage for the whole catalogue. Staff turn it on by
+editing that one row's two fields in the Supabase dashboard's table editor —
+no admin page, per the existing decision. When active, `create_order`
+discounts every line at order time, and `/api/products`, `/api/products/[slug]`,
+`/api/cart/preview`, and the shopping assistant's catalogue tools all show the
+same discounted price ahead of checkout, via a shared `server/utils/pricing.ts`
+rounding rule (round half up, on integer cents) used on both the SQL and
+TypeScript sides. `npm run build` passes.
+
+The migration was applied to the live Supabase project on 2026-09-03, after
+fixing a bug the live apply caught that no amount of code review had:
+`store_settings_sale_percent_range` originally read
+`check (sale_percent > 0 and sale_percent <= 100)`, which rejects the
+migration's own default row (`sale_active = false, sale_percent = 0`) — the
+table couldn't be seeded. Fixed to
+`check (sale_active = false or (sale_percent > 0 and sale_percent <= 100))`.
+Verified the same day: `create_order` called directly with the sale off
+records full price ($24.00) and with it on at 20% records the discounted
+total ($19.20, matching hand computation); `/api/products`,
+`/api/cart/preview` and the assistant chat endpoint all report $19.20 for the
+same item while the sale is active; the storefront (home, product detail,
+cart, checkout) shows the struck-through price and "20% off" tag correctly in
+both light and dark mode; an order placed through the real checkout form
+while the sale was active recorded `totalCents: 1920` and the staff email
+matched it; a second order placed after turning the sale back off recorded
+`totalCents: 2400`. The sale was left off and the three test orders placed
+during this were deleted afterward. The change's `tasks.md` is now 20/20
+checked.
 
 ---
 
@@ -88,7 +141,15 @@ Six changes have been through the full cycle, all in
 | `2026-09-02-add-shopping-assistant` | `specs/assistant/shopping-assistant/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
-tasks and spec. No change is currently in flight.
+tasks and spec.
+
+Two changes are in flight, each with its own artifacts complete and
+`openspec validate` passing:
+
+- `openspec/changes/add-email-optin/` — code complete and verified end to end
+  (section 1, section 10), not yet archived.
+- `openspec/changes/add-store-wide-sale/` — code complete and verified end to
+  end (section 1, section 10), not yet archived.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
@@ -155,23 +216,32 @@ nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtime
 .env / .env.example       secrets (.env is gitignored)
 
 supabase/
-  schema.sql              tables, RLS policies, create_order() function
+  schema.sql              tables (incl. email_subscribers, store_settings),
+                          RLS policies, create_order() function
   seed.sql                6 physical products and 3 downloadable files
 
 server/
   utils/supabase.ts       memoized service-role client (bypasses RLS)
   utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
-  utils/email.ts          Resend sends: order notification + contact message
-  api/products.get.ts     catalog list
+  utils/email.ts          Resend sends: order notification, contact message,
+                          newsletter welcome (sendWelcomeEmail)
+  utils/pricing.ts         salePriceCents()/withSalePricing(), the one rounding
+                          rule shared with create_order's SQL
+  utils/store-settings.ts  getSaleState(), reads the store_settings singleton
+  api/store-settings.get.ts  public sale state: { saleActive, salePercent }
+  api/products.get.ts     catalog list, prices discounted when a sale is active
   api/products/[slug].get.ts
-  api/cart/preview.post.ts  resolves cart IDs -> current prices + subtotal
+  api/cart/preview.post.ts  resolves cart IDs -> current (sale-aware) prices + subtotal
   api/orders.post.ts        rate limit -> validate -> create_order -> email
   api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
                             so a failed send is reported to the sender
+  api/email-optin.post.ts   rate limit -> validate -> upsert (ON CONFLICT DO
+                            NOTHING) -> welcome email only on a real insert
   api/chat.get.ts           whether the assistant is configured, no key shipped
   api/chat.post.ts          rate limit -> validate -> gpt-5-mini tool loop
-  utils/assistant.ts        the five tools, their handlers and the system prompt
+  utils/assistant.ts        the five tools, their handlers and the system prompt;
+                            its own catalogue queries are sale-aware too
   utils/confirmations.ts    one-time draft confirmations, in memory, 15 min TTL
 
 app/
@@ -183,10 +253,14 @@ app/
   pages/order-received.vue       confirmation, shows order id
   pages/contact.vue              contact form; replaced the navbar mailto link
   components/AssistantDrawer.vue chat drawer: messages, cart strip, order draft
+  components/EmailOptinForm.vue  email field + submit, in the footer
+  components/SalePrice.vue       struck-through original + discounted price +
+                                 "N% off" tag; used on the home, product, cart
+                                 and checkout pages, no-ops when no sale is active
   stores/assistant.ts            the conversation; NOT persisted, fresh per load
   stores/cart.ts                 IDs + quantities only, persisted
   stores/color-mode.ts           light/dark/system, owns the .dark class
-  types/index.ts                 Product, CartLine, CartPreview
+  types/index.ts                 Product, CartLine, CartPreview, StoreSettings
   utils/money.ts                 formatMoney()
   utils/bytes.ts                 formatBytes(), for file sizes
   assets/css/main.css            layer order + Tailwind import
@@ -252,6 +326,8 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
+NUXT_NEWSLETTER_PROMO_CODE  SET — `WELCOME10` as of 2026-09-03. Server-only;
+                            the same code is emailed to every opt-in subscriber
 
 `NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link was replaced by
 the `/contact` form, which delivers to `NUXT_ORDER_ADMIN_EMAIL`, so no address
@@ -282,8 +358,11 @@ then `supabase/seed.sql` in the SQL editor and repoint `.env`.
 
 An agent can now run that SQL itself through the Supabase MCP server configured
 in `.mcp.json`, rather than asking you to paste it. The first use needs a
-browser OAuth flow. See the database section of `AGENTS.md` for what it is
-scoped to and what to watch for.
+browser OAuth flow; that flow was completed on this machine on 2026-09-03, so
+an interactive session here should find `supabase` already connected via
+`/mcp` — a non-interactive session or a different machine still starts
+unauthorised. See the database section of `AGENTS.md` for what it is scoped to
+and what to watch for.
 
 Env changes are not hot-reloaded; restart `npm run dev` after editing `.env`. The
 dev server binds IPv6, so if `curl 127.0.0.1:3000` hangs, use `http://[::1]:3000`.
@@ -340,6 +419,16 @@ a different staff address will silently fail until a domain is verified.
 - **Windows dev-server lock.** `npm run dev` refuses to start if another Nuxt dev
   process holds the lock; kill it by PID first. Note `taskkill` fails under Git
   Bash (path mangling) — use PowerShell `Stop-Process -Id <pid> -Force`.
+- **`/mcp` reporting a server connected does not mean its tools are callable
+  in the current agent turn.** On 2026-09-03, running `/mcp` mid-session
+  reported `supabase` as one of 3 connected servers, but a `ToolSearch` for
+  Supabase tools in that same session still found none, both before and
+  after. Don't trust `/mcp`'s summary line alone — confirm with a real tool
+  call (or `ToolSearch`) before relying on a server. **Resolved in a later
+  session the same day:** `ToolSearch` for `mcp__supabase__*` and a real
+  `list_tables`/`apply_migration` call both succeeded — it was session-
+  specific, not a standing problem. The email-optin migration (section 1,
+  section 10) was applied this way.
 
 ---
 
@@ -360,10 +449,10 @@ were re-verified against the code on 2026-08-31.
   5 orders and 3 contact messages per 10 minutes — which is also the stated
   reason phase 1 skips a captcha. Once a deploy target is chosen, trust only
   that platform's forwarded header. Separately, when no IP resolves at all,
-  every caller collapses into one `'unknown'` bucket. The two routes use
-  separate buckets (`contact:` prefixed), so exhausting one does not block the
-  other, and the contact form is the more attractive target: it sends mail with
-  no order behind it.
+  every caller collapses into one `'unknown'` bucket. The routes use
+  separate buckets (`contact:` and `email-optin:` prefixed), so exhausting one
+  does not block the others. The contact and opt-in routes are the more
+  attractive targets: both send mail with no order behind them.
 - ~~A thrown email error 500s the customer after the order is committed.~~
   **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
   `server/api/orders.post.ts`, so section 5's promise actually holds: the
@@ -432,6 +521,33 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~Not a git repo.~~ **Done.** `main` has history back to the initial commit;
   `.env` is correctly untracked while `.env.example` is committed. No remote is
   configured yet, so the history exists only on this machine.
+- ~~Email opt-in (`openspec/changes/add-email-optin/`) is implemented,
+  uncommitted, and unverified.~~ **Done, 2026-09-03.** All 12 tasks in that
+  change's `tasks.md` are checked off. The Supabase MCP server's tools turned
+  out to be reachable this session (see the gotcha above), so
+  `apply_migration` ran directly rather than needing a hand-pasted SQL-editor
+  fallback. The manual end-to-end check (curl, not the `puppeteer` MCP tools
+  the user had suggested — they weren't needed for a plain API call) covered
+  new address, duplicate address and invalid address; the welcome email
+  arriving with `WELCOME10` was confirmed by the user via a Gmail screenshot.
+  Still uncommitted, and still no test framework in this repo (no
+  `vitest`/`jest`, no test script in `package.json`), so the change's own
+  "verify with a unit/integration test" lines were satisfied by this manual
+  pass instead, same as the rest of the codebase.
+- ~~Store-wide sale (`openspec/changes/add-store-wide-sale/`) is implemented,
+  uncommitted, and unverified against the live database.~~ **Done, 2026-09-03.**
+  All 20 tasks in that change's `tasks.md` are checked off — see section 1 for
+  what was verified, including the sale-percent check-constraint bug the live
+  migration caught. That document had briefly claimed "14 of 19" checked when
+  the real count was 2 of 20; both the count and the underlying verification
+  gap are closed now. Still uncommitted.
+- **Newsletter opt-in on the contact and order forms.** The user asked
+  (2026-09-03) for the same opt-in offer that's in the footer
+  (`EmailOptinForm.vue`) to also appear when a visitor completes `/contact` or
+  checkout, not just as a standing footer element. Not scoped or built yet —
+  needs its own OpenSpec proposal (a checkbox on each form, wired to the
+  existing `POST /api/email-optin`, presumably reusing the visitor's
+  already-typed email rather than asking for it twice).
 
 ---
 
@@ -448,3 +564,7 @@ Known gaps, roughly in the order they were prioritized with the user:
   section 9 were both run that way.
 - When a SQL snippet needs running, they would rather have it **copied to their
   clipboard** than pasted into chat to select by hand.
+- The agent has no mailbox access. For an email-delivery check, the user
+  confirmed receipt with a screenshot of their inbox (done for the email-optin
+  welcome message, 2026-09-03) rather than the agent trying to read it another
+  way.
