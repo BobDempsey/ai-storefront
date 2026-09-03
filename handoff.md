@@ -189,8 +189,10 @@ screenshot: the discount rows render exactly as designed, and the undiscounted
 order's email carries no subtotal or discount row at all. `npm run build`
 passes. Every test order, its items and its redemption were deleted afterward
 and the sale left at 20% active, matching the state before verification
-started. The change's `tasks.md` is 17/17 checked, not yet archived: see
-`openspec/changes/show-promo-code-in-order-email/`.
+started. The change's `tasks.md` was 17/17 checked and it was archived the
+same session: see
+`openspec/changes/archive/2026-09-03-show-promo-code-in-order-email/` and
+`openspec/specs/ordering/order-notification/`.
 
 ---
 
@@ -222,7 +224,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Seven changes have been through the full cycle, all in
+Eight changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -234,11 +236,12 @@ Seven changes have been through the full cycle, all in
 | `2026-09-02-add-digital-file-products` | `specs/catalog/digital-product/` |
 | `2026-09-02-add-shopping-assistant` | `specs/assistant/shopping-assistant/` |
 | `2026-09-03-add-email-optin` | `specs/newsletter/email-optin/` |
+| `2026-09-03-show-promo-code-in-order-email` | `specs/ordering/order-notification/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
-Three changes are in flight, each with its own artifacts complete and
+Two changes are in flight, each with its own artifacts complete and
 `openspec validate` passing:
 
 - `openspec/changes/add-store-wide-sale/` — code complete and verified end to
@@ -246,10 +249,11 @@ Three changes are in flight, each with its own artifacts complete and
 - `openspec/changes/add-promo-codes/` — 39 of 39 tasks done, verified end to
   end (section 1). Committed as `fcb1216`; the `tasks.md` edit closing the
   last three landed as `e4ca300`. Not yet archived.
-- `openspec/changes/show-promo-code-in-order-email/` — 17 of 17 tasks done,
-  verified end to end (section 1). Proposed, implemented and verified live in
-  one session on 2026-09-03; nothing about it is committed yet, including this
-  document. Not yet archived.
+
+`show-promo-code-in-order-email` was proposed, implemented, verified live and
+archived in one session on 2026-09-03 (section 1); its spec is now
+`specs/ordering/order-notification/`. Nothing about it is committed yet,
+including this document.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
@@ -755,6 +759,12 @@ Known gaps, roughly in the order they were prioritized with the user:
   is recorded. The staff email now shows a subtotal and a discount row naming
   the code or the store sale, above the total; an undiscounted order's email is
   unchanged. See `openspec/changes/show-promo-code-in-order-email/`.
+- [ ] The shopping assistant (`server/utils/assistant.ts`) should know about
+  promo codes and be able to apply a qualifying one to a draft order, while
+  still being unable to do anything with a code that the app itself does not
+  already support — no creating a code, no reusing one, no inventing a
+  discount. This is new scope: today's decision (section 3) is that the
+  assistant gets no promo tool at all and only explains the offer.
 
 ---
 
