@@ -71,7 +71,11 @@ the source of truth: write the change there first, then run it, rather than
 applying a migration that exists nowhere in the repo.
 
 The first use in a new environment needs a browser OAuth flow, so a
-non-interactive session cannot authorise it and will have to ask.
+non-interactive session cannot authorise it and will have to ask. That flow
+was completed on this machine on 2026-09-03 (`/mcp` shows `supabase`
+connected), so an interactive session here should find it already authorised;
+check `/mcp` rather than assuming, since a non-interactive session or a
+different machine still starts unauthorised.
 
 Two things to be careful about. Supabase's own guidance is not to point this at
 production, and this is the only project the app has, so treat anything beyond
