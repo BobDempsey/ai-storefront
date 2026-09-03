@@ -1,5 +1,5 @@
 import { emailOptinSchema } from '~~/server/utils/schemas'
-import { sendWelcomeEmail } from '~~/server/utils/email'
+import { subscribeEmail } from '~~/server/utils/subscribe'
 
 export default defineEventHandler(async event => {
   // A bucket of its own, like contact's: opt-in spam must not spend the
@@ -16,38 +16,15 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, statusMessage: 'Please enter a valid email address.' })
   }
 
-  const supabase = useSupabase()
-
-  // ON CONFLICT DO NOTHING: a row comes back only for an address that was not
-  // already subscribed. Zero rows means it was a duplicate, not a failure.
-  const { data, error } = await supabase
-    .from('email_subscribers')
-    .upsert({ email: parsed.data.email }, { onConflict: 'email', ignoreDuplicates: true })
-    .select('id')
-
-  if (error) {
-    console.error('[email-optin] could not record subscription:', error)
+  // A duplicate address gets the same response as a new one, so the wording
+  // never reveals whether the address was already on the list.
+  try {
+    await subscribeEmail(parsed.data.email)
+  } catch {
     throw createError({
       statusCode: 502,
-      statusMessage: 'Could not complete your subscription. Please try again in a moment.'
+      statusMessage: 'Your subscription could not be completed. Please try again in a moment.'
     })
-  }
-
-  const isNewSubscriber = (data?.length ?? 0) > 0
-
-  // A duplicate address gets the same response as a new one below, so the
-  // wording never reveals whether the address was already on the list. Only
-  // a genuinely new subscription sends mail.
-  if (isNewSubscriber) {
-    try {
-      await sendWelcomeEmail(parsed.data.email)
-    } catch (err) {
-      console.error('[email-optin] welcome email failed:', err)
-      throw createError({
-        statusCode: 502,
-        statusMessage: 'Your subscription could not be completed. Please try again in a moment.'
-      })
-    }
   }
 
   return { subscribed: true }

@@ -143,29 +143,38 @@ export async function sendContactEmail(contact: ContactEmailPayload) {
 }
 
 /**
- * Welcomes a new subscriber with the shop's single configured promo code —
- * the same code for every subscriber, not one generated per address. Thrown
- * on failure, like sendContactEmail: nothing else confirms the subscription
- * to the visitor, so the caller must know the send failed.
+ * Welcomes a new subscriber with the shop's active promo code, read at send
+ * time from the same table the checkout reads, so a subscriber is never given
+ * a code checkout would refuse. It is the same code for every subscriber, not
+ * one generated per address. With no code active the welcome still goes, minus
+ * the code block. Thrown on failure, like sendContactEmail: nothing else
+ * confirms the subscription to the visitor, so the caller must know.
  */
 export async function sendWelcomeEmail(email: string) {
-  const { resendApiKey, orderFromEmail, newsletterPromoCode } = useRuntimeConfig()
+  const { resendApiKey, orderFromEmail } = useRuntimeConfig()
 
-  if (!resendApiKey || !newsletterPromoCode) {
+  if (!resendApiKey) {
     throw new Error('newsletter email is not configured')
   }
+
+  const promo = await getActivePromo()
 
   const resend = new Resend(resendApiKey)
   const { error } = await resend.emails.send({
     from: orderFromEmail,
     to: email,
-    subject: "You're subscribed — here's your promo code",
+    subject: promo ? "You're subscribed, here's your promo code" : "You're subscribed",
     html: `
       <h2>Thanks for subscribing</h2>
       <p>We'll email you when there's something new.</p>
-      <p style="padding:12px 16px;background:#eff6ff;border-left:3px solid #2563eb;font-size:16px">
-        Your promo code: <strong>${esc(newsletterPromoCode)}</strong>
-      </p>
+      ${
+        promo
+          ? `<p style="padding:12px 16px;background:#eff6ff;border-left:3px solid #2563eb;font-size:16px">
+        Your promo code: <strong>${esc(promo.code)}</strong> for
+        ${esc(String(promo.percent))}% off your first order.
+      </p>`
+          : ''
+      }
     `
   })
 

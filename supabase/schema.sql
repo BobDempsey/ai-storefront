@@ -122,23 +122,88 @@ create policy "store settings are public"
   to anon, authenticated
   using (true);
 
--- Rewritten to discount each line when a sale is active. The rounding rule
--- (round half up, on integer cents) matches server/utils/pricing.ts, so the
--- price shown to a buyer and the price create_order charges never disagree.
+-- Promo codes -------------------------------------------------------------
+-- A code a buyer types at checkout. Staff edit these rows in the Supabase
+-- dashboard, the same way they flip the store-wide sale above; there is no
+-- admin page. The code lived in NUXT_NEWSLETTER_PROMO_CODE until this table
+-- existed, which is why the seed below carries the value that was in .env.
+create table if not exists public.promo_codes (
+  id         uuid primary key default gen_random_uuid(),
+  code       text not null,
+  percent    numeric not null,
+  active     boolean not null default true,
+  created_at timestamptz not null default now(),
+  constraint promo_codes_percent_range check (percent > 0 and percent <= 100),
+  -- Stored already normalised, so a lookup by exact match finds the same row
+  -- create_order finds. Without this a row typed as " welcome25 " in the
+  -- dashboard would be honoured at checkout but missed by the preview, and the
+  -- buyer would be shown one price and charged another.
+  constraint promo_codes_code_normalised check (code = upper(btrim(code)))
+);
+
+-- Comparison happens on the normalised form, so "welcome25", " WELCOME25 " and
+-- "WELCOME25" are one code and the same code cannot be registered twice.
+create unique index if not exists promo_codes_code_key
+  on public.promo_codes (upper(btrim(code)));
+
+-- One row per code-and-address pair that actually placed an order. The unique
+-- index below is the enforcement, not a check-then-insert in application code:
+-- two simultaneous orders with the same code and address cannot both commit.
+create table if not exists public.promo_redemptions (
+  id            uuid primary key default gen_random_uuid(),
+  promo_code_id uuid not null references public.promo_codes(id),
+  email         text not null,
+  order_id      uuid not null references public.orders(id) on delete cascade,
+  created_at    timestamptz not null default now()
+);
+
+create unique index if not exists promo_redemptions_code_email_key
+  on public.promo_redemptions (promo_code_id, lower(btrim(email)));
+
+-- No policies, like email_subscribers: unreachable from the browser, readable
+-- only through the service-role key the Nitro server holds. A visitor must
+-- never be able to list codes they were not sent.
+alter table public.promo_codes       enable row level security;
+alter table public.promo_redemptions enable row level security;
+
+-- Seeding the code that was already emailed to subscribers keeps every welcome
+-- message sent before this table existed redeemable.
+insert into public.promo_codes (code, percent, active)
+select 'WELCOME25', 25, true
+where not exists (
+  select 1 from public.promo_codes where upper(btrim(code)) = 'WELCOME25'
+);
+
+-- The two-argument version is dropped rather than replaced. `create or replace`
+-- matches on signature, so adding p_promo_code would leave both callable, and
+-- the older one would silently ignore promo codes while keeping its own grants.
+drop function if exists public.create_order(jsonb, jsonb);
+
+-- Prices each line at the better of the store-wide sale and the buyer's promo
+-- code, never both. The rounding rule (round half up, on integer cents) matches
+-- server/utils/pricing.ts, so the price shown to a buyer and the price
+-- create_order charges never disagree.
 create or replace function public.create_order(
-  p_customer jsonb,
-  p_items    jsonb
+  p_customer   jsonb,
+  p_items      jsonb,
+  p_promo_code text default null
 ) returns uuid
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_order_id     uuid;
-  v_matched      integer;
-  v_wanted       integer;
-  v_sale_active  boolean;
-  v_sale_percent numeric;
+  v_order_id      uuid;
+  v_matched       integer;
+  v_wanted        integer;
+  v_sale_active   boolean;
+  v_sale_percent  numeric;
+  v_code          text;
+  v_email         text;
+  v_promo_id      uuid;
+  v_promo_percent numeric := 0;
+  v_promo_active  boolean;
+  v_percent       numeric;
 begin
   -- An order with no lines is never valid, and the row-count guard below cannot
   -- catch it (0 matched = 0 wanted), so reject it up front.
@@ -176,8 +241,44 @@ begin
     raise exception 'invalid_item';
   end if;
 
+  -- Resolve the code before anything is written, so a code that cannot be used
+  -- costs nothing and leaves nothing behind.
+  v_code  := nullif(upper(btrim(coalesce(p_promo_code, ''))), '');
+  v_email := lower(btrim(coalesce(p_customer->>'email', '')));
+
+  if v_code is not null then
+    select id, percent, active
+      into v_promo_id, v_promo_percent, v_promo_active
+    from promo_codes
+    where upper(btrim(code)) = v_code;
+
+    if v_promo_id is null then
+      raise exception 'unknown_promo_code';
+    end if;
+
+    if not v_promo_active then
+      raise exception 'inactive_promo_code';
+    end if;
+
+    if exists (
+      select 1 from promo_redemptions
+      where promo_code_id = v_promo_id
+        and lower(btrim(email)) = v_email
+    ) then
+      raise exception 'promo_code_used';
+    end if;
+  end if;
+
   select sale_active, sale_percent into v_sale_active, v_sale_percent
   from store_settings where id = true;
+
+  -- Better of the two offers, never both, so the total can never fall below
+  -- what the larger single discount produces. A code the sale beat is still
+  -- redeemed below: the buyer did use it on an order.
+  v_percent := greatest(
+    case when v_sale_active then coalesce(v_sale_percent, 0) else 0 end,
+    case when v_promo_id is not null then coalesce(v_promo_percent, 0) else 0 end
+  );
 
   insert into orders (customer_name, customer_email, customer_phone, notes)
   values (
@@ -195,8 +296,8 @@ begin
     p.name,
     p.file_name,
     case
-      when v_sale_active
-        then round(p.price_cents * (100 - v_sale_percent) / 100)::integer
+      when v_percent > 0
+        then round(p.price_cents * (100 - v_percent) / 100)::integer
       else p.price_cents
     end,
     w.quantity
@@ -212,6 +313,14 @@ begin
     raise exception 'unavailable_item';
   end if;
 
+  -- Written in the order's own transaction, so the unique index is what stops a
+  -- second redemption even under two concurrent submissions, and a rollback for
+  -- any other reason takes the redemption with it.
+  if v_promo_id is not null then
+    insert into promo_redemptions (promo_code_id, email, order_id)
+    values (v_promo_id, v_email, v_order_id);
+  end if;
+
   update orders
   set total_cents = (
     select coalesce(sum(unit_price_cents * quantity), 0)
@@ -225,6 +334,7 @@ $$;
 
 -- Postgres grants EXECUTE to PUBLIC by default, and anon/authenticated inherit it.
 -- Revoking PUBLIC is what actually closes the RPC to the browser; the second
--- revoke is belt-and-braces in case an explicit grant is ever added.
-revoke execute on function public.create_order(jsonb, jsonb) from public;
-revoke execute on function public.create_order(jsonb, jsonb) from anon, authenticated;
+-- revoke is belt-and-braces in case an explicit grant is ever added. These do
+-- not carry over from the dropped two-argument signature.
+revoke execute on function public.create_order(jsonb, jsonb, text) from public;
+revoke execute on function public.create_order(jsonb, jsonb, text) from anon, authenticated;

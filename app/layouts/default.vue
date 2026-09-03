@@ -4,6 +4,10 @@ const colorMode = useColorModeStore()
 const assistant = useAssistantStore()
 const { storeName } = useRuntimeConfig().public
 
+// Names the discount in the footer's opt-in invitation, so the copy tracks the
+// active code rather than a number written into the page.
+const { optinOffer } = useStoreSettings()
+
 // Client-only; starts the watcher that owns the `.dark` class on <html>.
 colorMode.init()
 
@@ -93,7 +97,8 @@ const themeIcon = computed(() => {
       <p class="mb-4">Orders are confirmed by email. Payment is arranged separately.</p>
       <div class="mx-auto max-w-xs">
         <p class="mb-2 font-medium text-surface-700 dark:text-surface-300">
-          Get updates and a promo code
+          <span v-if="optinOffer">Get updates and {{ optinOffer }}</span>
+          <span v-else>Get updates from the shop</span>
         </p>
         <EmailOptinForm />
       </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CartPreview, OrderConflictData, OrderResponse } from '~/types'
+import type { CartPreview, OrderConflictData, OrderPromoErrorData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 const cart = useCartStore()
@@ -7,16 +7,58 @@ const cart = useCartStore()
 // accept text the order endpoint would reject.
 const NOTES_MAX = 500
 
-const form = reactive({ name: '', email: '', phone: '', notes: '' })
+const form = reactive({ name: '', email: '', phone: '', notes: '', promoCode: '', subscribe: false })
 const submitting = ref(false)
 const errorMessage = ref('')
 
+// Names the discount on the opt-in label, so it tracks the active code.
+const { optinOffer } = useStoreSettings()
+
+// The code the preview was last priced with. Typing alone changes nothing:
+// the buyer applies a code deliberately, and the total moves only then.
+const appliedCode = ref('')
+const applying = ref(false)
+
 const { data: preview, refresh } = await useFetch<CartPreview>('/api/cart/preview', {
   method: 'POST',
-  body: computed(() => ({ items: cart.items })),
+  body: computed(() => ({
+    items: cart.items,
+    promoCode: appliedCode.value || undefined,
+    email: form.email || undefined
+  })),
   immediate: false,
   watch: false
 })
+
+// What the server said about the applied code. `create_order` checks it again
+// at submit time, so this is what the buyer sees, not what they are charged on.
+const promoStatus = computed(() => preview.value?.promoStatus)
+
+const promoMessage = computed(() => {
+  switch (promoStatus.value) {
+    case 'applied':
+      return { severity: 'success' as const, text: `Code applied. ${salePercent.value}% off.` }
+    case 'unknown':
+      return { severity: 'error' as const, text: "That promo code isn't recognised." }
+    case 'inactive':
+      return { severity: 'error' as const, text: 'That promo code is no longer valid.' }
+    case 'used':
+      return { severity: 'error' as const, text: 'That promo code has already been used.' }
+    default:
+      return null
+  }
+})
+
+/** Re-prices the cart with the typed code. Clearing the field removes it. */
+async function applyPromoCode() {
+  applying.value = true
+  appliedCode.value = form.promoCode.trim()
+  try {
+    await refresh()
+  } finally {
+    applying.value = false
+  }
+}
 
 onMounted(() => {
   if (cart.isEmpty) navigateTo('/cart')
@@ -53,7 +95,19 @@ async function submitOrder() {
 
     const { orderId } = await $fetch<OrderResponse>('/api/orders', {
       method: 'POST',
-      body: { customer: form, items: cart.items }
+      body: {
+        customer: {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          notes: form.notes
+        },
+        items: cart.items,
+        // The code only, never a price: create_order resolves it and decides
+        // between it and the store-wide sale.
+        promoCode: form.promoCode.trim() || undefined,
+        subscribe: form.subscribe
+      }
     })
 
     cart.clear()
@@ -68,6 +122,13 @@ async function submitOrder() {
     if (error?.statusCode === 409) {
       conflictIds.value = conflict?.unavailableProductIds ?? []
       await refresh()
+    }
+
+    // A code refused at submit time: re-price so the summary drops the
+    // discount the buyer was shown, and let the field's own message name it.
+    if ((error?.data?.data as OrderPromoErrorData | undefined)?.promoStatus) {
+      await applyPromoCode()
+      return
     }
 
     errorMessage.value = unavailableLines.value.length
@@ -125,6 +186,46 @@ useSeoMeta({ title: 'Checkout', robots: 'noindex' })
           <p id="notes-count" class="text-right text-xs text-surface-500">
             {{ form.notes.length }} / {{ NOTES_MAX }}
           </p>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="promo">Promo code <span class="text-surface-400">(optional)</span></label>
+          <div class="flex gap-2">
+            <InputText
+              id="promo"
+              v-model="form.promoCode"
+              maxlength="60"
+              autocomplete="off"
+              class="flex-1"
+              aria-describedby="promo-message"
+              @keydown.enter.prevent="applyPromoCode"
+            />
+            <Button
+              type="button"
+              label="Apply"
+              outlined
+              :loading="applying"
+              :disabled="!form.promoCode.trim() && !appliedCode"
+              @click="applyPromoCode"
+            />
+          </div>
+          <Message
+            v-if="promoMessage"
+            id="promo-message"
+            :severity="promoMessage.severity"
+            size="small"
+            variant="simple"
+          >
+            {{ promoMessage.text }}
+          </Message>
+        </div>
+
+        <div class="flex items-start gap-2">
+          <Checkbox v-model="form.subscribe" input-id="checkout-subscribe" binary />
+          <label for="checkout-subscribe" class="text-sm text-surface-600 dark:text-surface-400">
+            <span v-if="optinOffer">Email me updates and {{ optinOffer }}</span>
+            <span v-else>Email me updates from the shop</span>
+          </label>
         </div>
 
         <Button

@@ -1,6 +1,7 @@
 import { orderSchema, mergeItems } from '~~/server/utils/schemas'
 import { sendOrderEmail } from '~~/server/utils/email'
 import { spendConfirmation } from '~~/server/utils/confirmations'
+import { subscribeQuietly } from '~~/server/utils/subscribe'
 
 /**
  * `create_order` raises a bare `unavailable_item`, so the route works out which
@@ -32,7 +33,7 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 400, statusMessage: 'Please check the form and try again.' })
   }
 
-  const { customer, items, confirmation } = parsed.data
+  const { customer, items, confirmation, promoCode, subscribe } = parsed.data
 
   // A submission carrying a confirmation says it came from an assistant draft,
   // so the confirmation has to be one this server issued and has not spent.
@@ -49,9 +50,13 @@ export default defineEventHandler(async event => {
 
   // Prices, totals and stock checks all happen inside create_order, in one
   // transaction, using the catalog as the source of truth.
+  // The raw code the buyer typed goes straight to create_order, which resolves
+  // it, decides between it and the store-wide sale, prices the lines and writes
+  // the redemption, all in the order's own transaction.
   const { data: orderId, error } = await supabase.rpc('create_order', {
     p_customer: customer,
-    p_items: merged
+    p_items: merged,
+    p_promo_code: promoCode || null
   })
 
   if (error) {
@@ -67,6 +72,25 @@ export default defineEventHandler(async event => {
         }
       })
     }
+    // Each promo failure has its own remedy, so the page needs to tell them
+    // apart: a typo is worth retrying, an address that already used the code
+    // is not.
+    const promoFailure = (
+      [
+        ['unknown_promo_code', "That promo code isn't recognised."],
+        ['inactive_promo_code', 'That promo code is no longer valid.'],
+        ['promo_code_used', 'That promo code has already been used.']
+      ] as const
+    ).find(([code]) => error.message.includes(code))
+
+    if (promoFailure) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: promoFailure[1],
+        data: { promoStatus: promoFailure[0] }
+      })
+    }
+
     // create_order re-checks what Zod already checked, so these only fire for
     // callers that bypass this route.
     if (error.message.includes('empty_order') || error.message.includes('invalid_item')) {
@@ -75,6 +99,10 @@ export default defineEventHandler(async event => {
     console.error('[orders] create_order failed:', error)
     throw createError({ statusCode: 502, statusMessage: 'Could not submit the order. Please try again.' })
   }
+
+  // Secondary to the order, so it can never fail one: the row is already
+  // committed and the buyer is owed their confirmation either way.
+  if (subscribe) await subscribeQuietly(customer.email)
 
   // Read back what Postgres actually stored, so the email quotes the priced
   // lines rather than anything the client sent.

@@ -4,6 +4,8 @@ const submitting = ref(false)
 const subscribed = ref(false)
 const errorMessage = ref('')
 
+const { optinOffer } = useStoreSettings()
+
 async function submit() {
   errorMessage.value = ''
   submitting.value = true
@@ -25,7 +27,8 @@ async function submit() {
   <div class="flex flex-col items-center gap-2">
     <p v-if="subscribed" class="text-sm">
       <i class="pi pi-check-circle mr-1 text-green-600" />
-      You're subscribed. Check your inbox for your promo code.
+      <span v-if="optinOffer">You're subscribed. Check your inbox for your promo code.</span>
+      <span v-else>You're subscribed.</span>
     </p>
 
     <form v-else class="flex flex-col items-center gap-2 sm:flex-row" @submit.prevent="submit">

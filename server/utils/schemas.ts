@@ -20,7 +20,21 @@ export const orderSchema = z.object({
   items: cartItemsSchema,
   // Present only on a submission from an assistant draft. The checkout page
   // sends none, and always has.
-  confirmation: z.string().uuid().optional()
+  confirmation: z.string().uuid().optional(),
+  // What the buyer typed into the promo field. Only ever a code: the browser
+  // never sends a percentage or a total, and create_order resolves this again
+  // before it prices anything.
+  promoCode: z.string().trim().max(60).optional(),
+  // Ticked the newsletter box on the checkout form.
+  subscribe: z.boolean().optional().default(false)
+})
+
+/** Body of the checkout's cart preview: the cart, plus what the buyer has
+ *  typed into the promo field and the email it would be redeemed against. */
+export const cartPreviewSchema = z.object({
+  items: cartItemsSchema,
+  promoCode: z.string().trim().max(60).optional(),
+  email: z.string().trim().max(200).optional()
 })
 
 /** Collapse duplicate lines so quantities are summed rather than rejected. */
@@ -35,7 +49,10 @@ export function mergeItems(items: z.infer<typeof cartItemsSchema>) {
 export const contactSchema = z.object({
   name: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(200),
-  message: z.string().trim().min(1).max(4000)
+  message: z.string().trim().min(1).max(4000),
+  // Ticked the newsletter box on the contact form. Off unless the sender
+  // turns it on, and it never changes how the message itself is handled.
+  subscribe: z.boolean().optional().default(false)
 })
 
 export const emailOptinSchema = z.object({

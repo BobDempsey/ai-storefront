@@ -44,13 +44,23 @@ export type CartLine =
 export interface StoreSettings {
   saleActive: boolean
   salePercent: number
+  /**
+   * The active promo code's discount, for copy that offers it. Zero when no
+   * code is active. The code itself is never sent to the browser.
+   */
+  promoPercent: number
 }
+
+/** Why a promo code was or was not applied. Mirrors create_order's errors. */
+export type PromoStatus = 'applied' | 'unknown' | 'inactive' | 'used'
 
 export interface CartPreview {
   lines: CartLine[]
   subtotalCents: number
   /** Ids the browser still holds whose product has left the catalogue. */
   missing: string[]
+  /** Absent unless a code was sent with the request. */
+  promoStatus?: PromoStatus
 }
 
 /**
@@ -65,6 +75,11 @@ export interface OrderResponse {
 /** Body of the 409 returned when an order contains an unavailable product. */
 export interface OrderConflictData {
   unavailableProductIds: string[]
+}
+
+/** Body of the 400 returned when a promo code cannot be used. */
+export interface OrderPromoErrorData {
+  promoStatus: 'unknown_promo_code' | 'inactive_promo_code' | 'promo_code_used'
 }
 
 // --- assistant ------------------------------------------------------------

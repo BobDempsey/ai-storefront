@@ -1,14 +1,20 @@
-import { cartItemsSchema, mergeItems } from '~~/server/utils/schemas'
+import { cartPreviewSchema, mergeItems } from '~~/server/utils/schemas'
+import { checkPromoCode, type PromoStatus } from '~~/server/utils/promo'
 
 /**
  * Resolves cart line IDs to current catalog prices. The browser stores only
  * IDs and quantities, so every displayed price comes from the database.
+ *
+ * A promo code may ride along from the checkout page, in which case the lines
+ * come back priced at the better of the sale and the code. That answer is
+ * advisory: `create_order` resolves the code again when the order is placed,
+ * and its answer is the one that counts.
  */
 export default defineEventHandler(async event => {
-  const parsed = cartItemsSchema.safeParse((await readBody(event))?.items)
+  const parsed = cartPreviewSchema.safeParse(await readBody(event))
   if (!parsed.success) throw createError({ statusCode: 400, statusMessage: 'Invalid cart' })
 
-  const merged = mergeItems(parsed.data)
+  const merged = mergeItems(parsed.data.items)
   const [{ data, error }, sale] = await Promise.all([
     useSupabase()
       .from('products')
@@ -27,10 +33,18 @@ export default defineEventHandler(async event => {
     })
   }
 
+  // Only looked up when the buyer typed something, so the cart page and the
+  // assistant, which send no code, do exactly what they did before.
+  const promo = parsed.data.promoCode
+    ? await checkPromoCode(parsed.data.promoCode, parsed.data.email ?? '')
+    : null
+
   const lines = merged
     .map(item => {
       const product = data?.find(p => p.id === item.product_id)
-      return product ? { ...withSalePricing(product, sale), quantity: item.quantity } : null
+      return product
+        ? { ...withSalePricing(product, sale, promo?.percent ?? 0), quantity: item.quantity }
+        : null
     })
     .filter((line): line is NonNullable<typeof line> => line !== null)
 
@@ -40,6 +54,8 @@ export default defineEventHandler(async event => {
       .filter(l => l.in_stock)
       .reduce((sum, l) => sum + l.price_cents * l.quantity, 0),
     // IDs the browser still holds that no longer exist in the catalog.
-    missing: merged.filter(i => !data?.some(p => p.id === i.product_id)).map(i => i.product_id)
+    missing: merged.filter(i => !data?.some(p => p.id === i.product_id)).map(i => i.product_id),
+    // Absent unless a code was sent, so nothing that ignores it sees a change.
+    promoStatus: (promo?.status ?? undefined) as PromoStatus | undefined
   }
 })

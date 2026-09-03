@@ -1,5 +1,6 @@
 import { contactSchema } from '~~/server/utils/schemas'
 import { sendContactEmail } from '~~/server/utils/email'
+import { subscribeQuietly } from '~~/server/utils/subscribe'
 
 export default defineEventHandler(async event => {
   // A bucket of its own: contact spam from one origin must not spend the
@@ -27,6 +28,10 @@ export default defineEventHandler(async event => {
       statusMessage: 'Your message could not be sent. Please try again in a moment.'
     })
   }
+
+  // Only after the message is away, and never allowed to fail it: the sender
+  // came here to reach staff, not to join a mailing list.
+  if (parsed.data.subscribe) await subscribeQuietly(parsed.data.email)
 
   return { sent: true }
 })

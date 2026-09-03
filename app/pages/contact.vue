@@ -1,5 +1,8 @@
 <script setup lang="ts">
-const form = reactive({ name: '', email: '', message: '' })
+const form = reactive({ name: '', email: '', message: '', subscribe: false })
+
+// Names the discount on the opt-in label, so it tracks the active code.
+const { optinOffer } = useStoreSettings()
 const submitting = ref(false)
 const sent = ref(false)
 const errorMessage = ref('')
@@ -59,6 +62,14 @@ useSeoMeta({
       <div class="flex flex-col gap-2">
         <label for="message">Message</label>
         <Textarea id="message" v-model="form.message" required maxlength="4000" rows="6" auto-resize />
+      </div>
+
+      <div class="flex items-start gap-2">
+        <Checkbox v-model="form.subscribe" input-id="contact-subscribe" binary />
+        <label for="contact-subscribe" class="text-sm text-surface-600 dark:text-surface-400">
+          <span v-if="optinOffer">Email me updates and {{ optinOffer }}</span>
+          <span v-else>Email me updates from the shop</span>
+        </label>
       </div>
 
       <Button type="submit" label="Send message" :loading="submitting" class="self-start" />
