@@ -20,7 +20,10 @@ and verified at the database and the API, with three browser-only checks still
 open (section 10). A
 further pass the same day corrected three more: which routes trust
 `X-Forwarded-For` in section 9, the assistant's rate-limit bucket in section 10,
-and the product count on the homepage in section 7.
+and the product count on the homepage in section 7. A sync later the same day
+found the promo-codes change had been committed as `fcb1216` after this
+document was last written; section 2 corrected from "Uncommitted" to that
+commit hash.
 
 ---
 
@@ -190,7 +193,8 @@ Two changes are in flight, each with its own artifacts complete and
   end (section 1, section 10), committed as `de3f67d`, not yet archived.
 - `openspec/changes/add-promo-codes/` — 36 of 39 tasks done. The three left are
   browser checks the headless browser on this machine could not run; see the
-  gotcha in section 8 and the open items in section 10. Uncommitted.
+  gotcha in section 8 and the open items in section 10. Committed as `fcb1216`,
+  not yet archived.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
