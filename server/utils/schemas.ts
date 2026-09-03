@@ -38,6 +38,10 @@ export const contactSchema = z.object({
   message: z.string().trim().min(1).max(4000)
 })
 
+export const emailOptinSchema = z.object({
+  email: z.string().trim().email().max(200)
+})
+
 // --- assistant ------------------------------------------------------------
 
 /** One turn of a conversation. The browser holds the history and sends it back. */

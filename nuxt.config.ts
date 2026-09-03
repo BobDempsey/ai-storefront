@@ -61,6 +61,7 @@ export default defineNuxtConfig({
     openaiApiKey: '',
     orderFromEmail: 'onboarding@resend.dev',
     orderAdminEmail: '',
+    newsletterPromoCode: '',
     public: {
       storeName: 'Store'
     }

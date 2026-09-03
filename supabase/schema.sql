@@ -71,10 +71,21 @@ alter table public.order_items add column if not exists file_name_snapshot text;
 
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
 
+-- Newsletter opt-in ---------------------------------------------------------
+-- One row per subscribed address. The unique constraint holds even across a
+-- race between two concurrent submissions of the same address, which a
+-- check-then-insert in application code alone would not.
+create table if not exists public.email_subscribers (
+  id         uuid primary key default gen_random_uuid(),
+  email      text not null unique,
+  created_at timestamptz not null default now()
+);
+
 -- Row Level Security ------------------------------------------------------
-alter table public.products    enable row level security;
-alter table public.orders      enable row level security;
-alter table public.order_items enable row level security;
+alter table public.products         enable row level security;
+alter table public.orders           enable row level security;
+alter table public.order_items      enable row level security;
+alter table public.email_subscribers enable row level security;
 
 -- Catalog is world-readable; everything else is unreachable from the browser.
 -- The service role key used by the Nitro server bypasses RLS.

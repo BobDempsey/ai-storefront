@@ -90,7 +90,13 @@ const themeIcon = computed(() => {
     </ClientOnly>
 
     <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500 dark:border-surface-800 dark:text-surface-400">
-      Orders are confirmed by email. Payment is arranged separately.
+      <p class="mb-4">Orders are confirmed by email. Payment is arranged separately.</p>
+      <div class="mx-auto max-w-xs">
+        <p class="mb-2 font-medium text-surface-700 dark:text-surface-300">
+          Get updates and a promo code
+        </p>
+        <EmailOptinForm />
+      </div>
     </footer>
   </div>
 </template>
