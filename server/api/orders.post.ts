@@ -110,7 +110,11 @@ export default defineEventHandler(async event => {
     { data: order, error: orderError },
     { data: orderItems, error: itemsError }
   ] = await Promise.all([
-    supabase.from('orders').select('total_cents').eq('id', orderId).single(),
+    supabase
+      .from('orders')
+      .select('total_cents, discount_source, discount_percent, promo_code_snapshot, subtotal_cents')
+      .eq('id', orderId)
+      .single(),
     supabase
       .from('order_items')
       .select('name_snapshot, file_name_snapshot, unit_price_cents, quantity')
@@ -124,6 +128,19 @@ export default defineEventHandler(async event => {
     console.error(`[orders] could not re-read ${orderId}:`, orderError ?? itemsError)
   }
 
+  // Only when the re-read succeeded and the order actually recorded a
+  // discount: a legacy order and a catalogue-price order both carry a null
+  // discount_source, and the email must not invent one for either.
+  const discount =
+    order && !incomplete && order.discount_source
+      ? {
+          source: order.discount_source as 'sale' | 'code',
+          percent: Number(order.discount_percent),
+          code: order.promo_code_snapshot,
+          subtotalCents: order.subtotal_cents ?? order.total_cents
+        }
+      : undefined
+
   // The order row is committed and is the real record, so nothing about the
   // notification is allowed to fail the request. `send` returns errors for a
   // rejected send, but still throws on network failures or a bad API key.
@@ -133,7 +150,8 @@ export default defineEventHandler(async event => {
       customer,
       items: orderItems ?? [],
       totalCents: order?.total_cents ?? 0,
-      incomplete
+      incomplete,
+      discount
     })
   } catch (err) {
     console.error(`[orders] email threw for ${orderId}:`, err)

@@ -174,6 +174,33 @@ where not exists (
   select 1 from public.promo_codes where upper(btrim(code)) = 'WELCOME25'
 );
 
+-- Discount attribution -----------------------------------------------------
+-- What priced an order, written once by create_order and never touched again.
+-- Nullable with no default: every order written before this existed keeps null
+-- across all four, which reads as "not recorded" rather than a genuine zero
+-- discount. A later edit to store_settings or promo_codes cannot rewrite what
+-- an already-committed order says it charged.
+alter table public.orders add column if not exists discount_source     text;
+alter table public.orders add column if not exists discount_percent    numeric;
+alter table public.orders add column if not exists promo_code_snapshot text;
+alter table public.orders add column if not exists subtotal_cents      integer;
+
+-- Three shapes only: the legacy all-null row, a recorded zero discount, or a
+-- recorded positive discount with a code present only for the 'code' source.
+-- The all-null shape has to be accepted or this constraint fails on every
+-- existing order the moment it is added.
+alter table public.orders drop constraint if exists orders_discount_shape_check;
+alter table public.orders add  constraint orders_discount_shape_check
+  check (
+    (discount_source is null and discount_percent is null and promo_code_snapshot is null and subtotal_cents is null)
+    or
+    (discount_source is null and discount_percent = 0 and promo_code_snapshot is null and subtotal_cents is not null)
+    or
+    (discount_source = 'sale' and discount_percent > 0 and promo_code_snapshot is null and subtotal_cents is not null)
+    or
+    (discount_source = 'code' and discount_percent > 0 and promo_code_snapshot is not null and subtotal_cents is not null)
+  );
+
 -- The two-argument version is dropped rather than replaced. `create or replace`
 -- matches on signature, so adding p_promo_code would leave both callable, and
 -- the older one would silently ignore promo codes while keeping its own grants.
@@ -204,6 +231,8 @@ declare
   v_promo_percent numeric := 0;
   v_promo_active  boolean;
   v_percent       numeric;
+  v_source        text;
+  v_subtotal      integer;
 begin
   -- An order with no lines is never valid, and the row-count guard below cannot
   -- catch it (0 matched = 0 wanted), so reject it up front.
@@ -280,6 +309,15 @@ begin
     case when v_promo_id is not null then coalesce(v_promo_percent, 0) else 0 end
   );
 
+  -- Which offer actually priced the order, for the record on the order row.
+  -- A tie goes to the code, so promo_redemptions and this record agree about
+  -- what happened on this order.
+  v_source := case
+    when v_percent = 0 then null
+    when v_promo_id is not null and coalesce(v_promo_percent, 0) >= v_percent then 'code'
+    else 'sale'
+  end;
+
   insert into orders (customer_name, customer_email, customer_phone, notes)
   values (
     p_customer->>'name',
@@ -321,11 +359,24 @@ begin
     values (v_promo_id, v_email, v_order_id);
   end if;
 
+  -- What the order would have totalled at catalogue prices, computed from the
+  -- same rows the discounted total is computed from, so the two can never
+  -- disagree about which lines they cover.
+  select coalesce(sum(p.price_cents * oi.quantity), 0)
+    into v_subtotal
+  from order_items oi
+  join products p on p.id = oi.product_id
+  where oi.order_id = v_order_id;
+
   update orders
-  set total_cents = (
-    select coalesce(sum(unit_price_cents * quantity), 0)
-    from order_items where order_id = v_order_id
-  )
+  set total_cents         = (
+        select coalesce(sum(unit_price_cents * quantity), 0)
+        from order_items where order_id = v_order_id
+      ),
+      discount_source     = v_source,
+      discount_percent    = v_percent,
+      promo_code_snapshot = case when v_source = 'code' then v_code else null end,
+      subtotal_cents      = v_subtotal
   where id = v_order_id;
 
   return v_order_id;

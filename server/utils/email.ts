@@ -13,6 +13,19 @@ export interface OrderEmailPayload {
   totalCents: number
   /** Set when the order could not be re-read, so the figures below are unreliable. */
   incomplete?: boolean
+  /**
+   * What priced this order, as recorded on the order row at the time it was
+   * placed. Omitted entirely when the order carries no recorded discount (a
+   * catalogue-price order, or one written before this was tracked) rather than
+   * passed as a zero, so renderHtml has one condition to test.
+   */
+  discount?: {
+    source: 'sale' | 'code'
+    percent: number
+    /** Set only when source is 'code'. */
+    code?: string | null
+    subtotalCents: number
+  }
 }
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
@@ -68,6 +81,22 @@ function renderHtml(order: OrderEmailPayload) {
       </thead>
       <tbody>${rows}</tbody>
       <tfoot>
+        ${
+          order.discount
+            ? `<tr>
+          <td colspan="2" style="padding:6px 12px;text-align:right">Subtotal</td>
+          <td style="padding:6px 12px;text-align:right">${money(order.discount.subtotalCents)}</td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding:6px 12px;text-align:right">${
+            order.discount.source === 'code'
+              ? `Promo code ${esc(order.discount.code ?? '')} (${order.discount.percent}% off, applied to this order)`
+              : `Store sale (${order.discount.percent}% off, applied to this order)`
+          }</td>
+          <td style="padding:6px 12px;text-align:right">&minus;${money(order.discount.subtotalCents - order.totalCents)}</td>
+        </tr>`
+            : ''
+        }
         <tr>
           <td colspan="2" style="padding:8px 12px;text-align:right"><strong>Total</strong></td>
           <td style="padding:8px 12px;text-align:right"><strong>${money(order.totalCents)}</strong></td>
