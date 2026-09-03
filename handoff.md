@@ -10,7 +10,17 @@ again the same day for a second, separate in-flight change that adds a
 store-wide sale, also now migrated live and verified end to end. Checked against
 the code once more on 2026-09-03: every claim below still holds, and the sale
 change's last open task (writing this document) is now ticked, so its 20/20
-count is real rather than aspirational.
+count is real rather than aspirational. Reviewed against the code again later on
+2026-09-03, after both changes were committed and the working tree went clean;
+four stale claims found by that pass are corrected below (commit state in
+sections 2 and 10, where `SalePrice` is used in section 4, the promo-code line
+in section 6, and Supabase MCP in non-interactive sessions in section 7).
+Revised again on 2026-09-03 for customer promo codes, which are migrated live
+and verified at the database and the API, with three browser-only checks still
+open (section 10). A
+further pass the same day corrected three more: which routes trust
+`X-Forwarded-For` in section 9, the assistant's rate-limit bucket in section 10,
+and the product count on the homepage in section 7.
 
 ---
 
@@ -58,7 +68,8 @@ address.
 /api/email-optin` validates it, upserts it into a new `email_subscribers`
 table with `ON CONFLICT DO NOTHING` so a duplicate address gets the same
 response as a new one, and sends a welcome email carrying a single static
-promo code (`NUXT_NEWSLETTER_PROMO_CODE`, same code for every subscriber).
+promo code (one code for every subscriber, read from the `promo_codes` table
+since 2026-09-03; it was `NUXT_NEWSLETTER_PROMO_CODE` when this was built).
 The `email_subscribers` migration was applied to the live Supabase project on
 2026-09-03 (RLS on, zero policies, matching task 1.1's intent). Verified the
 same day against a running `npm run dev`: a new address inserts one row and
@@ -94,9 +105,37 @@ cart, checkout) shows the struck-through price and "20% off" tag correctly in
 both light and dark mode; an order placed through the real checkout form
 while the sale was active recorded `totalCents: 1920` and the staff email
 matched it; a second order placed after turning the sale back off recorded
-`totalCents: 2400`. The sale was left off and the three test orders placed
-during this were deleted afterward. The change's `tasks.md` is now 20/20
+`totalCents: 2400`. The sale was left off at the end of that work and the three
+test orders placed during it were deleted. **It is on again now:** the user
+turned it on later the same day, first at 5% and then at 20%, so the live
+storefront is currently showing 20% off every item. Turn it off in the
+`store_settings` row when that is no longer wanted. The change's `tasks.md` is now 20/20
 checked.
+
+**Customer promo codes are built, migrated and verified at the API.** A code is
+a row in `promo_codes` (code, percent, active); staff add and deactivate them in
+the Supabase dashboard, the same way they flip the sale. A buyer types one into
+the promo field at checkout, `create_order` resolves it and prices every line at
+the better of the code and the store-wide sale, never both, then writes a
+`promo_redemptions` row in the order's own transaction. A unique index on
+`(promo_code_id, lower(btrim(email)))` is what stops a second redemption, so two
+simultaneous orders with the same code and address cannot both commit. The
+contact and checkout forms each carry an opt-in checkbox that reuses the email
+already typed, and the opt-in copy names the active code's percentage rather
+than a number written into the page.
+
+Verified 2026-09-03 against the live database: fourteen `create_order` checks
+covering no code, a valid code, an unknown code, an inactive code, a
+second use by the same address (varying case and spaces), sale-beats-code,
+code-beats-sale and a code alongside an out-of-stock item, each confirming both
+the total and that a refused call leaves no order and no redemption behind. Then
+at the API: `/api/cart/preview` reports 1800 for a 2400 item with `WELCOME25`
+while the 20% sale is on (25% wins, not 40%), `/api/orders` records `1800` and
+returns a distinguishable 400 for each of the three promo failures, an order
+with the box ticked added the subscriber, and `/api/store-settings` carries the
+percentage with no code string anywhere in it. The assistant declined three
+separate attempts to get, create and apply a code, naming none. Every test row
+was deleted afterwards and the sale left on at 20%.
 
 ---
 
@@ -128,7 +167,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Six changes have been through the full cycle, all in
+Seven changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -139,6 +178,7 @@ Six changes have been through the full cycle, all in
 | `2026-08-31-harden-order-error-paths` | `specs/ordering/failure-reporting/` |
 | `2026-09-02-add-digital-file-products` | `specs/catalog/digital-product/` |
 | `2026-09-02-add-shopping-assistant` | `specs/assistant/shopping-assistant/` |
+| `2026-09-03-add-email-optin` | `specs/newsletter/email-optin/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
@@ -146,10 +186,11 @@ tasks and spec.
 Two changes are in flight, each with its own artifacts complete and
 `openspec validate` passing:
 
-- `openspec/changes/add-email-optin/` — code complete and verified end to end
-  (section 1, section 10), not yet archived.
 - `openspec/changes/add-store-wide-sale/` — code complete and verified end to
-  end (section 1, section 10), not yet archived.
+  end (section 1, section 10), committed as `de3f67d`, not yet archived.
+- `openspec/changes/add-promo-codes/` — 36 of 39 tasks done. The three left are
+  browser checks the headless browser on this machine could not run; see the
+  gotcha in section 8 and the open items in section 10. Uncommitted.
 
 Specs cover theming, contact, the two ordering capabilities above, the
 catalogue's file products and the shopping assistant. Everything else in this document predates OpenSpec
@@ -194,6 +235,22 @@ New work should be.
   which the checkout page posts to without one. It means a future tool that
   submits for the visitor still cannot: the value submission needs is the one
   value the model was never given.
+- **A promo code and a store-wide sale never stack.** `create_order` applies the
+  larger of the two percentages and only that one. Stacking was considered and
+  rejected: it makes the final total depend on a sale percentage staff change
+  casually, and lets the combined discount exceed anything the shop advertised.
+  A code the sale beat is still recorded as redeemed, because the buyer used it.
+- **Promo codes are rows, not an env var.** `NUXT_NEWSLETTER_PROMO_CODE` is
+  gone. A code has to be changeable without a deploy and its redemptions have to
+  be recorded, and an env var can do neither.
+- **A code is redeemed once per email address, and that is the whole identity
+  check.** With no accounts, email is all the shop has. Someone using a second
+  address gets a second discount; the cost is one discount, and closing it would
+  mean building accounts.
+- **The assistant gets no promo tool, ever.** Its permissions are its tool list,
+  so the guarantee that it cannot create, change or apply a code is that no such
+  tool exists and it is never told a code. The system prompt only shapes how it
+  explains the offer and declines.
 - **Files are catalogue rows, not a second table.** A downloadable file is a
   `products` row with `kind = 'digital'`, so `create_order` keeps its single
   join and stays the only place a price comes from.
@@ -226,18 +283,26 @@ server/
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
   utils/email.ts          Resend sends: order notification, contact message,
                           newsletter welcome (sendWelcomeEmail)
-  utils/pricing.ts         salePriceCents()/withSalePricing(), the one rounding
-                          rule shared with create_order's SQL
+  utils/pricing.ts         resolveDiscountPercent() (better of sale and code),
+                          discountedCents(), salePriceCents(), withSalePricing().
+                          The one rounding rule shared with create_order's SQL
   utils/store-settings.ts  getSaleState(), reads the store_settings singleton
-  api/store-settings.get.ts  public sale state: { saleActive, salePercent }
+  utils/promo.ts           checkPromoCode() -> applied/unknown/inactive/used,
+                          getActivePromo(). Reading side only; create_order is
+                          what actually resolves a code on an order
+  utils/subscribe.ts       subscribeEmail() and subscribeQuietly(), shared by the
+                          opt-in form, the contact form and checkout
+  api/store-settings.get.ts  public sale state plus the active code's percent.
+                          Never the code itself
   api/products.get.ts     catalog list, prices discounted when a sale is active
   api/products/[slug].get.ts
-  api/cart/preview.post.ts  resolves cart IDs -> current (sale-aware) prices + subtotal
+  api/cart/preview.post.ts  resolves cart IDs -> current (sale-aware) prices +
+                            subtotal. An optional promoCode prices the lines with
+                            the code too and reports promoStatus; advisory only
   api/orders.post.ts        rate limit -> validate -> create_order -> email
   api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
                             so a failed send is reported to the sender
-  api/email-optin.post.ts   rate limit -> validate -> upsert (ON CONFLICT DO
-                            NOTHING) -> welcome email only on a real insert
+  api/email-optin.post.ts   rate limit -> validate -> subscribeEmail()
   api/chat.get.ts           whether the assistant is configured, no key shipped
   api/chat.post.ts          rate limit -> validate -> gpt-5-mini tool loop
   utils/assistant.ts        the five tools, their handlers and the system prompt;
@@ -255,8 +320,11 @@ app/
   components/AssistantDrawer.vue chat drawer: messages, cart strip, order draft
   components/EmailOptinForm.vue  email field + submit, in the footer
   components/SalePrice.vue       struck-through original + discounted price +
-                                 "N% off" tag; used on the home, product, cart
-                                 and checkout pages, no-ops when no sale is active
+                                 "N% off" tag; used on the home, product and
+                                 cart pages, no-ops when no sale is active.
+                                 Checkout does NOT use it: it reads salePercent
+                                 off the first preview line and renders its own
+                                 "N% off" Tag beside an already-discounted total
   stores/assistant.ts            the conversation; NOT persisted, fresh per load
   stores/cart.ts                 IDs + quantities only, persisted
   stores/color-mode.ts           light/dark/system, owns the .dark class
@@ -288,14 +356,21 @@ Also present, not listed above: README.md, package.json, tsconfig.json
    `unavailable_item` the route re-queries `products` and returns the offending
    ids as `data.unavailableProductIds` on the 409, so the checkout page can name
    them; that lookup is best-effort and returns an empty array if it fails.
-4. `create_order` (SECURITY DEFINER, one transaction) validates the payload,
-   inserts the order, joins `products` to price each line and snapshot its name,
-   then writes the total. **This is the single source of truth for pricing.**
-   It raises three distinct errors, all of which roll the whole call back:
+4. `create_order(jsonb, jsonb, text)` (SECURITY DEFINER, one transaction)
+   validates the payload, resolves the promo code if one was typed, inserts the
+   order, joins `products` to price each line at the better of the sale and the
+   code and snapshot its name, writes the redemption row if a code was used, then
+   writes the total. **This is the single source of truth for pricing.**
+   It raises six distinct errors, all of which roll the whole call back:
    - `empty_order` — `p_items` is null, not an array, or empty.
    - `invalid_item` — any line has a null product id or a quantity below 1.
    - `unavailable_item` — a line's product is missing or out of stock. The guard
      compares matched rows against the count of **distinct** product ids.
+   - `unknown_promo_code`, `inactive_promo_code`, `promo_code_used` — the code
+     does not exist, is switched off, or this address already used it. All three
+     are raised before the order row is written, and `/api/orders` maps each to
+     its own 400 carrying `data.promoStatus`, because the remedy differs: a typo
+     is worth retrying, an address that already used the code is not.
    Duplicate product ids are summed into one line inside the function, so
    `mergeItems()` in `server/utils/schemas.ts` is now belt-and-braces rather
    than the only thing preventing duplicate lines.
@@ -311,8 +386,10 @@ Also present, not listed above: README.md, package.json, tsconfig.json
 
 ## 6. Environment
 
-`.env` holds real Supabase and Resend credentials. `.env.example` still holds
-placeholders for everything, as intended.
+`.env` holds real Supabase and Resend credentials. `.env.example` holds
+placeholders for every secret. One entry there is a real value rather than a
+placeholder, deliberately: `NUXT_ORDER_FROM_EMAIL` is the Resend sandbox sender.
+It is not a credential, so it is safe to commit.
 
 ```
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
@@ -326,8 +403,10 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
-NUXT_NEWSLETTER_PROMO_CODE  SET — `WELCOME10` as of 2026-09-03. Server-only;
-                            the same code is emailed to every opt-in subscriber
+
+`NUXT_NEWSLETTER_PROMO_CODE` is gone as of 2026-09-03. The promo code lives in
+the `promo_codes` table, so staff can change it and its redemptions can be
+recorded. `WELCOME25` at 25% is the seeded, active row.
 
 `NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link was replaced by
 the `/contact` form, which delivers to `NUXT_ORDER_ADMIN_EMAIL`, so no address
@@ -352,16 +431,19 @@ npm run dev                        # http://localhost:3000
 ```
 
 The database is already provisioned and seeded, and `.env` already points at it,
-so this should just work — the homepage shows six demo products. Only if you are
+so this should just work: the homepage shows the catalogue's 9 rows, 6 under a
+Products tab and 3 under Files. Only if you are
 standing up a **fresh** Supabase project do you need to run `supabase/schema.sql`
 then `supabase/seed.sql` in the SQL editor and repoint `.env`.
 
 An agent can now run that SQL itself through the Supabase MCP server configured
 in `.mcp.json`, rather than asking you to paste it. The first use needs a
 browser OAuth flow; that flow was completed on this machine on 2026-09-03, so
-an interactive session here should find `supabase` already connected via
-`/mcp` — a non-interactive session or a different machine still starts
-unauthorised. See the database section of `AGENTS.md` for what it is scoped to
+a session here finds `supabase` already connected. The stored authorisation
+holds for non-interactive sessions too: one on 2026-09-03 ran `execute_sql`
+against the live database with no prompt. A different machine still starts
+unauthorised, and a non-interactive session cannot run the OAuth flow, so it
+has to be done once interactively there. See the database section of `AGENTS.md` for what it is scoped to
 and what to watch for.
 
 Env changes are not hot-reloaded; restart `npm run dev` after editing `.env`. The
@@ -419,6 +501,32 @@ a different staff address will silently fail until a domain is verified.
 - **Windows dev-server lock.** `npm run dev` refuses to start if another Nuxt dev
   process holds the lock; kill it by PID first. Note `taskkill` fails under Git
   Bash (path mangling) — use PowerShell `Stop-Process -Id <pid> -Force`.
+- **`create or replace function` does not replace a function whose signature
+  changed.** Adding `p_promo_code` to `create_order` created a *second*
+  function; both stayed callable, and the two-argument one would have silently
+  ignored promo codes while keeping its own grants. The migration drops
+  `create_order(jsonb, jsonb)` explicitly first, and re-runs both `revoke
+  execute` lines against the new signature, because those do not carry over.
+  Check `pg_proc` for exactly one `create_order` after any future signature
+  change.
+- **The `puppeteer` MCP browser on this machine does not hydrate the app.** On
+  2026-09-03 it served and rendered pages fine (SSR markup, the pre-paint theme
+  script, `window.__NUXT__`) but the client bundle never ran: `header button`
+  came back as 0, clicking "Add to cart" changed nothing, and `captureScreenshot`
+  eventually timed out. Restarting it with different launch options changed
+  nothing. So it is usable for checking server-rendered markup and useless for
+  anything needing a click. Verify interactive behaviour against the API, or by
+  hand in a real browser.
+- **`npm run dev` may attach to a port you did not expect.** A dev server was
+  already holding 3000, so a second `npm run dev` silently took 3001 and its
+  console output went to the new log while every `curl localhost:3000` hit the
+  older process. Check the log line for the port before trusting that the server
+  you are reading logs from is the one answering your requests.
+- **Resend refuses `example.com` addresses outright.** A welcome email to a
+  made-up test address fails with "Invalid to field. Please use our testing
+  email address instead", which is separate from the sandbox-sender limit. So an
+  opt-in test with a fake address returns 502 even though the subscriber row was
+  written. Use the owner's address for anything that has to actually send.
 - **`/mcp` reporting a server connected does not mean its tools are callable
   in the current agent turn.** On 2026-09-03, running `/mcp` mid-session
   reported `supabase` as one of 3 connected servers, but a `ToolSearch` for
@@ -442,17 +550,18 @@ were re-verified against the code on 2026-08-31.
   every interpolated value through `esc()` / `escMultiline()`. Anything new added
   to that template must go through them too — the customer fields come from a
   public, unauthenticated form.
-- **Rate limiting is bypassable.** `server/api/orders.post.ts` and
-  `server/api/contact.post.ts` both call
+- **Rate limiting is bypassable.** All four limited routes call
   `getRequestIP(event, { xForwardedFor: true })`, which trusts a client-supplied
-  `X-Forwarded-For`. A new header value per request defeats both limits —
-  5 orders and 3 contact messages per 10 minutes — which is also the stated
-  reason phase 1 skips a captcha. Once a deploy target is chosen, trust only
-  that platform's forwarded header. Separately, when no IP resolves at all,
-  every caller collapses into one `'unknown'` bucket. The routes use
-  separate buckets (`contact:` and `email-optin:` prefixed), so exhausting one
-  does not block the others. The contact and opt-in routes are the more
-  attractive targets: both send mail with no order behind them.
+  `X-Forwarded-For`: `orders.post.ts` (5 per 10 min), `contact.post.ts` (3 per
+  10 min), `email-optin.post.ts` (5 per 10 min) and `chat.post.ts` (75 per day).
+  A new header value per request defeats every one of them, which is also the
+  stated reason phase 1 skips a captcha. Once a deploy target is chosen, trust
+  only that platform's forwarded header. Separately, when no IP resolves at all,
+  every caller collapses into one `'unknown'` bucket. Each route keys its own
+  bucket (`contact:`, `email-optin:` and `chat:` prefixed; orders uses the bare
+  IP), so exhausting one does not block the others. The contact and opt-in
+  routes are the more attractive targets: both send mail with no order behind
+  them.
 - ~~A thrown email error 500s the customer after the order is committed.~~
   **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
   `server/api/orders.post.ts`, so section 5's promise actually holds: the
@@ -506,8 +615,10 @@ Known gaps, roughly in the order they were prioritized with the user:
   time-limited link. That needs the file in storage and an order status the
   dashboard can set, neither of which exists.
 - **The assistant's daily cap is unproven.** The 25-message cap is verified; the
-  75-requests-a-day limit was left untested rather than spend 75 provider calls,
-  and it rides on the same limiter as the order and contact routes.
+  75-requests-a-day limit was left untested rather than spend 75 provider calls.
+  It uses the same `rate-limit.ts` module as the order and contact routes but
+  its own `chat:` bucket on a 24-hour window, so it neither spends nor is spent
+  by their allowances.
 - **The assistant has no transcript.** Nothing about a conversation is stored,
   so when a visitor says the bot ordered the wrong thing there is nothing to
   read. Deliberate, and the open question recorded in the change's design.
@@ -530,7 +641,7 @@ Known gaps, roughly in the order they were prioritized with the user:
   the user had suggested — they weren't needed for a plain API call) covered
   new address, duplicate address and invalid address; the welcome email
   arriving with `WELCOME10` was confirmed by the user via a Gmail screenshot.
-  Still uncommitted, and still no test framework in this repo (no
+  Committed as `8012c44`. Still no test framework in this repo (no
   `vitest`/`jest`, no test script in `package.json`), so the change's own
   "verify with a unit/integration test" lines were satisfied by this manual
   pass instead, same as the rest of the codebase.
@@ -540,14 +651,27 @@ Known gaps, roughly in the order they were prioritized with the user:
   what was verified, including the sale-percent check-constraint bug the live
   migration caught. That document had briefly claimed "14 of 19" checked when
   the real count was 2 of 20; both the count and the underlying verification
-  gap are closed now. Still uncommitted.
-- **Newsletter opt-in on the contact and order forms.** The user asked
-  (2026-09-03) for the same opt-in offer that's in the footer
-  (`EmailOptinForm.vue`) to also appear when a visitor completes `/contact` or
-  checkout, not just as a standing footer element. Not scoped or built yet —
-  needs its own OpenSpec proposal (a checkbox on each form, wired to the
-  existing `POST /api/email-optin`, presumably reusing the visitor's
-  already-typed email rather than asking for it twice).
+  gap are closed now. Committed as `de3f67d`.
+- ~~Newsletter opt-in on the contact and order forms.~~ **Built, 2026-09-03**,
+  as part of `add-promo-codes`. Both forms carry a checkbox, off by default,
+  reusing the email that form already collects, and a failed subscription is
+  logged rather than allowed to fail the message or the order.
+- **Three promo-code checks are unverified, all of them browser-only.** The
+  `add-promo-codes` tasks left open are 5.5 (the new controls in dark mode),
+  6.1 and 6.2 (placing an order through the checkout form with a code, then
+  being refused on a second attempt). The headless browser here would not
+  hydrate the app, so no click could be driven; see the gotcha in section 8.
+  What that leaves untested is only the client wiring: the Apply button calling
+  `preview` with the code, the promo message rendering the four statuses, and
+  the checkbox reaching the request body. The server side of all three ran
+  through `/api/orders` and `/api/cart/preview` and passed. Someone should open
+  `/checkout` in a real browser and try it, in both colour modes.
+- **No one has read a promo-code welcome email.** The agent has no mailbox
+  access. Two welcome emails were sent to the owner's address on 2026-09-03,
+  one with `WELCOME25` active and one with every code deactivated, and both
+  sends were accepted by Resend. Whether the first reads "Your promo code:
+  WELCOME25 for 25% off your first order" and the second carries no code block
+  at all still needs a look in the inbox.
 
 ---
 
@@ -564,6 +688,12 @@ Known gaps, roughly in the order they were prioritized with the user:
   section 9 were both run that way.
 - When a SQL snippet needs running, they would rather have it **copied to their
   clipboard** than pasted into chat to select by hand.
+- They work in very short turns: `y`, `yn`, `go`, "1 sentence". Answer the
+  question asked at that length, act, and report the outcome in a line. Long
+  status write-ups get cut off rather than read.
+- They will hand over a multi-part feature in one message (the promo-code work
+  arrived as five numbered items plus a restriction) and expect it routed
+  through OpenSpec rather than built directly.
 - The agent has no mailbox access. For an email-delivery check, the user
   confirmed receipt with a screenshot of their inbox (done for the email-optin
   welcome message, 2026-09-03) rather than the agent trying to read it another
