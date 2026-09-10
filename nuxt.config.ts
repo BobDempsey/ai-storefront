@@ -32,6 +32,10 @@ export default defineNuxtConfig({
     }
   },
 
+  routeRules: {
+    '/**': { headers: { 'Cache-Control': 'no-store' } }
+  },
+
   vite: {
     plugins: [tailwindcss()],
     server: {
