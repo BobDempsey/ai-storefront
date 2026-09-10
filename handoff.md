@@ -53,10 +53,9 @@ server and deleting the leftover test order this placed (id
 `6ea89d95-0625-4128-bf22-7b1ac0a57377`, no promo redemption) via
 `execute_sql`, but the session that did this document's own sync still found
 `supabase` unauthorized, matching the gotcha in section 8 that
-authorization is session-specific, not a standing state. **Unverified from
-here: the next session with a working `supabase` MCP connection should query
-`orders`/`order_items` for that id (expect no rows) before trusting this
-paragraph.**
+authorization is session-specific, not a standing state. **Verified
+2026-09-10** over a working `supabase` MCP connection: `orders` and
+`order_items` both return 0 rows for that id, so the deletion did happen.
 
 The same session added a global `Cache-Control: no-store` route rule in
 `nuxt.config.ts` (`10110a3`, verified with `npm run build`), created a public
@@ -66,6 +65,16 @@ A `vercel` MCP server is configured (outside this project's `.mcp.json`, at
 the user's Claude Code level); like `supabase` it needs an interactive OAuth
 authorization this non-interactive session did not have, so Vercel work this
 session went through the dashboard by hand instead.
+
+A later session on 2026-09-10 authorized the `vercel` MCP server, confirmed the
+production deploy of `e0fd7e1` is READY at
+`https://ecommerce-store-kzx5onxny-bobdempseys-projects.vercel.app`, and found
+all seven environment variables already set on Production and Preview, so
+nothing had to be pushed. That session also verified the test-order deletion
+above. It ran `vercel login` and `vercel link`, which left a `.vercel/`
+directory and a generated `.env.local` in the working tree, and added
+`.vercel` and `.env*` to `.gitignore`; that `.gitignore` edit is the only
+uncommitted change.
 
 ---
 
@@ -646,6 +655,13 @@ a different staff address will silently fail until a domain is verified.
   `list_tables`/`apply_migration` call both succeeded — it was session-
   specific, not a standing problem. The email-optin migration (section 1,
   section 10) was applied this way.
+- **The `vercel` MCP server has no tool for environment variables.** It can
+  list projects, deployments and build logs, but reading or setting env vars
+  goes through the `vercel` CLI instead. The CLI is logged in on this machine
+  and the project is linked (`prj_GcjYs1vWVVoE2ePPfh2iyA5gcLRw`, team
+  `bobdempseys-projects`, hobby plan), so `vercel env ls` works directly. Like
+  `supabase`, the MCP server's OAuth is interactive and a non-interactive
+  session cannot run it.
 
 ---
 
@@ -748,8 +764,16 @@ Known gaps, roughly in the order they were prioritized with the user:
   credentials as Vercel environment variables, not new provisioned resources.
   `nuxt.config.ts` still allows `.trycloudflare.com` through Vite so the dev
   server can be shared through a quick tunnel; that setting does nothing in
-  production. Not yet done: the env vars have not been entered into Vercel and
-  no deploy has finished.
+  production. **Deployed and verified 2026-09-10.** Production is READY for
+  `e0fd7e1` at
+  `https://ecommerce-store-kzx5onxny-bobdempseys-projects.vercel.app`
+  (the prior deploy of `10110a3` is READY too; there are no failed builds).
+  All seven env vars were already present on Production and Preview:
+  `NUXT_SUPABASE_URL`, `NUXT_SUPABASE_SERVICE_KEY`, `NUXT_RESEND_API_KEY`,
+  `NUXT_ORDER_FROM_EMAIL`, `NUXT_ORDER_ADMIN_EMAIL`, `NUXT_PUBLIC_STORE_NAME`,
+  `NUXT_OPENAI_API_KEY`. Still open: no custom domain, and
+  `NUXT_PUBLIC_STORE_NAME` is the placeholder in production as well as
+  locally.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
