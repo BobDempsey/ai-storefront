@@ -65,6 +65,9 @@ export default defineNuxtConfig({
     openaiApiKey: '',
     orderFromEmail: 'onboarding@resend.dev',
     orderAdminEmail: '',
+    // Empty by default, which is what makes an unconfigured server unable to
+    // create a test order at all.
+    testOrderToken: '',
     public: {
       storeName: 'Store'
     }

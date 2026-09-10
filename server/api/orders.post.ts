@@ -21,12 +21,29 @@ async function findUnavailableIds(supabase: ReturnType<typeof useSupabase>, ids:
 }
 
 export default defineEventHandler(async event => {
-  rateLimit(
-    getRequestIP(event, { xForwardedFor: true }) ?? 'unknown',
-    5,
-    10 * 60_000,
-    'Too many orders. Please try again later.'
-  )
+  // A test order is declared by a header carrying the server's own token, not
+  // by the build environment, so the branches below are the ones production
+  // runs. `testOrderToken` is empty unless someone set it, and an empty token
+  // matches nothing, so an unconfigured server cannot produce a test order.
+  // A wrong or missing token is not an error: the request simply becomes an
+  // ordinary order, so a real customer can never be refused by this.
+  const { testOrderToken } = useRuntimeConfig()
+  const isTest =
+    Boolean(testOrderToken) && getHeader(event, 'x-test-order-token') === testOrderToken
+
+  // A caller holding the token does not spend the customer allowance. The suite
+  // shares one IP with everything else on the machine, and five orders per ten
+  // minutes is gone after a single run of the database and browser tests. The
+  // limiter still guards every request that does not hold the token, which in
+  // production is all of them.
+  if (!isTest) {
+    rateLimit(
+      getRequestIP(event, { xForwardedFor: true }) ?? 'unknown',
+      5,
+      10 * 60_000,
+      'Too many orders. Please try again later.'
+    )
+  }
 
   const parsed = orderSchema.safeParse(await readBody(event))
   if (!parsed.success) {
@@ -56,7 +73,8 @@ export default defineEventHandler(async event => {
   const { data: orderId, error } = await supabase.rpc('create_order', {
     p_customer: customer,
     p_items: merged,
-    p_promo_code: promoCode || null
+    p_promo_code: promoCode || null,
+    p_is_test: isTest
   })
 
   if (error) {
@@ -144,17 +162,24 @@ export default defineEventHandler(async event => {
   // The order row is committed and is the real record, so nothing about the
   // notification is allowed to fail the request. `send` returns errors for a
   // rejected send, but still throws on network failures or a bad API key.
-  try {
-    await sendOrderEmail({
-      orderId,
-      customer,
-      items: orderItems ?? [],
-      totalCents: order?.total_cents ?? 0,
-      incomplete,
-      discount
-    })
-  } catch (err) {
-    console.error(`[orders] email threw for ${orderId}:`, err)
+  //
+  // A test order is the one case where not sending is correct rather than a
+  // failure: the suite runs against the live project, and staff must not get an
+  // inbox full of orders nobody placed. The order itself is committed and
+  // recorded exactly like any other.
+  if (!isTest) {
+    try {
+      await sendOrderEmail({
+        orderId,
+        customer,
+        items: orderItems ?? [],
+        totalCents: order?.total_cents ?? 0,
+        incomplete,
+        discount
+      })
+    } catch (err) {
+      console.error(`[orders] email threw for ${orderId}:`, err)
+    }
   }
 
   // The order is committed either way, so the id is always returned. The total
