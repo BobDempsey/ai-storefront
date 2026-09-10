@@ -55,6 +55,12 @@ async function applyPromoCode() {
   appliedCode.value = form.promoCode.trim()
   try {
     await refresh()
+    // A rejected code must not sit in the field: leaving it there means
+    // Submit resends the same code and gets the same rejection again.
+    if (promoStatus.value && promoStatus.value !== 'applied') {
+      form.promoCode = ''
+      appliedCode.value = ''
+    }
   } finally {
     applying.value = false
   }
