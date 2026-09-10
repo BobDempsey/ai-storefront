@@ -58,6 +58,15 @@ here: the next session with a working `supabase` MCP connection should query
 `orders`/`order_items` for that id (expect no rows) before trusting this
 paragraph.**
 
+The same session added a global `Cache-Control: no-store` route rule in
+`nuxt.config.ts` (`10110a3`, verified with `npm run build`), created a public
+GitHub repo at `https://github.com/BobDempsey/ecommerce-store` and pushed
+`main` to it, then started a Vercel deploy from that repo (see section 10).
+A `vercel` MCP server is configured (outside this project's `.mcp.json`, at
+the user's Claude Code level); like `supabase` it needs an interactive OAuth
+authorization this non-interactive session did not have, so Vercel work this
+session went through the dashboard by hand instead.
+
 ---
 
 ## 1. What this is
@@ -731,12 +740,25 @@ Known gaps, roughly in the order they were prioritized with the user:
   seconds while the tool loop runs.
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
   change it.
-- **No deploy target chosen.** Vercel or Netlify were floated, nothing decided.
-  `nuxt.config.ts` allows `.trycloudflare.com` through Vite so the dev server can
-  be shared through a quick tunnel. That setting does nothing in production.
-- ~~Not a git repo.~~ **Done.** `main` has history back to the initial commit;
-  `.env` is correctly untracked while `.env.example` is committed. No remote is
-  configured yet, so the history exists only on this machine.
+- ~~No deploy target chosen.~~ **Decided, 2026-09-10: Vercel.** A deploy was
+  started from the Vercel dashboard against the new GitHub repo. Its "Optional
+  Integrations" step offered to provision Resend and Supabase through Vercel's
+  own marketplace; both were declined, since the project already has working
+  accounts for both and should point at them with the existing `.env`
+  credentials as Vercel environment variables, not new provisioned resources.
+  `nuxt.config.ts` still allows `.trycloudflare.com` through Vite so the dev
+  server can be shared through a quick tunnel; that setting does nothing in
+  production. Not yet done: the env vars have not been entered into Vercel and
+  no deploy has finished.
+- ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
+  `main` has history back to the initial commit; `.env` is correctly untracked
+  while `.env.example` is committed. Pushed to
+  `https://github.com/BobDempsey/ecommerce-store` (public, created with `gh
+  repo create --public --source=. --remote=origin --push`) after confirming
+  nothing tracked in the repo carries a real secret: `.env` is untracked,
+  `.env.example` holds only placeholders, and a grep across the tree for
+  Supabase/Resend/OpenAI key prefixes turned up only false positives
+  (`store_settings`, `sync`, `before`, none of them credentials).
 - ~~Email opt-in (`openspec/changes/add-email-optin/`) is implemented,
   uncommitted, and unverified.~~ **Done, 2026-09-03.** All 12 tasks in that
   change's `tasks.md` are checked off. The Supabase MCP server's tools turned
