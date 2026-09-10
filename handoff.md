@@ -39,7 +39,18 @@ unarchived, `add-store-wide-sale` and `add-promo-codes` (section 2), syncing
 their delta specs into a new `catalog/storefront-sale` capability, a new
 `promotions/promo-code` capability, and additions to `assistant/shopping-assistant`,
 `contact/contact-message` and `newsletter/email-optin`. `openspec validate
---specs --strict` passes all 10 capabilities. Uncommitted as of this writing.
+--specs --strict` passes all 10 capabilities. That archive move was committed
+as `d1f36b2`. A sync the same day found and fixed the checkout bug recorded in
+section 9: a rejected promo code stayed in the field and got resent on
+Submit. `applyPromoCode` in `app/pages/checkout.vue` now clears the field (and
+`appliedCode`) whenever the server comes back with anything other than
+`applied`, so a repeat Submit no longer resends the same rejected code.
+Verified against a running `npm run dev` through the `playwright` MCP server:
+applying an unrecognised code clears the field, and Submit then places the
+order at the sale price on the first try. `npm run build` passes. Committed
+as `6c70104`. The test order this placed was not deleted: the Supabase MCP
+server needed an interactive OAuth re-authorization this session did not
+have, so it is still in the live database under `bobdempsey83@gmail.com`.
 
 ---
 
@@ -673,17 +684,11 @@ were re-verified against the code on 2026-08-31.
   `{ orderId }` alone when the re-read failed and `{ orderId, totalCents }` when
   it succeeded, typed as optional in `app/types/index.ts` so a consumer has to
   check. The staff email keeps its `incomplete` banner.
-- **A rejected promo code stays in the field and gets resent.** Found
-  2026-09-03 verifying `add-promo-codes` in a real browser: clicking Apply on
-  an already-used code shows "That promo code has already been used." but
-  leaves the code text in `app/pages/checkout.vue`'s promo input. Clicking
-  Submit right after resends that same code, so `/api/orders` 400s again
-  instead of placing the order at the sale price. Clearing the field by hand
-  first works fine — the underlying reuse block and the sale-price fallback
-  are both correct — but a visitor who doesn't clear it gets stuck on a
-  confusing repeat rejection. The fix is client-side: clear or disable the
-  field on a rejected Apply, or drop the code from the submit payload when
-  its own status says rejected.
+- ~~A rejected promo code stays in the field and gets resent.~~ **Fixed,
+  2026-09-10, committed as `6c70104`.** `applyPromoCode` now clears
+  `form.promoCode` and `appliedCode` whenever the server's status is anything
+  but `applied`, so a rejected code cannot sit in the field for a following
+  Submit to resend. See the top of this document.
 
 ## 10. Not done yet
 
