@@ -48,9 +48,15 @@ Submit. `applyPromoCode` in `app/pages/checkout.vue` now clears the field (and
 Verified against a running `npm run dev` through the `playwright` MCP server:
 applying an unrecognised code clears the field, and Submit then places the
 order at the sale price on the first try. `npm run build` passes. Committed
-as `6c70104`. The test order this placed was not deleted: the Supabase MCP
-server needed an interactive OAuth re-authorization this session did not
-have, so it is still in the live database under `bobdempsey83@gmail.com`.
+as `6c70104`. A different session reported reauthorizing the `supabase` MCP
+server and deleting the leftover test order this placed (id
+`6ea89d95-0625-4128-bf22-7b1ac0a57377`, no promo redemption) via
+`execute_sql`, but the session that did this document's own sync still found
+`supabase` unauthorized, matching the gotcha in section 8 that
+authorization is session-specific, not a standing state. **Unverified from
+here: the next session with a working `supabase` MCP connection should query
+`orders`/`order_items` for that id (expect no rows) before trusting this
+paragraph.**
 
 ---
 
