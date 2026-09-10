@@ -19,10 +19,16 @@ logs
 .idea
 .playwright-mcp
 
-# Local env files
+# Local env files. The negation has to come last, or a later .env* pattern
+# re-ignores the example file it exempts.
 .env
 .env.*
 !.env.example
 
+# vercel link writes these
 .vercel
-.env*
+
+# Playwright writes its traces and reports under node_modules/.cache, which is
+# already ignored above. These two cover a run that overrides outputDir.
+playwright-report
+test-results
