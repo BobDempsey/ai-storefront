@@ -1,6 +1,6 @@
 # Remaining tasks
 
-- [ ] Set the production store name and add a custom domain
+- [ ] Set a real store name and add a custom domain
 - [ ] Trust only the deploy platform's forwarded-IP header
 - [ ] Add a committed test suite
 - [ ] Buy and verify a domain for SPF/DKIM

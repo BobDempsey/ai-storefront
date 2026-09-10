@@ -73,8 +73,10 @@ all seven environment variables already set on Production and Preview, so
 nothing had to be pushed. That session also verified the test-order deletion
 above. It ran `vercel login` and `vercel link`, which left a `.vercel/`
 directory and a generated `.env.local` in the working tree, and added
-`.vercel` and `.env*` to `.gitignore`; that `.gitignore` edit is the only
-uncommitted change.
+`.vercel` and `.env*` to `.gitignore`; that work is committed as `b9d2ffd`.
+The same session then found production serving an error page instead of the
+catalogue, traced it to empty environment variables, had the user re-push all
+seven from `.env`, redeployed, and confirmed the live store works (section 10).
 
 ---
 
@@ -662,6 +664,26 @@ a different staff address will silently fail until a domain is verified.
   `bobdempseys-projects`, hobby plan), so `vercel env ls` works directly. Like
   `supabase`, the MCP server's OAuth is interactive and a non-interactive
   session cannot run it.
+- **An environment variable set to an empty string overrides the
+  `runtimeConfig` default rather than falling back to it.** Seven Vercel
+  variables existed with the right names and empty values, so `supabaseUrl`
+  came through as `''` and every server route answered "Supabase is not
+  configured", which reads exactly like a missing variable. `vercel env ls`
+  hides values, so it cannot tell the two apart. The cheap test is
+  `curl -s <url>/ | grep -o 'storeName[^,}]*'`: the build default is `Store`,
+  so `storeName:""` in the payload proves the environment is reaching the
+  server and is empty, while the default proves it is not reaching it at all.
+- **Adding a Vercel environment variable does not update deployments that
+  already exist.** The first production build ran 13 minutes before the
+  variables were created and never saw them. `vercel redeploy <url>` builds a
+  new deployment against the current variables and re-points the alias.
+- **The Claude Code auto-mode classifier blocks any command that moves secret
+  values**, including `vercel env pull` and a script that pipes `.env` values
+  into `vercel env add`. The working pattern is to write the script to the
+  scratchpad and have the user run it from their own shell. Their terminal is
+  Git Bash, not PowerShell, so hand them
+  `powershell -ExecutionPolicy Bypass -File "<path>"` rather than a bare `&`
+  call, which is a Bash syntax error.
 
 ---
 
@@ -764,16 +786,20 @@ Known gaps, roughly in the order they were prioritized with the user:
   credentials as Vercel environment variables, not new provisioned resources.
   `nuxt.config.ts` still allows `.trycloudflare.com` through Vite so the dev
   server can be shared through a quick tunnel; that setting does nothing in
-  production. **Deployed and verified 2026-09-10.** Production is READY for
-  `e0fd7e1` at
-  `https://ecommerce-store-kzx5onxny-bobdempseys-projects.vercel.app`
-  (the prior deploy of `10110a3` is READY too; there are no failed builds).
-  All seven env vars were already present on Production and Preview:
-  `NUXT_SUPABASE_URL`, `NUXT_SUPABASE_SERVICE_KEY`, `NUXT_RESEND_API_KEY`,
-  `NUXT_ORDER_FROM_EMAIL`, `NUXT_ORDER_ADMIN_EMAIL`, `NUXT_PUBLIC_STORE_NAME`,
-  `NUXT_OPENAI_API_KEY`. Still open: no custom domain, and
-  `NUXT_PUBLIC_STORE_NAME` is the placeholder in production as well as
-  locally.
+  production. **Deployed and working 2026-09-10**, at
+  `https://ecommerce-store-theta-sable.vercel.app` (the production alias; the
+  per-deployment URLs sit behind Vercel's deployment protection and answer a
+  login page to anything that is not a signed-in browser, so verify against
+  the alias). Getting there took two false starts, both recorded in section 8:
+  the first deploy predated the environment variables, and the variables that
+  did exist held empty values. All seven are now set on Production and
+  Preview from the local `.env`: `NUXT_SUPABASE_URL`,
+  `NUXT_SUPABASE_SERVICE_KEY`, `NUXT_RESEND_API_KEY`, `NUXT_ORDER_FROM_EMAIL`,
+  `NUXT_ORDER_ADMIN_EMAIL`, `NUXT_PUBLIC_STORE_NAME`, `NUXT_OPENAI_API_KEY`.
+  `/api/products` and `/api/store-settings` both return 200 on five
+  consecutive calls, and the catalogue renders. Still open: no custom domain,
+  and `NUXT_PUBLIC_STORE_NAME` is the `Store` placeholder in production
+  because that is what `.env` holds.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
