@@ -77,6 +77,12 @@ directory and a generated `.env.local` in the working tree, and added
 The same session then found production serving an error page instead of the
 catalogue, traced it to empty environment variables, had the user re-push all
 seven from `.env`, redeployed, and confirmed the live store works (section 10).
+It then added the first committed test suite, through the OpenSpec change
+`add-test-suite`: 60 unit tests, 17 against the live database, two Playwright
+end-to-end tests and a production smoke check, plus an `is_test` column on
+`orders` so a test run can be told apart from real business and never emails
+staff. Section 10 has how to run each part; section 8 has what bit while
+writing them.
 
 ---
 
@@ -410,7 +416,9 @@ server/
   api/cart/preview.post.ts  resolves cart IDs -> current (sale-aware) prices +
                             subtotal. An optional promoCode prices the lines with
                             the code too and reports promoStatus; advisory only
-  api/orders.post.ts        rate limit -> validate -> create_order -> email
+  api/orders.post.ts        read test token -> rate limit -> validate ->
+                            create_order -> email. A valid x-test-order-token
+                            skips both the limiter and the email
   api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
                             so a failed send is reported to the sender
   api/email-optin.post.ts   rate limit -> validate -> subscribeEmail()
@@ -462,7 +470,8 @@ Also present, not listed above: README.md, package.json, tsconfig.json
 2. `POST /api/cart/preview` resolves those IDs against the catalog and returns
    priced lines, a subtotal, and a `missing[]` of IDs no longer in the catalog
    (the cart page removes those automatically).
-3. `POST /api/orders` rate-limits by IP (5 per 10 min), Zod-validates the body,
+3. `POST /api/orders` rate-limits by IP (5 per 10 min, skipped for a request
+   carrying a valid `x-test-order-token`), Zod-validates the body,
    merges duplicate lines, then calls the `create_order` Postgres RPC. On
    `unavailable_item` the route re-queries `products` and returns the offending
    ids as `data.unavailableProductIds` on the 409, so the checkout page can name
@@ -514,6 +523,10 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
+NUXT_TEST_ORDER_TOKEN       SET locally — a random hex string. SERVER ONLY. Lets a
+                            request mark an order as a test, which skips the staff
+                            email. Deliberately NOT set on Vercel: unset means no
+                            request can mark anything
 
 `NUXT_NEWSLETTER_PROMO_CODE` is gone as of 2026-09-03. The promo code lives in
 the `promo_codes` table, so staff can change it and its redemptions can be
@@ -684,6 +697,30 @@ a different staff address will silently fail until a domain is verified.
   Git Bash, not PowerShell, so hand them
   `powershell -ExecutionPolicy Bypass -File "<path>"` rather than a bare `&`
   call, which is a Bash syntax error.
+- **A Playwright click can land before Vue hydrates, and then does nothing.**
+  Nuxt server-renders the markup, so "Add to cart" is visible and clickable
+  before any listener is attached. Playwright clicks the moment it is visible,
+  the click hits dead markup, no cart cookie is written, and `/checkout`
+  bounces to `/cart`. The symptom is a detached-element timeout on a button
+  three steps later, which points nowhere near the cause. `await
+  page.waitForLoadState('networkidle')` after every `goto` fixes it; see
+  `tests/e2e/checkout.spec.ts`.
+- **Do not set `vite.server.watch.ignored` in `nuxt.config.ts`.** It replaces
+  chokidar's default ignore list rather than adding to it, so `node_modules`
+  and `.nuxt` come back under watch and the dev server reload-storms. Playwright
+  artifacts are kept out of the watcher by writing them under
+  `node_modules/.cache/playwright` instead (`playwright.config.ts`).
+- **`create_order` cannot gain a defaulted parameter without dropping the old
+  signature.** Postgres overloads on signature, so the old and new functions
+  both stay callable and a call with the old argument count becomes ambiguous.
+  `supabase/schema.sql` now drops the two- and three-argument versions before
+  creating the four-argument one.
+- **Postgres integer division will silently truncate a rounding check.**
+  Verifying `discountedCents` against `round(cents * (100 - pct) / 100)` with
+  integer literals gives the wrong answer, because the division happens in
+  integers before `round` sees it. `v_percent` is `numeric` in `create_order`;
+  cast the percentage when checking by hand, or the two look like they
+  disagree when they do not.
 
 ---
 
@@ -749,8 +786,38 @@ Known gaps, roughly in the order they were prioritized with the user:
 
 - ~~The email leg has never run.~~ **Done** — verified 2026-08-31, see section 1.
   Still nothing sends to an arbitrary staff address until a domain is verified.
-- **No tests of any kind.** The `create_order` regression suite was run ad hoc
-  against the live database by an agent and is not committed anywhere.
+- ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
+  four parts, each with its own script, because they need different things to
+  be true before they can pass:
+  - `npm test` — 60 unit tests over `pricing`, `promo`, `rate-limit` and
+    `schemas`. No network, no database, under half a second. Run these on every
+    save. `tests/unit/setup.ts` supplies the Nuxt auto-imports (`createError`,
+    `useSupabase`) that server code expects and Vitest does not provide.
+  - `npm run test:db` — 17 tests that call the real `create_order` and
+    `POST /api/orders` against the **live** Supabase project. Needs
+    `npm run dev` already running.
+  - `npm run test:e2e` — Playwright, cart through placed order, including the
+    rejected-promo-code clear from `6c70104`. Starts a dev server if none is up.
+  - `npm run test:smoke` — checks the deployed site. Fails when the network or
+    the deploy is down, which is why it is not in `npm test`.
+- **Test orders live in the live database.** There is no throwaway project, so
+  the tests write real rows and mark them `is_test`. Anything reading orders as
+  business to fulfil must filter `where not is_test`; the Supabase dashboard's
+  default view will not. Each test deletes its own rows in an `afterEach`, and
+  `sweepStaleTestOrders` clears anything older than an hour that a crashed run
+  left behind. A test order never emails staff.
+- **`POST /api/orders` marks an order as a test only for a request carrying the
+  `x-test-order-token` header matching `NUXT_TEST_ORDER_TOKEN`.** A wrong or
+  missing token yields an ordinary order rather than an error, and an unset
+  token means no request can mark anything, which is the production setting.
+  The gate is a secret rather than the build environment on purpose: gating on
+  "not production" would mean production ran a branch no test ever exercised.
+  A request holding the token also skips the order rate limiter. The suites
+  share one IP with everything else on the machine, and five orders per ten
+  minutes is spent by a single `test:db` plus `test:e2e` run, so without this
+  the second run fails on a 429 that says nothing about the code. Every request
+  without the token is limited exactly as before, which in production is all of
+  them.
 - **No SPF/DKIM**, because no domain. Admin mail will land in junk until the
   domain is bought and verified in Resend.
 - **No customer confirmation email** — only staff are notified.
