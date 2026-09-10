@@ -201,10 +201,30 @@ alter table public.orders add  constraint orders_discount_shape_check
     (discount_source = 'code' and discount_percent > 0 and promo_code_snapshot is not null and subtotal_cents is not null)
   );
 
+-- Test orders ---------------------------------------------------------------
+-- Whether an automated test created this order. Tests run against this same
+-- project rather than a throwaway one, so the marker is what lets a read of
+-- outstanding business exclude them, and what stops a test run emailing staff.
+-- Defaulting to false means a caller that knows nothing about testing cannot
+-- create a test order by accident.
+alter table public.orders add column if not exists is_test boolean not null default false;
+
+comment on column public.orders.is_test is
+  'True when the order was created by an automated test. Real reads of outstanding business filter on "not is_test".';
+
+-- Partial: test rows are the rare ones and the only ones ever looked up by
+-- this column, so indexing the false side would be dead weight.
+create index if not exists orders_is_test_idx on public.orders (is_test) where is_test;
+
 -- The two-argument version is dropped rather than replaced. `create or replace`
 -- matches on signature, so adding p_promo_code would leave both callable, and
 -- the older one would silently ignore promo codes while keeping its own grants.
 drop function if exists public.create_order(jsonb, jsonb);
+
+-- The three-argument version goes for the same reason: a defaulted fourth
+-- parameter does not replace it, it overloads it, and a three-argument call
+-- would then be ambiguous rather than resolving to either one.
+drop function if exists public.create_order(jsonb, jsonb, text);
 
 -- Prices each line at the better of the store-wide sale and the buyer's promo
 -- code, never both. The rounding rule (round half up, on integer cents) matches
@@ -213,7 +233,8 @@ drop function if exists public.create_order(jsonb, jsonb);
 create or replace function public.create_order(
   p_customer   jsonb,
   p_items      jsonb,
-  p_promo_code text default null
+  p_promo_code text default null,
+  p_is_test    boolean default false
 ) returns uuid
 language plpgsql
 security definer
@@ -318,12 +339,15 @@ begin
     else 'sale'
   end;
 
-  insert into orders (customer_name, customer_email, customer_phone, notes)
+  -- Written in the same insert as the rest of the order, so an order either
+  -- records what it is or does not exist.
+  insert into orders (customer_name, customer_email, customer_phone, notes, is_test)
   values (
     p_customer->>'name',
     p_customer->>'email',
     nullif(p_customer->>'phone', ''),
-    nullif(p_customer->>'notes', '')
+    nullif(p_customer->>'notes', ''),
+    coalesce(p_is_test, false)
   )
   returning id into v_order_id;
 
@@ -387,5 +411,5 @@ $$;
 -- Revoking PUBLIC is what actually closes the RPC to the browser; the second
 -- revoke is belt-and-braces in case an explicit grant is ever added. These do
 -- not carry over from the dropped two-argument signature.
-revoke execute on function public.create_order(jsonb, jsonb, text) from public;
-revoke execute on function public.create_order(jsonb, jsonb, text) from anon, authenticated;
+revoke execute on function public.create_order(jsonb, jsonb, text, boolean) from public;
+revoke execute on function public.create_order(jsonb, jsonb, text, boolean) from anon, authenticated;
