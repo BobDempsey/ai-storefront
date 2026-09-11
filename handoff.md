@@ -730,13 +730,21 @@ vitest.db, vitest.llm and vitest.smoke). Section 10 has what each one runs.
 `.env` holds real Supabase and Resend credentials. `.env.example` holds
 placeholders for every secret. One entry there is a real value rather than a
 placeholder, deliberately: `NUXT_ORDER_FROM_EMAIL` is the Resend sandbox sender.
-It is not a credential, so it is safe to commit.
+It is not a credential, so it is safe to commit, and it stays the sandbox
+address in the example even though `.env` has moved off it, because an adopter
+has no verified domain on their first run.
 
 ```
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
 NUXT_SUPABASE_SERVICE_KEY   SET — an sb_secret_... key. SERVER ONLY, never expose
 NUXT_RESEND_API_KEY         SET — a real re_... key, verified sending
-NUXT_ORDER_FROM_EMAIL       onboarding@resend.dev until a domain is verified
+NUXT_ORDER_FROM_EMAIL       orders@bobdempsey83.com as of 2026-09-11, locally
+                            and on both Vercel environments. Nothing receives
+                            there and nothing needs to: the domain is verified
+                            in Resend, which is all sending requires, and a
+                            buyer's Reply goes to the reply-to instead. The
+                            sandbox `onboarding@resend.dev` it replaced is what
+                            had been holding back every delivery
 NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resend
                             account address. The sandbox sender will not deliver
                             anywhere else until a domain is verified
@@ -1231,8 +1239,15 @@ Known gaps, roughly in the order they were prioritized with the user:
   server and by reading the zone back with the AWS CLI. **So this was never
   blocked; the sandbox sender was.** Every note in this document about mail
   being undeliverable traces to `NUXT_ORDER_FROM_EMAIL` still being
-  `onboarding@resend.dev`, not to a missing domain. Pointing it at an address on
-  the verified domain is what closes them, and it is now the only step left.
+  `onboarding@resend.dev`, not to a missing domain. **Pointing it at the verified
+  domain closed them, the same day**: `NUXT_ORDER_FROM_EMAIL` is
+  `orders@bobdempsey83.com` in `.env` and on both Vercel environments, and
+  production was redeployed, since changing a variable does not rebuild what is
+  already running. `test:smoke` passes 4/4 against the domain afterwards.
+  **Unconfirmed**: no mail has gone through the new sender yet, so whether a
+  buyer at an arbitrary address actually receives the confirmation is untested.
+  That needs a real order and someone reading an inbox, and it is the last
+  item in `tasks.md` for this shop.
   **Decided 2026-09-11: the sender is an address on `bobdempsey83.com` with no
   mailbox behind it**, and the user's personal Gmail stays as
   `NUXT_ORDER_ADMIN_EMAIL`. The distinction that settled it: anyone can send
