@@ -84,6 +84,29 @@ end-to-end tests and a production smoke check, plus an `is_test` column on
 staff. Section 10 has how to run each part; section 8 has what bit while
 writing them.
 
+Two further changes followed the same day, both archived. `add-assistant-tests`
+covered the shopping assistant, which the first suite had skipped on the
+grounds that testing it costs a provider call: 35 of the 37 tests turned out to
+cost nothing, because the rules worth protecting live in `runTool` and
+`confirmations.ts` rather than in the model. `trust-configured-client-ip`
+replaced the four copies of `getRequestIP(event, { xForwardedFor: true })` with
+one resolver that believes only the header a deployment names (section 9).
+
+That last one is worth reading before touching anything here that depends on
+the environment. Its first design refused any caller it could not identify, on
+the reasoning that a socket address is always present, and every test passed;
+the dev server then refused every local request, because its socket carries no
+address at all. Vercel had been hiding the original bug for the same class of
+reason. Check what the host actually supplies rather than what the code assumes
+it supplies.
+
+**This repository is a template**, which is how the remaining work was
+prioritised on 2026-09-10: fix what every adopter inherits, and leave what is
+particular to this shop. A customer confirmation email, stock decrementing and
+paid-order file delivery are the first group. A real store name, a domain and
+SPF/DKIM are the second, and belong in the README as setup steps rather than in
+the backlog as repo work.
+
 ---
 
 ## 1. What this is
@@ -860,7 +883,12 @@ Known gaps, roughly in the order they were prioritized with the user:
   them.
 - **No SPF/DKIM**, because no domain. Admin mail will land in junk until the
   domain is bought and verified in Resend.
-- **No customer confirmation email** — only staff are notified.
+- **No customer confirmation email.** Only staff are notified. **Prioritised
+  2026-09-10** as one of the three an adopter of this template inherits.
+  `sendWelcomeEmail` in `server/utils/email.ts` already mails a customer
+  address, so the sending path exists; the sandbox sender still delivers only
+  to the Resend account address until a domain is verified, which caps what can
+  be proven end to end.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
@@ -869,7 +897,12 @@ Known gaps, roughly in the order they were prioritized with the user:
   catalogue rows with `kind = 'digital'`, sold through the same cart and order
   path, and staff email the file by hand after payment. There is still no
   storage bucket and no download route, by decision.
-- **Files are delivered by hand.** The next step here is the one deferred when
+- **Files are delivered by hand.** **Prioritised 2026-09-10.** Note before
+  designing it: `orders.status` exists, defaults to `'new'`, and is read or
+  written by nothing anywhere in the codebase, so the status a dashboard would
+  set is free to define. `AGENTS.md` currently forbids agents from touching
+  Supabase storage, so standing up a bucket needs either a human or a change to
+  that agreement. The next step here is the one deferred when
   files were added: when staff mark an order paid, the app emails the customer a
   time-limited link. That needs the file in storage and an order status the
   dashboard can set, neither of which exists.
@@ -885,7 +918,12 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **The assistant does not stream.** A reply lands whole, after a pause of a few
   seconds while the tool loop runs.
 - **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
-  change it.
+  change it. **Prioritised 2026-09-10.** Note before designing it: `products`
+  has no quantity column at all, and the constraint
+  `products_digital_in_stock_check` forbids a digital row from ever being out of
+  stock, so a count column has to leave files alone. `create_order` checks
+  availability by row count on a `join products p on ... and p.in_stock`, not by
+  reading a number.
 - ~~No deploy target chosen.~~ **Decided, 2026-09-10: Vercel.** A deploy was
   started from the Vercel dashboard against the new GitHub repo. Its "Optional
   Integrations" step offered to provision Resend and Supabase through Vercel's
