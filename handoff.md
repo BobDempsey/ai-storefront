@@ -1040,6 +1040,17 @@ managed by Vercel: the domain answers with `awsdns-*` nameservers, and
 `vercel domains ls` reports zero domains on the account. So the records go in
 Route 53, not in Vercel's own DNS.
 
+**The AWS CLI is installed on this machine but not usable.** `aws --version`
+reports 2.31.10, and `aws sts get-caller-identity` fails with
+`InvalidClientTokenId`, so whatever credentials are configured are stale or
+wrong. Fixing that is worth doing before the DNS work rather than during it:
+with a working CLI an agent can add and verify the Route 53 records itself, and
+read back what actually resolved. Without it, every record is a value handed to
+the user to paste into the console, and a typo only surfaces later as a
+certificate that never issues. `aws configure` or an SSO login, whichever this
+account uses, and the profile needs `route53:ChangeResourceRecordSets` and
+`route53:ListResourceRecordSets` on the `bobdempsey83.com` hosted zone.
+
 The rename to `ai-storefront` is **partly done as of 2026-09-11**. `package.json`
 and the README title carry the new name, and the GitHub repo is now
 `BobDempsey/ai-storefront` with the git remote updated; Vercel's GitHub

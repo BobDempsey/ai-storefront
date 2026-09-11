@@ -2,6 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
+- [ ] Re-authorize the AWS CLI (installed, but its credentials are rejected)
 - [x] Rename the project in package.json and the README
 - [x] Rename the GitHub repo and update the git remote URL
 - [x] Rename the Vercel project (project ID unchanged, so no re-link needed)
