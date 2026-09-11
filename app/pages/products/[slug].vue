@@ -11,10 +11,31 @@ if (!product.value) {
   throw createError({ statusCode: 404, statusMessage: 'Product not found', fatal: true })
 }
 
+// `image_url` is a site-relative path, which no Open Graph consumer will
+// resolve, so it is made absolute against siteUrl. Without siteUrl the layout's
+// default share image stands rather than a broken product one.
+const { siteUrl } = useRuntimeConfig().public
+
 useSeoMeta({
   title: () => product.value?.name,
   description: () => product.value?.description ?? '',
-  ogImage: () => product.value?.image_url ?? ''
+  ogTitle: () => product.value?.name,
+  ogDescription: () => product.value?.description ?? '',
+  ogType: 'website',
+  ogImage: () => {
+    const path = product.value?.image_url
+    if (!siteUrl || !path) return undefined
+    return path.startsWith('http') ? path : `${siteUrl}${path}`
+  },
+  ogImageAlt: () => product.value?.name,
+  // The layout declares 1200x630 for the share image. Catalogue photos are
+  // square, and a consumer that believes the inherited numbers reserves a
+  // letterbox and crops the picture into it, so restate the real size here.
+  ogImageWidth: 800,
+  ogImageHeight: 800,
+  // Square is not a large-image card. Saying so gets the photo shown whole
+  // rather than cropped to a 1.91:1 strip.
+  twitterCard: 'summary'
 })
 
 const isFile = computed(() => product.value?.kind === 'digital')

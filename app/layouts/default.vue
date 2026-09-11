@@ -2,7 +2,7 @@
 const cart = useCartStore()
 const colorMode = useColorModeStore()
 const assistant = useAssistantStore()
-const { storeName } = useRuntimeConfig().public
+const { storeName, siteUrl } = useRuntimeConfig().public
 
 // Names the discount in the footer's opt-in invitation, so the copy tracks the
 // active code rather than a number written into the page.
@@ -10,6 +10,32 @@ const { optinOffer } = useStoreSettings()
 
 // Client-only; starts the watcher that owns the `.dark` class on <html>.
 colorMode.init()
+
+// The tab title. It lives here rather than in `nuxt.config.ts` because
+// `storeName` is a runtime value: a titleTemplate in the config would bake in
+// whatever NUXT_PUBLIC_STORE_NAME held at build time, so the second shop would
+// ship the first shop's name. A page that sets no title of its own gets the
+// store name alone.
+useHead({
+  titleTemplate: title => (title ? `${title} · ${storeName}` : storeName)
+})
+
+// Defaults for every page's link preview. A page that sets its own title or
+// description through useSeoMeta wins, because its call runs after this one;
+// the product page overrides the image too. Omitting ogImage when siteUrl is
+// unset is deliberate: a relative path is silently dropped by every consumer,
+// which looks like working tags that never show a picture.
+useSeoMeta({
+  ogSiteName: storeName,
+  ogType: 'website',
+  ogTitle: () => `${storeName} — handmade 3D prints and printable files`,
+  ogDescription: 'Browse the catalogue and submit an order request.',
+  ogImage: siteUrl ? `${siteUrl}/og-image.png` : undefined,
+  ogImageWidth: siteUrl ? 1200 : undefined,
+  ogImageHeight: siteUrl ? 630 : undefined,
+  ogImageAlt: siteUrl ? `${storeName}` : undefined,
+  twitterCard: 'summary_large_image'
+})
 
 // Two icons, never three: the control switches between light and dark, so it
 // shows the scheme on screen rather than the stored mode. A visitor still on

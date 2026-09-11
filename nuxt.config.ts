@@ -74,7 +74,12 @@ export default defineNuxtConfig({
     // own proxy's header, or empty to use the connection address alone.
     trustedIpHeader: 'x-vercel-forwarded-for',
     public: {
-      storeName: 'Store'
+      storeName: 'Store',
+      // Absolute origin, no trailing slash. Open Graph consumers refuse a
+      // relative image path, so the share tags have to build a full URL and
+      // nothing in a request tells a prerendered page what its own origin is.
+      // Empty means the share image is omitted rather than emitted broken.
+      siteUrl: ''
     }
   }
 })
