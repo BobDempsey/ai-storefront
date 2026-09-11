@@ -1,7 +1,8 @@
-# Ecommerce Store Template
+# AI Storefront
 
-Nuxt 4 storefront with a request-an-order checkout: customers build a cart and
-submit it, staff receive the order by email and arrange payment off-app.
+A Nuxt 4 storefront template with a shopping assistant, and a request-an-order
+checkout: customers build a cart and submit it, staff receive the order by email
+and arrange payment off-app.
 
 ## Stack
 

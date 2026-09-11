@@ -13,6 +13,7 @@
 - [ ] Redeploy, since adding an env var does not rebuild an existing deployment
 - [ ] Update the smoke test URL, the README and handoff.md for the new domain
 - [ ] Place a test order and confirm the buyer email reaches a non-account address
+- [ ] Add Open Graph tags and a share image, so a texted link previews properly
 
 ## Next: fif.bobdempsey83.com from the same repo
 
