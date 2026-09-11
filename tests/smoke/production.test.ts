@@ -9,13 +9,15 @@ import { describe, expect, it } from 'vitest'
  * the runtimeConfig defaults rather than falling back to them. Nothing in the
  * repository was wrong, so nothing in the repository could have caught it.
  *
- * The target is the production alias. The per-deployment URLs sit behind
- * Vercel's deployment protection and answer a login page to anything that is
- * not a signed-in browser, so pointing this at one would assert on that login
- * page and pass while the store was down.
+ * The target is the custom domain, which is what a customer actually types.
+ * Do not point it at a per-deployment URL: those sit behind Vercel's
+ * deployment protection and answer a login page to anything that is not a
+ * signed-in browser, so the test would assert on that login page and pass
+ * while the store was down. `SMOKE_BASE_URL` overrides it, which is how the
+ * second shop gets checked by the same suite.
  */
 
-const BASE = process.env.SMOKE_BASE_URL ?? 'https://ecommerce-store-theta-sable.vercel.app'
+const BASE = process.env.SMOKE_BASE_URL ?? 'https://ai-storefront.bobdempsey83.com'
 
 const get = (path: string) => fetch(`${BASE}${path}`, { headers: { accept: 'application/json' } })
 

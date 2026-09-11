@@ -58,6 +58,8 @@ and arrange payment off-app.
    ```
 
    The conventions behind that split are in [AGENTS.md](AGENTS.md).
+   `test:smoke` defaults to this template's own demo at
+   `ai-storefront.bobdempsey83.com`; set `SMOKE_BASE_URL` to check yours.
 
 ## Before you take it live
 
@@ -92,6 +94,12 @@ they never heard back. Add the records, then send yourself a test order.
 **Point `NUXT_TRUSTED_IP_HEADER` at your host.** Covered in step 3 above. It
 defaults to Vercel's header; if you deploy elsewhere and leave it, every visitor
 shares one rate-limit bucket.
+
+**Point the smoke test at your own domain.** `SMOKE_BASE_URL` overrides the
+default in `tests/smoke/production.test.ts`. Give it the custom domain rather
+than a per-deployment URL: those sit behind Vercel's deployment protection and
+answer a login page, which the test would happily assert on while your store
+was down.
 
 ### Deploying to Vercel
 
