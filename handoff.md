@@ -233,7 +233,12 @@ so the second shop would ship the first shop's name in every tab. Open Graph
 tags and a generated share image followed, with the new
 `NUXT_PUBLIC_SITE_URL` behind them (sections 6 and 10). `npm test` is green at
 173, `npm run build` passes, and `npm run test:smoke` passes against the
-domain.
+domain. `NUXT_PUBLIC_STORE_NAME` and `NUXT_PUBLIC_SITE_URL` were then set on
+Vercel Production and `main` pushed at `5c761b2`, which Vercel built and
+promoted; verified live at the domain: the tab reads "Shop · AI Storefront",
+all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
+`test:smoke` is 4/4. That push also found **Preview holds no environment
+variables at all**, which section 10 now records.
 
 ---
 
@@ -732,14 +737,13 @@ NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resen
 NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
-NUXT_PUBLIC_STORE_NAME      SET — "AI Storefront" as of 2026-09-11. Still the
-                            `Store` placeholder on Vercel until it is set there
-                            and the deployment is rebuilt
+NUXT_PUBLIC_STORE_NAME      SET — "AI Storefront" as of 2026-09-11, locally and
+                            on Vercel Production. The placeholder is gone
 NUXT_PUBLIC_SITE_URL        SET — https://ai-storefront.bobdempsey83.com, no
-                            trailing slash. The origin the share tags build an
-                            absolute image URL from. Not set on Vercel yet, and
-                            an unset one omits the share image rather than
-                            emitting a relative path every consumer drops
+                            trailing slash, locally and on Vercel Production.
+                            The origin the share tags build an absolute image
+                            URL from; an unset one omits the share image rather
+                            than emitting a relative path every consumer drops
 NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             limiter believes about who is calling. Not a secret.
                             Set it to your host's header if you leave Vercel;
@@ -1299,9 +1303,13 @@ Known gaps, roughly in the order they were prioritized with the user:
   `NUXT_ORDER_ADMIN_EMAIL`, `NUXT_PUBLIC_STORE_NAME`, `NUXT_OPENAI_API_KEY`.
   `/api/products` and `/api/store-settings` both return 200 on five
   consecutive calls, and the catalogue renders. The custom domain landed
-  2026-09-11 (below). Still open: `NUXT_PUBLIC_STORE_NAME` is the `Store`
-  placeholder in production, because that is what Vercel holds; `.env` has said
-  "AI Storefront" since the rename.
+  2026-09-11 (below), and the store name with it.
+- **Preview has no environment variables at all.** Found 2026-09-11: `vercel
+  env ls preview` returns none, so a preview deployment builds unconfigured and
+  serves the error page production served on 2026-09-10. This document said all
+  seven were set on Production and Preview; only Production is true. Nothing
+  currently depends on it, because deploys come from pushes to `main`, which is
+  Production. It bites the first time a branch or a pull request is previewed.
 - ~~No Open Graph tags, so a texted link previews as a bare URL.~~ **Done,
   2026-09-11.** Defaults live in `app/layouts/default.vue` beside the
   `titleTemplate`, and `app/pages/products/[slug].vue` overrides the title,
