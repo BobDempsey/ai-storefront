@@ -793,6 +793,17 @@ a different staff address will silently fail until a domain is verified.
   declares the full page order `@layer theme, base, primevue, components,
   utilities;`, while `cssLayer` in `nuxt.config.ts` declares only PrimeVue's own
   `theme, base, primevue`. This is PrimeVue's documented pairing.
+- **PrimeVue components carry padding the markup does not show.** The catalogue
+  cards were too narrow on a phone because three layers of horizontal padding
+  stacked up: `<main>`'s `px-4` page gutter, the section's `p-6`, and 18px of
+  PrimeVue's own `.p-tabpanels`. That third layer is the one that wastes an
+  afternoon, because reading `index.vue` accounts for only two of them. Measure
+  the chain in the browser rather than adding up the classes. Fixed 2026-09-11
+  by dropping the two inner layers below `sm` (`p-4 sm:p-6` on the section,
+  `!px-0 sm:!px-[18px]` on `TabPanels`), which took a card at 390px from 272px
+  to 324px and left every breakpoint from `sm` up measuring exactly as before.
+  The page gutter stays at 16px on purpose: that one is the margin of the page,
+  not wasted space.
 - **Never hardcode `bg-white` on a surface.** Dark mode is class-driven, and the
   layout sets `dark:text-surface-0` on the body, so a white card renders white
   text on white and the content looks like it is simply missing. Follow the
@@ -1185,6 +1196,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   rate-limit fix, the buyer confirmation, the assistant promo field and both of
   today's UI changes are all live. Note that the deployed rate limiter now
   believes only `NUXT_TRUSTED_IP_HEADER`, which is set to Vercel's own header.
+  A second push the same day (`f023612`) took the phone-width catalogue fix
+  live; verified at 390px against the production alias, a card measures 324px.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
