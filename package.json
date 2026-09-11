@@ -13,6 +13,7 @@
     "test:db": "vitest run --config vitest.db.config.ts",
     "test:smoke": "vitest run --config vitest.smoke.config.ts",
     "test:e2e": "playwright test",
+    "test:e2e:llm": "playwright test --config playwright.llm.config.ts",
     "test:llm": "vitest run --config vitest.llm.config.ts"
   },
   "dependencies": {

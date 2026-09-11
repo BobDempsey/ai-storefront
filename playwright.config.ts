@@ -21,6 +21,10 @@ export default defineConfig({
   // makes them fight over all three.
   workers: 1,
   fullyParallel: false,
+  // The default run costs nothing. assistant-promo.spec.ts needs the assistant
+  // to answer, which is a real provider call, so it is excluded here and run
+  // on its own with `npm run test:e2e:llm` (playwright.llm.config.ts).
+  testIgnore: '**/assistant-promo.spec.ts',
   timeout: 60_000,
   reporter: process.env.CI
     ? 'line'
