@@ -1215,17 +1215,20 @@ Known gaps, roughly in the order they were prioritized with the user:
   the second run fails on a 429 that says nothing about the code. Every request
   without the token is limited exactly as before, which in production is all of
   them.
-- **No SPF/DKIM**, because no domain, and neither is repo work. Admin mail
-  lands in junk and the buyer confirmation reaches no real customer until a
-  domain is bought and verified in Resend. That is a per-deployment setup step
-  the adopter takes, explicitly set aside by the user on 2026-09-10 along with
-  the custom domain and the `Store` placeholder still standing in for
-  `NUXT_PUBLIC_STORE_NAME` in production. The three were meant to land in the
-  README as setup steps instead, and now have: `README.md` gained a "Before you
-  take it live" section on 2026-09-11 covering the store name, the domain and
-  SPF/DKIM, plus the trusted-IP header and the two Vercel traps this project
-  hit. So an adopter is told. **Buying the domain and setting the production
-  store name are still open**, and are the user's to do, not repo work.
+- **No SPF/DKIM**, and it is not repo work. Admin mail lands in junk and the
+  buyer confirmation reaches no real customer until a domain is verified in
+  Resend. It was set aside by the user on 2026-09-10 as a per-deployment setup
+  step, alongside the custom domain and the `Store` placeholder standing in for
+  `NUXT_PUBLIC_STORE_NAME` in production; all three were to land in the README
+  instead, and did, in a "Before you take it live" section added 2026-09-11
+  covering the store name, the domain and SPF/DKIM, plus the trusted-IP header
+  and the two Vercel traps this project hit. **The other two closed the same
+  day**: the domain is live and the production store name is set (both below).
+  This one is what is left, and it is still the user's to do. Note that the
+  domain now exists, so the remaining work is verifying `bobdempsey83.com` (or
+  a subdomain of it) in Resend and adding the records it hands back to the
+  Route 53 zone `Z071721280HQ6W3TJD8O`, which the `route53-dns` credentials can
+  now write directly.
 - ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
   OpenSpec change `add-customer-order-confirmation`. A committed order now
   sends the buyer their own copy as well as notifying staff:
@@ -1244,6 +1247,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   email. **The sandbox sender still delivers only to the Resend account
   address, so a real buyer receives nothing until a domain is verified.** Read
   that silence as the missing domain, not as a bug in this code.
+- **Each product needs more description text than it has.** The seeded
+  descriptions in `supabase/seed.sql` are one line apiece ("Print-in-place PLA,
+  92 links, 11" nose to tail."), which is all the catalogue card and
+  `app/pages/products/[slug].vue` have to show, and it is now also what the
+  share tags put in a link preview.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need

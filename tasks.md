@@ -6,6 +6,7 @@
 - [ ] Verify a domain in Resend and add its SPF/DKIM records
 - [ ] Point NUXT_ORDER_FROM_EMAIL at that domain and redeploy
 - [ ] Place a test order and confirm the buyer email arrives
+- [ ] Write longer product descriptions
 
 ## Next: fif.bobdempsey83.com from the same repo
 
