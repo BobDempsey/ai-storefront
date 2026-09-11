@@ -6,6 +6,43 @@ const assistant = useAssistantStore()
 const cart = useCartStore()
 
 const input = ref('')
+const messageBox = ref<{ $el: HTMLInputElement } | null>(null)
+
+/**
+ * What the panel says while it waits. A reply takes six to eight seconds even
+ * at the reasoning effort the route now asks for (see REASONING_EFFORT in
+ * server/api/chat.post.ts), and nothing streams, so the wait is a blank panel
+ * unless something fills it.
+ *
+ * The wording changes once, three seconds in. A label that never moves stops
+ * being read after the first second and starts looking like a page that has
+ * hung; one that changes says the wait is being counted by something. Three
+ * seconds because that is roughly where a wait stops feeling instant, and
+ * still inside the six it will actually take.
+ */
+const PATIENCE_MS = 3000
+const waitedAWhile = ref(false)
+const waitingLabel = computed(() => (waitedAWhile.value ? 'Almost there' : 'Thinking'))
+
+watch(
+  () => assistant.pending,
+  pending => {
+    // Cleared on both edges, so the next question starts at "Thinking" rather
+    // than inheriting the end of the last one.
+    if (patienceTimer) clearTimeout(patienceTimer)
+    waitedAWhile.value = false
+    if (!pending) return
+    patienceTimer = setTimeout(() => {
+      waitedAWhile.value = true
+    }, PATIENCE_MS)
+  }
+)
+
+let patienceTimer: ReturnType<typeof setTimeout> | undefined
+
+onUnmounted(() => {
+  if (patienceTimer) clearTimeout(patienceTimer)
+})
 const submitting = ref(false)
 const orderId = ref('')
 const draftError = ref('')
@@ -13,6 +50,43 @@ const draftError = ref('')
 // The draft's own details, editable before confirming. Copied out of the draft
 // so an edit is the visitor's, not something the assistant typed.
 const details = reactive({ name: '', email: '', phone: '', notes: '' })
+
+/**
+ * A product page can open the panel with a question about that product already
+ * written. Two things have to be true before it lands: there has to be a
+ * question waiting, and the box has to be empty. A half-typed message is the
+ * visitor's, so it wins.
+ *
+ * A conversation in progress does not block it, though an earlier version of
+ * this guard said it did. Reading one product, asking about it, then moving to
+ * another and asking about that one is the ordinary way to use the button, and
+ * under the old rule the second click opened a panel with an empty box and no
+ * explanation, which reads as broken rather than as careful.
+ *
+ * Taking it on open rather than on close is what stops a visitor who opens from
+ * one product, closes, and reopens from the navbar getting the first product's
+ * question back.
+ *
+ * Nothing is sent. The text sits in the box under the greeting with the cursor
+ * at the end of it, so the next keystroke either edits it or sends it, and the
+ * click costs no provider call.
+ */
+watch(
+  () => assistant.open,
+  async open => {
+    if (!open || !assistant.prefill) return
+    if (input.value) return
+
+    input.value = assistant.prefill
+    assistant.takePrefill()
+
+    await nextTick()
+    const field = messageBox.value?.$el
+    if (!field) return
+    field.focus()
+    field.setSelectionRange(field.value.length, field.value.length)
+  }
+)
 
 watch(
   () => assistant.draft,
@@ -270,7 +344,20 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
             {{ message.content }}
           </div>
 
-          <p v-if="assistant.pending" class="text-sm text-surface-500">Thinking...</p>
+          <!--
+            aria-live so a screen reader hears the wait and its one change
+            rather than silence. The spinner is decorative next to that text,
+            so it is hidden from the reader instead of being read as an image.
+          -->
+          <p
+            v-if="assistant.pending"
+            class="flex items-center gap-2 font-medium text-surface-700 dark:text-surface-300"
+            role="status"
+            aria-live="polite"
+          >
+            <i class="pi pi-spin pi-spinner text-primary" aria-hidden="true" />
+            {{ waitingLabel }}
+          </p>
 
           <!-- The draft: the shop's lines and the shop's total, with the
                details editable before anything is submitted. -->
@@ -379,6 +466,7 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
           @submit.prevent="send"
         >
           <InputText
+            ref="messageBox"
             v-model="input"
             class="flex-1"
             placeholder="Chat with the AI Shop Assistant"

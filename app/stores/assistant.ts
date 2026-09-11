@@ -23,6 +23,14 @@ export const useAssistantStore = defineStore('assistant', {
      * not, because that does not rebuild the store.
      */
     showDot: true,
+    /**
+     * A question a page wants waiting in the message box, set by whoever calls
+     * `openDrawer()`. It is a handover rather than a value: the drawer takes it
+     * on open and calls `takePrefill()`, so a later open from the navbar does
+     * not bring back the last product's question. The drawer decides whether to
+     * use it; a half-typed message or a conversation in progress wins over it.
+     */
+    prefill: '',
     available: true,
     pending: false,
     ended: false,
@@ -37,7 +45,14 @@ export const useAssistantStore = defineStore('assistant', {
   },
 
   actions: {
-    async openDrawer() {
+    /**
+     * `prefill` is optional and only ever set, never cleared, by opening: an
+     * open from a control that has no question to offer leaves whatever is
+     * already waiting alone, since clearing it here would race the drawer
+     * reading it.
+     */
+    async openDrawer(prefill?: string) {
+      if (prefill) this.prefill = prefill
       this.open = true
       this.showDot = false
       // Cheap, and the answer can change between deploys, so ask each time the
@@ -52,6 +67,11 @@ export const useAssistantStore = defineStore('assistant', {
 
     close() {
       this.open = false
+    },
+
+    /** The drawer takes the pending question, leaving nothing behind it. */
+    takePrefill() {
+      this.prefill = ''
     },
 
     /** Closing does not clear; starting again does. */

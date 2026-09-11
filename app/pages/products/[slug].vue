@@ -4,6 +4,7 @@ import { formatBytes } from '~/utils/bytes'
 
 const route = useRoute()
 const cart = useCartStore()
+const assistant = useAssistantStore()
 const added = ref(false)
 
 const { data: product } = await useFetch<Product>(`/api/products/${route.params.slug}`)
@@ -50,6 +51,21 @@ useSeoMeta({
 })
 
 const isFile = computed(() => product.value?.kind === 'digital')
+
+/**
+ * Opens the panel with a question about this product already written, for the
+ * visitor to send, edit or replace. Nothing is sent here, so the button costs
+ * no provider call however often it is pressed.
+ *
+ * The question is built from `product.name`, the same value the heading
+ * renders, so the text and the page cannot name different things. The assistant
+ * is told nothing about which page the visitor is on: it learns the product
+ * from the words, exactly as if they had been typed.
+ */
+function askAboutThis() {
+  if (!product.value) return
+  assistant.openDrawer(`Tell me more about the ${product.value.name}.`)
+}
 
 function addToCart() {
   if (!product.value) return
@@ -113,6 +129,13 @@ function addToCart() {
           :label="product.in_stock ? 'Add to cart' : 'Out of stock'"
           :disabled="!product.in_stock"
           @click="addToCart"
+        />
+        <Button
+          label="Ask about this"
+          icon="pi pi-microchip-ai"
+          severity="secondary"
+          outlined
+          @click="askAboutThis"
         />
         <NuxtLink v-if="added" to="/cart" class="text-sm underline">View cart</NuxtLink>
       </div>
