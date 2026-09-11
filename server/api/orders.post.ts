@@ -1,5 +1,5 @@
 import { orderSchema, mergeItems } from '~~/server/utils/schemas'
-import { sendOrderEmail } from '~~/server/utils/email'
+import { sendCustomerEmail, sendOrderEmail } from '~~/server/utils/email'
 import { spendConfirmation } from '~~/server/utils/confirmations'
 import { subscribeQuietly } from '~~/server/utils/subscribe'
 
@@ -180,6 +180,29 @@ export default defineEventHandler(async event => {
       })
     } catch (err) {
       console.error(`[orders] email threw for ${orderId}:`, err)
+    }
+
+    // The buyer's own copy, from the same re-read, so the two can never quote
+    // different totals for one order. Its own try/catch, and sent after the
+    // staff notification rather than beside it: if the process dies between
+    // the two, the shop has still been told it has an order.
+    //
+    // Skipped when the re-read failed. Staff get a warning banner and a
+    // dashboard to check against; a buyer has neither, and a confirmation
+    // listing no items and a $0.00 total is worse than no confirmation at all.
+    // They already have the order id from the page they landed on.
+    if (!incomplete) {
+      try {
+        await sendCustomerEmail({
+          orderId,
+          customer,
+          items: orderItems ?? [],
+          totalCents: order?.total_cents ?? 0,
+          discount
+        })
+      } catch (err) {
+        console.error(`[orders] customer confirmation threw for ${orderId}:`, err)
+      }
     }
   }
 

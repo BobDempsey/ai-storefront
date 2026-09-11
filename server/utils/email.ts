@@ -133,6 +133,108 @@ export async function sendOrderEmail(order: OrderEmailPayload) {
   if (error) console.error(`[orders] email failed for ${order.orderId}:`, error)
 }
 
+/**
+ * What the buyer is told. The same figures as the staff notification, minus
+ * `incomplete`: staff get a warning banner and a dashboard to go and check,
+ * where a buyer sent a $0.00 order with no lines has neither. The route sends
+ * them nothing at all in that case, so this payload cannot express it.
+ */
+export type CustomerEmailPayload = Omit<OrderEmailPayload, 'incomplete'>
+
+/**
+ * The buyer's copy. Deliberately a second renderer rather than `renderHtml`
+ * with flags: that one is written for someone who can act on the order — it
+ * names the file staff owe, quotes the buyer's notes back and says to reply to
+ * the customer. This one answers "what did I ask for, and what happens now".
+ * They share the escaping and the money format, which is all that has to agree.
+ */
+export function renderCustomerHtml(order: CustomerEmailPayload) {
+  const owesFile = order.items.some(i => i.file_name_snapshot)
+
+  const rows = order.items
+    .map(
+      i => `<tr>
+        <td style="padding:6px 12px;border-bottom:1px solid #eee">${esc(i.name_snapshot)}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td>
+        <td style="padding:6px 12px;border-bottom:1px solid #eee;text-align:right">${money(i.unit_price_cents * i.quantity)}</td>
+      </tr>`
+    )
+    .join('')
+
+  return `
+    <h2>Thanks — we have your order</h2>
+    <p>Hi ${esc(order.customer.name)}, this confirms the order you just placed. Your reference is <strong>${esc(order.orderId)}</strong>.</p>
+    <p style="padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb"><strong>No payment has been taken.</strong> This is an order request. We will reply to this email to arrange payment, and nothing is charged until you have heard from us.</p>
+    <table style="border-collapse:collapse;font-family:system-ui,sans-serif;font-size:14px">
+      <thead>
+        <tr>
+          <th style="padding:6px 12px;text-align:left">Item</th>
+          <th style="padding:6px 12px">Qty</th>
+          <th style="padding:6px 12px;text-align:right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        ${
+          order.discount
+            ? `<tr>
+          <td colspan="2" style="padding:6px 12px;text-align:right">Subtotal</td>
+          <td style="padding:6px 12px;text-align:right">${money(order.discount.subtotalCents)}</td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding:6px 12px;text-align:right">${
+            order.discount.source === 'code'
+              ? `Promo code ${esc(order.discount.code ?? '')} (${order.discount.percent}% off)`
+              : `Store sale (${order.discount.percent}% off)`
+          }</td>
+          <td style="padding:6px 12px;text-align:right">&minus;${money(order.discount.subtotalCents - order.totalCents)}</td>
+        </tr>`
+            : ''
+        }
+        <tr>
+          <td colspan="2" style="padding:8px 12px;text-align:right"><strong>Total</strong></td>
+          <td style="padding:8px 12px;text-align:right"><strong>${money(order.totalCents)}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+    ${owesFile ? '<p>Your order includes a download. We will email the file to you once payment is arranged — there is nothing to download from this message.</p>' : ''}
+    <p style="color:#666;font-size:12px">Reply to this email if anything above is wrong, or if you have a question about your order.</p>
+  `
+}
+
+/**
+ * Confirms the order to the buyer. Like the staff notification, the order row
+ * is already committed, so a failure here is logged and goes no further.
+ *
+ * `replyTo` is the staff address — the mirror of the staff notification's
+ * reply-to being the buyer — so a buyer answering this reaches the shop rather
+ * than the unattended sandbox sender.
+ */
+export async function sendCustomerEmail(order: CustomerEmailPayload) {
+  const { resendApiKey, orderFromEmail, orderAdminEmail } = useRuntimeConfig()
+
+  // orderAdminEmail is required even though it is not the recipient: without it
+  // a reply from the buyer would go nowhere, and a confirmation you cannot
+  // answer is worse than none.
+  if (!resendApiKey || !orderAdminEmail) {
+    console.warn(`[orders] email not configured; order ${order.orderId} saved without a customer confirmation`)
+    return
+  }
+
+  const resend = new Resend(resendApiKey)
+  const { error } = await resend.emails.send({
+    from: orderFromEmail,
+    to: order.customer.email,
+    replyTo: orderAdminEmail,
+    // No store name: NUXT_PUBLIC_STORE_NAME is the `Store` placeholder in the
+    // template as shipped, and "Your order from Store" reads as a bug.
+    subject: `Your order ${order.orderId} (${money(order.totalCents)})`,
+    html: renderCustomerHtml(order)
+  })
+
+  if (error) console.error(`[orders] customer confirmation failed for ${order.orderId}:`, error)
+}
+
 export interface ContactEmailPayload {
   name: string
   email: string
