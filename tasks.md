@@ -9,3 +9,4 @@
 - [ ] Point each deployment at its own database and verify the split
 - [ ] Render a share image carrying the second shop's name
 - [ ] Make the smoke test able to check either deployment
+- [ ] need a way to direct users to the contact form when they want to place a custom order

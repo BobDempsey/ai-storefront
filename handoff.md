@@ -1330,17 +1330,26 @@ Known gaps, roughly in the order they were prioritized with the user:
   sentence, which is why the opener is still written to stand on its own.
 - ~~The homepage never said what the shop was, or that it had an assistant.~~
   **Done, 2026-09-11.** An introduction sits above the catalogue card in
-  `app/pages/index.vue`: what the shop sells, that ordering is a request rather
-  than a checkout, and a panel naming four things the assistant can do with an
-  "Ask the assistant" button that calls `openDrawer()`. **Each bullet is
+  `app/pages/index.vue`: what the shop sells, the two ways to order, and a
+  panel naming four things the assistant can do with an "Ask the AI Shop
+  Assistant" button that calls `openDrawer()`. The copy went through several
+  rounds with the user the same day and is theirs, not a draft to tidy: it
+  calls the feature the **AI Shop Assistant** by name throughout, opens with
+  "An AI-assisted shop", and avoids colons and semicolons in visitor-facing
+  prose. `AssistantDrawer.vue` was renamed to match, in its header, its input
+  placeholder, its aria-label and its greeting. **Each bullet is
   written against a tool in `server/utils/assistant.ts`**, not against the idea
   of the feature, and the `CAN_DO` array carries a comment saying to keep them
   in step; `tests/unit/assistant-promo-boundary.test.ts` already pins the tool
   list, so a tool arriving without the copy following is at least visible. The
   section also states what the assistant cannot do, because a visitor who knows
-  it cannot place an order or produce a discount reads a refusal as the design
-  rather than a failure, and because the alternative is spending one of the 25
-  messages finding out. **Nothing in it is specific to this shop**: it renders
+  it cannot place an order or take payment reads a refusal as the design rather
+  than a failure, and because the alternative is spending one of the 25 messages
+  finding out. **The promo-code boundary is no longer stated there**: an earlier
+  draft said the assistant cannot hand out a discount, and the user's rewrite
+  dropped it. The rule still holds in `SYSTEM_PROMPT` and is still pinned by
+  `tests/unit/assistant-promo-boundary.test.ts`; only the page stopped saying
+  so. **Nothing in it is specific to this shop**: it renders
   `storeName` and describes the assistant, both of which the Forged in Filament
   deployment has too, so it does not need editing or hiding when the same code
   runs the other store. The catalogue card's `<h1>Shop</h1>` dropped to an

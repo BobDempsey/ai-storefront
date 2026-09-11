@@ -8,15 +8,16 @@ const assistant = useAssistantStore()
 const { storeName } = useRuntimeConfig().public
 
 // What the assistant can actually do, in the visitor's terms. Each line maps to
-// a tool in server/utils/assistant.ts: search_catalogue and get_product, then
-// get_cart and propose_cart_change, then draft_order. Keep them in step. The
-// last line is the boundary the prompt enforces, and saying it up front is
-// cheaper than a visitor spending a message to find it out.
+// a tool in server/utils/assistant.ts: get_product, then search_catalogue,
+// then draft_order, then propose_cart_change. Keep them in step. The sentence
+// under the list is the boundary
+// the prompt enforces, and saying it up front is cheaper than a visitor
+// spending one of their 25 messages finding it out.
 const CAN_DO = [
-  'Find something by what it is for, not just by name',
-  'Answer what a print is made of, how big it is and what it costs',
-  'Add to or clear your cart, for you to approve',
-  'Fill in an order for you to check and confirm yourself'
+  'Answer product sizing and price',
+  'Ask if we sell something for a particular job',
+  'Draft an order for you to check and confirm yourself',
+  'Add items to your cart (with your approval)'
 ]
 
 const physical = computed(() => products.value?.filter(p => p.kind !== 'digital') ?? [])
@@ -57,23 +58,32 @@ useSeoMeta({
   <section class="mb-6 rounded-xl border border-surface-200 bg-surface-0 p-4 sm:p-6 dark:border-surface-800 dark:bg-surface-900">
     <h1 class="text-2xl font-semibold tracking-tight">{{ storeName }}</h1>
 
-    <p class="mt-3 max-w-2xl text-surface-600 dark:text-surface-400">
-      A small shop for 3D-printed things: finished prints under
-      <strong>Products</strong>, and the files to print your own under
-      <strong>Files</strong>. Ordering here is a request rather than a checkout.
-      You send a cart, we reply by email to confirm it and arrange payment, and
-      nothing is charged on the site.
-    </p>
+    <div class="mt-3 flex max-w-3xl flex-col gap-3 text-surface-600 dark:text-surface-400">
+      <p>
+        An AI-assisted shop for desk organisers, planters, lamps, gaming gear
+        and other 3D-printed goods.
+      </p>
+
+      <p>Find finished products or the files to print your own items.</p>
+
+      <p>
+        You can place an order by asking the AI shop assistant for help, or add
+        items to your cart and complete the check out form. We'll be in touch by
+        email after you submit an order. No payments are currently taken on the
+        website.
+      </p>
+    </div>
 
     <div class="mt-6 rounded-lg border border-surface-200 bg-surface-50 p-4 sm:p-5 dark:border-surface-800 dark:bg-surface-950">
       <h2 class="flex items-center gap-2 font-medium">
         <i class="pi pi-microchip-ai text-primary" />
-        Shop by asking
+        Shop by asking the AI shop assistant
       </h2>
 
       <p class="mt-2 max-w-2xl text-sm text-surface-600 dark:text-surface-400">
-        There is an assistant on this site that knows the catalogue and your
-        cart. Tell it what you are after and it will do the looking.
+        There is an AI shop assistant on this site that knows the catalogue and
+        your cart. Ask it questions about a product, or tell it what you're
+        looking for and it will help you find it.
       </p>
 
       <ul class="mt-4 grid gap-2 sm:grid-cols-2">
@@ -88,14 +98,14 @@ useSeoMeta({
       </ul>
 
       <p class="mt-4 max-w-2xl text-sm text-surface-500">
-        It cannot place an order, take a payment or hand out a discount. It
-        writes the order up and hands it back to you; nothing is submitted until
-        you press the button yourself.
+        The AI shop assistant cannot place an order for you or take payment,
+        but it can draft an order up for you to approve. Once you approve,
+        it'll send us the order and you'll get an email confirmation.
       </p>
 
       <Button
         class="mt-5"
-        label="Ask the assistant"
+        label="Ask the AI Shop Assistant"
         icon="pi pi-microchip-ai"
         size="small"
         @click="assistant.openDrawer()"

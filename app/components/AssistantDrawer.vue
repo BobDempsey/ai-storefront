@@ -222,7 +222,7 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
     :visible="assistant.open"
     position="right"
     class="w-full sm:!w-[28rem]"
-    header="Shop assistant"
+    header="AI Shop Assistant"
     @update:visible="assistant.close()"
   >
     <div class="flex h-full flex-col gap-4">
@@ -254,9 +254,9 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
             enters the history the provider sees.
           -->
           <p v-if="assistant.isEmpty" class="text-sm text-surface-500">
-            Hi, I'm the shop assistant. Ask me about anything: info on a product, what
-            is in your cart, or how ordering works. I can add things for you and draft
-            an order, but you confirm it yourself.
+            Hi, I'm the shop assistant. Ask me anything about the products, your
+            cart, or how ordering works. I can add things for you and draft an
+            order, but you confirm it yourself.
           </p>
 
           <div
@@ -381,8 +381,8 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
           <InputText
             v-model="input"
             class="flex-1"
-            placeholder="Ask about the shop"
-            aria-label="Message the shop assistant"
+            placeholder="Chat with the AI Shop Assistant"
+            aria-label="Message the AI Shop Assistant"
             :disabled="assistant.pending"
           />
           <Button
