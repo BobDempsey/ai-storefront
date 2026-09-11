@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:db": "vitest run --config vitest.db.config.ts",
     "test:smoke": "vitest run --config vitest.smoke.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:llm": "vitest run --config vitest.llm.config.ts"
   },
   "dependencies": {
     "@pinia/nuxt": "^1.0.2",

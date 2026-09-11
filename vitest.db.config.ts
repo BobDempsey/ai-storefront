@@ -12,7 +12,9 @@ export default defineConfig({
     environment: 'node',
     fileParallelism: false,
     testTimeout: 30_000,
-    hookTimeout: 30_000
+    // chat-guards.test.ts starts a second dev server in beforeAll, which takes
+    // longer than a database round trip.
+    hookTimeout: 150_000
   },
   resolve: {
     alias: {

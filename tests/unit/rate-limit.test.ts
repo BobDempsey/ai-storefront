@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { rateLimit } from '~~/server/utils/rate-limit'
 
 // The limiter keeps its window in a module-level Map keyed by the string the
@@ -110,5 +112,25 @@ describe('rateLimit', () => {
     // Still exactly two hits on record, so one ageing out frees exactly one slot.
     vi.advanceTimersByTime(60_001)
     expect(() => spend(key, 2, 2)).not.toThrow()
+  })
+})
+
+/**
+ * The isolation test above is only meaningful while the chat route actually
+ * prefixes its key. Reading the source is blunt, but it is what catches someone
+ * dropping the prefix and silently putting the assistant on the order budget.
+ */
+describe('the buckets the routes actually use', () => {
+  const source = (path: string) =>
+    readFileSync(fileURLToPath(new URL(`../../server/api/${path}`, import.meta.url)), 'utf8')
+
+  it('keys the assistant on a chat: prefix', () => {
+    expect(source('chat.post.ts')).toContain('`chat:${getRequestIP(')
+  })
+
+  it('keys orders on the bare address, so the two cannot collide', () => {
+    const orders = source('orders.post.ts')
+    expect(orders).toContain("getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'")
+    expect(orders).not.toContain('chat:')
   })
 })
