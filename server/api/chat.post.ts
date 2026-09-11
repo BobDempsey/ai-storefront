@@ -11,6 +11,23 @@ const REQUESTS_PER_DAY = 75
 /** Bounds one turn: without it a single message can fan out into a long run. */
 const MAX_TOOL_ROUNDS = 4
 
+/**
+ * How much the model deliberates before answering. `gpt-5-mini` is a reasoning
+ * model, and left at its default it thinks before every turn: one measured
+ * question took 29 seconds over three rounds and spent 896 reasoning tokens,
+ * the last round alone burning 768. The same question at `low` answered in 6.4
+ * seconds over two rounds, calling the same tool. The extra round is the part
+ * worth knowing: thinking harder sent it back to look things up again rather
+ * than answer.
+ *
+ * `minimal` measured no faster than `low` and leaves the model less room to
+ * hold to the rules in SYSTEM_PROMPT, several of which exist to stop a visitor
+ * talking it out of something. Those rules are checked against this setting by
+ * `npm run test:llm` and `npm run test:e2e:llm`; if one of them turns, this is
+ * the first thing to put back.
+ */
+const REASONING_EFFORT = 'low' as const
+
 export default defineEventHandler(async event => {
   rateLimitByCaller(
     event,
@@ -50,6 +67,9 @@ export default defineEventHandler(async event => {
       const completion = await openai.chat.completions.create({
         model: MODEL,
         messages,
+        // On every round, not just the first: the slowest round measured was
+        // the last one, the one that writes the answer.
+        reasoning_effort: REASONING_EFFORT,
         ...(round < MAX_TOOL_ROUNDS ? { tools: TOOLS } : {})
       })
 
