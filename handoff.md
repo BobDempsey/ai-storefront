@@ -155,7 +155,9 @@ published, and the live store is running none of it (section 10). Four smaller
 claims were corrected in place: the unit-test count and file count and the
 `test:db` count in section 10, the `llm/` line in section 4's tree, and the
 `.mcp.json` line in section 2, which named only the Supabase server. Verified
-still true the same day: 15 archived changes and 12 capabilities with no
+still true the same day: 15 archived changes (17 now, the two navbar and
+assistant changes described below having been archived since) and 12
+capabilities with no
 in-flight change, every path in section 4's layout, the 9 seeded products,
 `npm test` green at 156, `npm run test:smoke` green against the production
 alias, and the live sale on at 20% with the promo at 25% and
@@ -202,6 +204,37 @@ emulated `prefers-reduced-motion: reduce` it stays at full opacity while the
 pulse ring is gone. `npm test`, `npm run build` and `npm run test:e2e` all pass,
 the e2e suite now without any seeding.
 
+Reviewed against the code again later on 2026-09-11, working tree clean at
+`e72f94a` and `origin/main` level with local `main`. The rename is finished: the
+**local folder is now `ai-storefront`** too, which section 10 still had as the
+one piece outstanding, so nothing about the name is left to do. Two counts were
+corrected in place, the archived-change count in the paragraph above (15, now
+17) and the project root in section 1. Verified still true the same day: `npm
+test` green at 173 across 13 files, 12 capabilities with no in-flight change,
+`NUXT_PUBLIC_STORE_NAME` is "AI Storefront" in `.env` and still the `Store`
+placeholder in `.env.example` and on Vercel, the smoke test still points at
+`ecommerce-store-theta-sable.vercel.app`, and `aws sts get-caller-identity`
+still fails with `InvalidClientTokenId` against a working 2.31.10 binary.
+
+The same session then took the demo live on its own domain. The AWS CLI was
+re-credentialled under a new scoped IAM user and
+`https://ai-storefront.bobdempsey83.com` now serves the store over valid TLS,
+with the smoke test pointed at it. Both are written up in section 10, which is
+also where the surprises are: Vercel's per-domain CNAME target, and why
+`vercel domains inspect` cannot read it.
+
+The same session then gave the storefront a browser tab title and link
+previews. Pages had been setting bare titles, so a tab read "Shop" with the
+shop's name nowhere on it; a `titleTemplate` in `app/layouts/default.vue` now
+renders "Shop · AI Storefront". It sits in the layout rather than
+`nuxt.config.ts` on purpose: `storeName` is a runtime value, and a template in
+the config would bake in whatever `NUXT_PUBLIC_STORE_NAME` held at build time,
+so the second shop would ship the first shop's name in every tab. Open Graph
+tags and a generated share image followed, with the new
+`NUXT_PUBLIC_SITE_URL` behind them (sections 6 and 10). `npm test` is green at
+173, `npm run build` passes, and `npm run test:smoke` passes against the
+domain.
+
 ---
 
 ## 1. What this is
@@ -211,7 +244,7 @@ storefront. Payment is deliberately **out of scope** — customers build a cart 
 submit an order request; staff receive the order by email and arrange payment
 off-app.
 
-Project root: `C:\Users\bobde\Desktop\ecommerce-store`
+Project root: `C:\Users\bobde\Desktop\ai-storefront`
 
 Status: **the storefront is live against a real database.** A Supabase project
 (`forged in filament`, ref `wfhhkdmgouyxnrxnbaeo`) exists, the schema and seed
@@ -702,6 +735,11 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
 NUXT_PUBLIC_STORE_NAME      SET — "AI Storefront" as of 2026-09-11. Still the
                             `Store` placeholder on Vercel until it is set there
                             and the deployment is rebuilt
+NUXT_PUBLIC_SITE_URL        SET — https://ai-storefront.bobdempsey83.com, no
+                            trailing slash. The origin the share tags build an
+                            absolute image URL from. Not set on Vercel yet, and
+                            an unset one omits the share image rather than
+                            emitting a relative path every consumer drops
 NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             limiter believes about who is calling. Not a secret.
                             Set it to your host's header if you leave Vercel;
@@ -1040,16 +1078,16 @@ managed by Vercel: the domain answers with `awsdns-*` nameservers, and
 `vercel domains ls` reports zero domains on the account. So the records go in
 Route 53, not in Vercel's own DNS.
 
-**The AWS CLI is installed on this machine but not usable.** `aws --version`
-reports 2.31.10, and `aws sts get-caller-identity` fails with
-`InvalidClientTokenId`, so whatever credentials are configured are stale or
-wrong. Fixing that is worth doing before the DNS work rather than during it:
-with a working CLI an agent can add and verify the Route 53 records itself, and
-read back what actually resolved. Without it, every record is a value handed to
-the user to paste into the console, and a typo only surfaces later as a
-certificate that never issues. `aws configure` or an SSO login, whichever this
-account uses, and the profile needs `route53:ChangeResourceRecordSets` and
-`route53:ListResourceRecordSets` on the `bobdempsey83.com` hosted zone.
+~~The AWS CLI is installed on this machine but not usable.~~ **Fixed
+2026-09-11.** The stale credentials were replaced with a key pair belonging to a
+new IAM user, `route53-dns`, carrying `AmazonRoute53FullAccess` and nothing
+else. The account had no IAM users at all before this: the user works as root,
+and a root key was declined because it cannot be scoped or revoked without
+taking the whole account with it. `aws sts get-caller-identity` now returns
+`arn:aws:iam::134347609656:user/route53-dns`, and an agent can write and read
+back Route 53 records itself rather than handing values to the user to paste.
+**The `bobdempsey83.com` hosted zone is `Z071721280HQ6W3TJD8O`** (the account
+also holds `robertdempsey.com`, which is nothing to do with this project).
 
 The rename to `ai-storefront` is **partly done as of 2026-09-11**. `package.json`
 and the README title carry the new name, and the GitHub repo is now
@@ -1061,14 +1099,16 @@ worth not re-worrying about: the **project ID does not change**, so
 `.vercel/project.json` stayed valid and `vercel link` did not need rerunning,
 and the **generated `.vercel.app` aliases did not change either**.
 `ecommerce-store-theta-sable.vercel.app` still serves the site and no
-`ai-storefront-*` alias was created, so the URL hardcoded in
-`tests/smoke/production.test.ts` still works. Vercel's GitHub integration also
-followed the repo rename on its own and kept deploying.
+`ai-storefront-*` alias was created. It is no longer what the smoke test
+targets, though: that now points at the custom domain (below). Vercel's GitHub
+integration also followed the repo rename on its own and kept deploying.
 
-The one piece still outstanding is the **local folder**, still
-`C:\Users\bobde\Desktop\ecommerce-store`. Rename it between sessions: doing it
-from inside a session moves the working directory out from under the session
-doing it.
+The rename is **complete as of 2026-09-11**. The last piece, the **local
+folder**, is now `C:\Users\bobde\Desktop\ai-storefront`; it was renamed between
+sessions, because doing it from inside a session moves the working directory out
+from under the session doing it. Nothing broke in the move: git, the `.vercel`
+link and `node_modules` all travelled with the folder, and `npm test` passes
+from the new path.
 
 The public name a customer sees, `NUXT_PUBLIC_STORE_NAME`, is "AI Storefront"
 in `.env` as of 2026-09-11 and becomes "Forged in Filament" on the other
@@ -1258,9 +1298,44 @@ Known gaps, roughly in the order they were prioritized with the user:
   `NUXT_SUPABASE_SERVICE_KEY`, `NUXT_RESEND_API_KEY`, `NUXT_ORDER_FROM_EMAIL`,
   `NUXT_ORDER_ADMIN_EMAIL`, `NUXT_PUBLIC_STORE_NAME`, `NUXT_OPENAI_API_KEY`.
   `/api/products` and `/api/store-settings` both return 200 on five
-  consecutive calls, and the catalogue renders. Still open: no custom domain,
-  and `NUXT_PUBLIC_STORE_NAME` is the `Store` placeholder in production
-  because that is what `.env` holds.
+  consecutive calls, and the catalogue renders. The custom domain landed
+  2026-09-11 (below). Still open: `NUXT_PUBLIC_STORE_NAME` is the `Store`
+  placeholder in production, because that is what Vercel holds; `.env` has said
+  "AI Storefront" since the rename.
+- ~~No Open Graph tags, so a texted link previews as a bare URL.~~ **Done,
+  2026-09-11.** Defaults live in `app/layouts/default.vue` beside the
+  `titleTemplate`, and `app/pages/products/[slug].vue` overrides the title,
+  description and image with the product's own. Four things are worth knowing
+  before touching them. **`useSeoMeta` in a page beats the layout**, because the
+  page's call runs second, which is why the defaults are safe to state broadly.
+  **Open Graph refuses a relative image path** and drops it silently, so both
+  URLs are built against `NUXT_PUBLIC_SITE_URL`; with that unset the image is
+  omitted on purpose, since tags that look right but never show a picture are
+  worse than tags that admit they have none. **Declared dimensions are
+  inherited**, so the product page restates 800x800 over the layout's 1200x630
+  rather than letting a consumer letterbox a square photo, and drops to
+  `twitter:card: summary` for the same reason. And **the share image is per
+  shop**: `public/og-image.png` has "AI Storefront" rendered into it, so
+  Forged in Filament needs its own file rather than this one. It was generated
+  headlessly from an HTML page through the Playwright already in the repo,
+  which is how to make the next one.
+- ~~No custom domain.~~ **Done, 2026-09-11.**
+  `https://ai-storefront.bobdempsey83.com` serves the store over valid TLS.
+  Added to the Vercel project against Production, then a CNAME written into
+  Route 53 by the CLI. Three things worth knowing before doing the same for
+  `fif`. **Vercel no longer asks for `cname.vercel-dns.com`**: it issues a
+  per-domain target, here `63f2d142a70b0e9d.vercel-dns-017.com.`, so read the
+  value off the project's Domains tab rather than reusing this one. **The
+  subdomain is not a Vercel domain**, only a domain attached to a project, so
+  `vercel domains inspect` refuses it with "you don't have access" and the
+  console is the only place that shows the target. And **it resolved almost
+  immediately**, on a 300-second TTL, so the certificate issued on the first
+  Refresh rather than after the wait the DNS-propagation warning implies.
+  `tests/smoke/production.test.ts` now defaults to this domain instead of the
+  `.vercel.app` alias, overridable with `SMOKE_BASE_URL`, which is how the
+  second shop will be checked by the same suite; `npm run test:smoke` passes
+  4/4 against it. The README gained a matching note in "Before you take it
+  live".
 - ~~Production is 31 commits behind local `main`.~~ **Closed 2026-09-11.**
   `main` was pushed at `7419568`, 40 commits on from `e0fd7e1`, and Vercel's
   GitHub integration built and promoted it on its own. Verified beyond the
