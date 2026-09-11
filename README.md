@@ -32,6 +32,14 @@ submit it, staff receive the order by email and arrange payment off-app.
    cp .env.example .env
    ```
 
+   One entry deserves a moment: `NUXT_TRUSTED_IP_HEADER` names the only header
+   the rate limiter will believe about who is calling. A header the client can
+   set is not an identity, so anything else is ignored. Use
+   `x-vercel-forwarded-for` on Vercel (the default), `cf-connecting-ip` behind
+   Cloudflare, `x-forwarded-for` behind your own nginx or Caddy, and leave it
+   empty when Node faces the internet directly. Naming the wrong one costs you
+   nothing worse than limiting every visitor as if they were the same person.
+
 4. Start the dev server:
 
    ```bash

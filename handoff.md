@@ -523,6 +523,10 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
+NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
+                            limiter believes about who is calling. Not a secret.
+                            Set it to your host's header if you leave Vercel;
+                            empty means the connection address alone
 NUXT_TEST_ORDER_TOKEN       SET locally — a random hex string. SERVER ONLY. Lets a
                             request mark an order as a test, which skips the staff
                             email. Deliberately NOT set on Vercel: unset means no
@@ -697,6 +701,12 @@ a different staff address will silently fail until a domain is verified.
   Git Bash, not PowerShell, so hand them
   `powershell -ExecutionPolicy Bypass -File "<path>"` rather than a bare `&`
   call, which is a Bash syntax error.
+- **Do not probe the order rate limit with real orders.** The test-order token
+  deliberately skips the limiter, so exercising the limiter means posting
+  without it, and every one of those sends a real staff email. Five reached the
+  owner's inbox on 2026-09-10 that way. Post a deliberately invalid body
+  instead: `rateLimitByCaller` runs before Zod, so a 400 still spends the
+  bucket while creating no order and sending no mail.
 - **A bind probe on `127.0.0.1` reports a busy port as free.** Nuxt's dev
   server binds IPv6, so `net.createServer().listen(port, '127.0.0.1')`
   succeeds while a server is still answering on `[::1]`. Ask over HTTP instead;
@@ -739,18 +749,24 @@ were re-verified against the code on 2026-08-31.
   every interpolated value through `esc()` / `escMultiline()`. Anything new added
   to that template must go through them too — the customer fields come from a
   public, unauthenticated form.
-- **Rate limiting is bypassable.** All four limited routes call
-  `getRequestIP(event, { xForwardedFor: true })`, which trusts a client-supplied
-  `X-Forwarded-For`: `orders.post.ts` (5 per 10 min), `contact.post.ts` (3 per
-  10 min), `email-optin.post.ts` (5 per 10 min) and `chat.post.ts` (75 per day).
-  A new header value per request defeats every one of them, which is also the
-  stated reason phase 1 skips a captcha. Once a deploy target is chosen, trust
-  only that platform's forwarded header. Separately, when no IP resolves at all,
-  every caller collapses into one `'unknown'` bucket. Each route keys its own
-  bucket (`contact:`, `email-optin:` and `chat:` prefixed; orders uses the bare
-  IP), so exhausting one does not block the others. The contact and opt-in
-  routes are the more attractive targets: both send mail with no order behind
-  them.
+- ~~Rate limiting is bypassable.~~ **Fixed, 2026-09-10.** All four routes now
+  go through `rateLimitByCaller` in `server/utils/client-address.ts`, which
+  reads only the header named by `NUXT_TRUSTED_IP_HEADER` and otherwise the
+  connection's own address. A client-supplied `X-Forwarded-For` is ignored
+  unless a deployment names it, and a multi-value header is read from the last
+  value, not h3's first, because the last is the one the trusted proxy wrote.
+  Verified live: six orders sent with six different spoofed `x-forwarded-for`
+  values now exhaust one allowance at the fifth, where previously all six were
+  accepted. Two things worth knowing. **Vercel was masking this**: it overwrites
+  `X-Forwarded-For` itself, so the deployed site was never exposed and a test
+  against production would have proved nothing. And **the dev server exposes no
+  client address at all**: the request's socket object exists but its
+  `remoteAddress` is null, so anything that treats "no address" as fatal
+  refuses every local request. It is not fatal here: unidentifiable callers
+  share one bucket and the server logs `[rate-limit] no client address
+  resolved`. That pooling is the remaining weakness, chosen over refusing them
+  (which takes a shop offline) and over serving them freely (which is a way
+  around every limit).
 - ~~A thrown email error 500s the customer after the order is committed.~~
   **Fixed.** `sendOrderEmail` is now wrapped in `try`/`catch` in
   `server/api/orders.post.ts`, so section 5's promise actually holds: the

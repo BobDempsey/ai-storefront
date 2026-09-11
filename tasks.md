@@ -1,7 +1,6 @@
 # Remaining tasks
 
 - [ ] Set a real store name and add a custom domain
-- [ ] Trust only the deploy platform's forwarded-IP header
 - [ ] Buy and verify a domain for SPF/DKIM
 - [ ] Add a customer confirmation email
 - [ ] Add stock decrementing on order
