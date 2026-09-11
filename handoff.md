@@ -104,11 +104,14 @@ it supplies.
 
 **This repository is a template**, which is how the remaining work was
 prioritised on 2026-09-10: fix what every adopter inherits, and leave what is
-particular to this shop. A customer confirmation email and paid-order file
-delivery are the first group; stock decrementing was in it until the user
-dropped it the same day (section 10). A real store name, a domain and
-SPF/DKIM are the second, and belong in the README as setup steps rather than in
-the backlog as repo work.
+particular to this shop. The customer confirmation email was the first group
+and is built (section 10); stock decrementing and paid-order file delivery were
+in it until the user dropped both the same day. A real store name, a domain and
+SPF/DKIM are the second, and the user closed that group the same day too: they
+are per-deployment setup, not repo work, and belong in the README as setup
+steps. Do not open work on a domain, SPF/DKIM, a store name or a deploy without
+asking. Nothing is queued as a result: `tasks.md` is empty, and the one idea
+still written down in section 10 is parked rather than next.
 
 A later session on 2026-09-10 built the buyer's own order confirmation, the
 first of the three template gaps prioritised above, through the OpenSpec change
@@ -934,8 +937,12 @@ Known gaps, roughly in the order they were prioritized with the user:
   the second run fails on a 429 that says nothing about the code. Every request
   without the token is limited exactly as before, which in production is all of
   them.
-- **No SPF/DKIM**, because no domain. Admin mail will land in junk until the
-  domain is bought and verified in Resend.
+- **No SPF/DKIM**, because no domain, and neither is repo work. Admin mail
+  lands in junk and the buyer confirmation reaches no real customer until a
+  domain is bought and verified in Resend. That is a per-deployment setup step
+  the adopter takes, explicitly set aside by the user on 2026-09-10 along with
+  the custom domain and the `Store` placeholder still standing in for
+  `NUXT_PUBLIC_STORE_NAME` in production.
 - ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
   OpenSpec change `add-customer-order-confirmation`. A committed order now
   sends the buyer their own copy as well as notifying staff:
@@ -1073,7 +1080,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   still being unable to do anything with a code that the app itself does not
   already support — no creating a code, no reusing one, no inventing a
   discount. This is new scope: today's decision (section 3) is that the
-  assistant gets no promo tool at all and only explains the offer.
+  assistant gets no promo tool at all and only explains the offer. **Parked,
+  not queued**, as of 2026-09-10: the user kept the idea here but took it off
+  `tasks.md`, so treat it as an option someone may revive rather than the next
+  thing to build. Reversing the section 3 decision is an ask, not an
+  assumption.
 
 ---
 

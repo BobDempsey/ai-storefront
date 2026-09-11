@@ -1,4 +1,5 @@
 # Remaining tasks
 
-- [ ] Let the assistant apply a qualifying promo code to a draft order
-- [ ] Per-deployment setup: real store name, custom domain, SPF/DKIM
+Nothing outstanding.
+
+The assistant promo-code idea is parked in handoff.md section 10, not queued.
