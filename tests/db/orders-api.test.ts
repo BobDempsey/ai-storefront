@@ -74,6 +74,38 @@ describe('POST /api/orders', () => {
     expect(order!.total_cents).toBe(body.totalCents)
   })
 
+  // Every address this file uses is unroutable, so an order that tried to
+  // confirm itself to the buyer would be rejected by Resend. A test order
+  // sends nothing to anyone, and withholding both emails is a success rather
+  // than the partial failure a real order reports when its email does not send.
+  it('places a test order without emailing staff or the buyer, and reports no failure', async () => {
+    const email = uniqueEmail('api-test-order')
+    const response = await post(
+      {
+        customer: { name: 'API Test', email },
+        items: [{ productId, quantity: 1 }]
+      },
+      asTest
+    )
+
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as Record<string, unknown>
+    created.push(body.orderId as string)
+
+    // The whole response is the order and its total: no error, no partial
+    // delivery, nothing about email at all.
+    expect(Object.keys(body).sort()).toEqual(['orderId', 'totalCents'])
+
+    const { data: order } = await db()
+      .from('orders')
+      .select('is_test, customer_email')
+      .eq('id', body.orderId as string)
+      .single()
+
+    expect(order!.is_test).toBe(true)
+    expect(order!.customer_email).toBe(email)
+  })
+
   it('rejects an unrecognised promo code with its own status, and writes no order', async () => {
     const email = uniqueEmail('api-badpromo')
     const response = await post(

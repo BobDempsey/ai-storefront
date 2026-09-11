@@ -16,6 +16,20 @@ vi.stubGlobal('useSupabase', () => {
   throw new Error('useSupabase was called without a stub; use useSupabaseReturning()')
 })
 
+/** Replaced per test by `useRuntimeConfigReturning`. Unset, it fails loudly. */
+vi.stubGlobal('useRuntimeConfig', () => {
+  throw new Error('useRuntimeConfig was called without a stub; use useRuntimeConfigReturning()')
+})
+
+/**
+ * Stubs the Nuxt runtime config for a test. Only the keys a test cares about
+ * need supplying; anything else reads as undefined, which is what an unset
+ * environment variable produces at runtime.
+ */
+export function useRuntimeConfigReturning(config: Record<string, unknown>) {
+  vi.stubGlobal('useRuntimeConfig', () => config)
+}
+
 type Row = Record<string, unknown> | null
 
 /**
