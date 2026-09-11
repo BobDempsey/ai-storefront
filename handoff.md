@@ -1092,10 +1092,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   the adopter takes, explicitly set aside by the user on 2026-09-10 along with
   the custom domain and the `Store` placeholder still standing in for
   `NUXT_PUBLIC_STORE_NAME` in production. The three were meant to land in the
-  README as setup steps instead; checked 2026-09-11, they have not. `README.md`
-  has a Setup section and it mentions no domain, no SPF/DKIM and no store name,
-  so an adopter is currently told none of it. Writing those steps is repo work
-  and is the one piece of this group that does not need a deploy.
+  README as setup steps instead, and now have: `README.md` gained a "Before you
+  take it live" section on 2026-09-11 covering the store name, the domain and
+  SPF/DKIM, plus the trusted-IP header and the two Vercel traps this project
+  hit. So an adopter is told. **Buying the domain and setting the production
+  store name are still open**, and are the user's to do, not repo work.
 - ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
   OpenSpec change `add-customer-order-confirmation`. A committed order now
   sends the buyer their own copy as well as notifying staff:
