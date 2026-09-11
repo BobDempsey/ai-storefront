@@ -38,6 +38,18 @@ submit it, staff receive the order by email and arrange payment off-app.
    npm run dev
    ```
 
+5. Run the tests:
+
+   ```bash
+   npm test              # unit tests, no network
+   npm run test:e2e      # browser, needs a dev server (starts one if needed)
+   npm run test:db       # writes to the live Supabase project
+   npm run test:smoke    # checks the deployed site
+   npm run test:llm      # real provider calls, the only script that costs money
+   ```
+
+   The conventions behind that split are in [AGENTS.md](AGENTS.md).
+
 ## Contributing with AI agents
 
 This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for
