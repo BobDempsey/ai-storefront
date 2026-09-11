@@ -39,8 +39,10 @@ unarchived, `add-store-wide-sale` and `add-promo-codes` (section 2), syncing
 their delta specs into a new `catalog/storefront-sale` capability, a new
 `promotions/promo-code` capability, and additions to `assistant/shopping-assistant`,
 `contact/contact-message` and `newsletter/email-optin`. `openspec validate
---specs --strict` passes all 10 capabilities. That archive move was committed
-as `d1f36b2`. A sync the same day found and fixed the checkout bug recorded in
+--specs --strict` passed all 10 capabilities at the time; there are 12 now,
+`ordering/test-order` having arrived with the test suite and
+`ordering/customer-confirmation` with the buyer confirmation. That archive move
+was committed as `d1f36b2`. A sync the same day found and fixed the checkout bug recorded in
 section 9: a rejected promo code stayed in the field and got resent on
 Submit. `applyPromoCode` in `app/pages/checkout.vue` now clears the field (and
 `appliedCode`) whenever the server comes back with anything other than
@@ -102,10 +104,31 @@ it supplies.
 
 **This repository is a template**, which is how the remaining work was
 prioritised on 2026-09-10: fix what every adopter inherits, and leave what is
-particular to this shop. A customer confirmation email, stock decrementing and
-paid-order file delivery are the first group. A real store name, a domain and
+particular to this shop. A customer confirmation email and paid-order file
+delivery are the first group; stock decrementing was in it until the user
+dropped it the same day (section 10). A real store name, a domain and
 SPF/DKIM are the second, and belong in the README as setup steps rather than in
 the backlog as repo work.
+
+A later session on 2026-09-10 built the buyer's own order confirmation, the
+first of the three template gaps prioritised above, through the OpenSpec change
+`add-customer-order-confirmation` (section 10). Nothing about the order changed:
+the confirmation is rendered from the re-read that already feeds the staff
+notification, so the two cannot quote different totals, and it is sent after it
+in its own `try`/`catch` so neither can affect the other or the committed order.
+Verified against a running dev server: two real orders placed through the
+checkout form, one sale-priced at 20% and one with `WELCOME25` beating it at
+25%, both recording the figures the page showed ($12.80 against $16.00, and
+$21.75 against $29.00) with no email failure logged for either. Both orders,
+their items and the redemption were deleted afterwards and the sale left on at
+20%, matching the state before. Unit coverage went from 123 tests to 146.
+
+Reviewed against the code on 2026-09-10 in an earlier session, which committed
+nothing and found the working tree clean at `78b5d6b`. Five stale claims are
+corrected below: the capability count above, the change count and table in
+section 2, that section's line about the archive move being uncommitted,
+`server/utils/client-address.ts` and the test tree missing from section 4's
+layout, and the unit-test count in section 10.
 
 ---
 
@@ -299,7 +322,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Ten changes have been through the full cycle, all in
+Fourteen changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -314,6 +337,10 @@ Ten changes have been through the full cycle, all in
 | `2026-09-03-add-store-wide-sale` | `specs/catalog/storefront-sale/` |
 | `2026-09-03-add-promo-codes` | `specs/promotions/promo-code/`, plus additions folded into `specs/assistant/shopping-assistant/`, `specs/contact/contact-message/` and `specs/newsletter/email-optin/` |
 | `2026-09-03-show-promo-code-in-order-email` | `specs/ordering/order-notification/` |
+| `2026-09-10-add-test-suite` | `specs/ordering/test-order/`, plus additions folded into `specs/ordering/order-notification/` |
+| `2026-09-10-add-assistant-tests` | none — it added tests, and changed no behaviour to spec |
+| `2026-09-10-trust-configured-client-ip` | additions folded into `specs/ordering/failure-reporting/` |
+| `2026-09-10-add-customer-order-confirmation` | `specs/ordering/customer-confirmation/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
@@ -323,7 +350,7 @@ section 10, committed as `de3f67d`) and `add-promo-codes` (39 of 39 tasks,
 verified end to end, committed as `fcb1216` then `e4ca300`) sat archivable but
 un-archived for the rest of that session; both were archived on 2026-09-03 in
 a later sync, syncing their delta specs into the main tree (see the top of
-this document). Nothing about the archive move itself is committed yet.
+this document). That archive move is committed, as `d1f36b2`.
 
 `show-promo-code-in-order-email` was proposed, implemented, verified live and
 archived in one session on 2026-09-03 (section 1); its spec is now
@@ -432,6 +459,9 @@ server/
                           what actually resolves a code on an order
   utils/subscribe.ts       subscribeEmail() and subscribeQuietly(), shared by the
                           opt-in form, the contact form and checkout
+  utils/client-address.ts  resolveClientAddress() and rateLimitByCaller(). The one
+                          place any route decides who is calling; believes only
+                          the header NUXT_TRUSTED_IP_HEADER names
   api/store-settings.get.ts  public sale state plus the active code's percent.
                           Never the code itself
   api/products.get.ts     catalog list, prices discounted when a sale is active
@@ -482,7 +512,17 @@ openspec/                 specs and changes -- see section 2
 .agents/, .claude/        openspec skills; .claude also holds slash commands
 AGENTS.md, CLAUDE.md      the working agreement for AI agents
 
-Also present, not listed above: README.md, package.json, tsconfig.json
+tests/
+  unit/                     no network, no database; setup.ts supplies the Nuxt
+                            auto-imports Vitest does not
+  db/                       against the live Supabase project, needs npm run dev
+  e2e/                      Playwright, cart through placed order
+  llm/                      two real gpt-5-mini calls; the only suite that costs
+  smoke/                    against the deployed site
+
+Also present, not listed above: README.md, package.json, tsconfig.json,
+playwright.config.ts, and one vitest config per suite (vitest.config.ts plus
+vitest.db, vitest.llm and vitest.smoke). Section 10 has what each one runs.
 ```
 
 ---
@@ -730,6 +770,16 @@ a different staff address will silently fail until a domain is verified.
   owner's inbox on 2026-09-10 that way. Post a deliberately invalid body
   instead: `rateLimitByCaller` runs before Zod, so a 400 still spends the
   bucket while creating no order and sending no mail.
+- **A dev server left running for half an hour can stop hydrating the app.**
+  On 2026-09-10 both Playwright tests failed at the same line: "Add to cart"
+  clicked, and no `cart` cookie ever appeared. The page server-rendered fine
+  and the same suite had passed earlier. The cause was the dev server itself,
+  running since before that session's edits and through a run of HMR reloads;
+  `playwright.config.ts` sets `reuseExistingServer: true`, so the suite
+  attached to it rather than starting a clean one. Killing it and letting
+  Playwright start its own made both tests pass unchanged. Before believing a
+  hydration failure, restart the dev server. Note that the suite shuts down a
+  server it started, so `npm run test:db` afterwards needs one brought back up.
 - **A bind probe on `127.0.0.1` reports a busy port as free.** Nuxt's dev
   server binds IPv6, so `net.createServer().listen(port, '127.0.0.1')`
   succeeds while a server is still answering on `[::1]`. Ask over HTTP instead;
@@ -833,10 +883,13 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — 60 unit tests over `pricing`, `promo`, `rate-limit` and
-    `schemas`. No network, no database, under half a second. Run these on every
-    save. `tests/unit/setup.ts` supplies the Nuxt auto-imports (`createError`,
-    `useSupabase`) that server code expects and Vitest does not provide.
+  - `npm test` — 123 unit tests across 8 files, over `pricing`, `promo`,
+    `rate-limit`, `schemas`, `client-address`, the assistant's read and write
+    tools, and `confirmations`. It was 60 when this suite landed; the assistant
+    and client-address changes brought the rest. No network, no database, under
+    a second. Run these on every save. `tests/unit/setup.ts` supplies the Nuxt
+    auto-imports (`createError`, `useSupabase`) that server code expects and
+    Vitest does not provide.
   - `npm run test:db` — 17 tests that call the real `create_order` and
     `POST /api/orders` against the **live** Supabase project. Needs
     `npm run dev` already running.
@@ -883,12 +936,24 @@ Known gaps, roughly in the order they were prioritized with the user:
   them.
 - **No SPF/DKIM**, because no domain. Admin mail will land in junk until the
   domain is bought and verified in Resend.
-- **No customer confirmation email.** Only staff are notified. **Prioritised
-  2026-09-10** as one of the three an adopter of this template inherits.
-  `sendWelcomeEmail` in `server/utils/email.ts` already mails a customer
-  address, so the sending path exists; the sandbox sender still delivers only
-  to the Resend account address until a domain is verified, which caps what can
-  be proven end to end.
+- ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
+  OpenSpec change `add-customer-order-confirmation`. A committed order now
+  sends the buyer their own copy as well as notifying staff:
+  `sendCustomerEmail` and `renderCustomerHtml` in `server/utils/email.ts`,
+  called from `server/api/orders.post.ts` after the staff notification and in
+  its own `try`/`catch`. It states the order id, the priced lines and the
+  total, the same subtotal and discount rows staff see when the order was
+  discounted, that no payment has been taken and that staff will make contact,
+  and, for an order containing a file, that the file follows once payment is
+  arranged. Reply-to is the staff address, the mirror of the staff email's
+  reply-to being the buyer. No schema change, no new environment variable.
+  Three rules are worth knowing before editing it: a test order sends neither
+  email, a failed re-read sends the buyer nothing at all (staff get a warning
+  banner and a dashboard to check against, where a buyer handed a $0.00 order
+  with no lines has neither), and neither send can fail the order or the other
+  email. **The sandbox sender still delivers only to the Resend account
+  address, so a real buyer receives nothing until a domain is verified.** Read
+  that silence as the missing domain, not as a bug in this code.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
@@ -917,8 +982,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   read. Deliberate, and the open question recorded in the change's design.
 - **The assistant does not stream.** A reply lands whole, after a pause of a few
   seconds while the tool loop runs.
-- **No stock decrementing.** `in_stock` is a manual boolean; ordering does not
-  change it. **Prioritised 2026-09-10.** Note before designing it: `products`
+- **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
+  ordering does not change it. Briefly prioritised on 2026-09-10, then dropped
+  the same day at the user's direction: staff flip the boolean in the Supabase
+  dashboard and that is enough for this shop. Do not build it without asking.
+  If it is ever revived, note that `products`
   has no quantity column at all, and the constraint
   `products_digital_in_stock_check` forbids a digital row from ever being out of
   stock, so a count column has to leave files alone. `create_order` checks
