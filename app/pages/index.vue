@@ -28,7 +28,14 @@ useSeoMeta({
 </script>
 
 <template>
-  <section class="rounded-xl border border-surface-200 bg-surface-0 p-6 dark:border-surface-800 dark:bg-surface-900">
+  <!--
+    Three layers of horizontal padding stack up between the viewport and a
+    product card: this section, PrimeVue's own .p-tabpanels, and the layout's
+    px-4 on <main>. At 390px that left 118px of the screen as padding and the
+    cards too narrow. The two inner layers drop away below sm; the layout's
+    16px page gutter stays, because that one is the margin of the page itself.
+  -->
+  <section class="rounded-xl border border-surface-200 bg-surface-0 p-4 sm:p-6 dark:border-surface-800 dark:bg-surface-900">
     <h1 class="mb-8 text-2xl font-semibold tracking-tight">Shop</h1>
 
     <Tabs value="products">
@@ -43,7 +50,7 @@ useSeoMeta({
         </Tab>
       </TabList>
 
-      <TabPanels>
+      <TabPanels class="!px-0 sm:!px-[18px]">
         <TabPanel value="products" class="pt-6">
           <Message v-if="error" severity="error">
             Could not load products. Check the Supabase configuration in <code>.env</code>.
