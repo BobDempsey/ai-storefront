@@ -20,7 +20,9 @@ export default defineConfig({
     alias: {
       // Matches the `~~/server/...` specifier Nuxt gives server code, so the
       // utilities under test import exactly as they do at runtime.
-      '~~': fileURLToPath(new URL('./', import.meta.url))
+      '~~': fileURLToPath(new URL('./', import.meta.url)),
+      // And `~/...` for app code, which resolves to app/ under Nuxt 4.
+      '~': fileURLToPath(new URL('./app/', import.meta.url))
     }
   }
 })

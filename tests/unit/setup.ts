@@ -22,6 +22,19 @@ vi.stubGlobal('useRuntimeConfig', () => {
 })
 
 /**
+ * The Pinia stores auto-import this from the persistedstate Nuxt module, and
+ * they read it while the module is being evaluated, not when an action runs.
+ * So it has to exist before a test file imports a store at all. The tests here
+ * never install the plugin, so what these return is never used; they only have
+ * to be callable.
+ */
+vi.stubGlobal('piniaPluginPersistedstate', {
+  localStorage: () => undefined,
+  sessionStorage: () => undefined,
+  cookies: () => undefined
+})
+
+/**
  * Stubs the Nuxt runtime config for a test. Only the keys a test cares about
  * need supplying; anything else reads as undefined, which is what an unset
  * environment variable produces at runtime.
