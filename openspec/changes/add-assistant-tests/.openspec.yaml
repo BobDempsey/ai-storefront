@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-09-10
+# Tests only. Every behaviour covered here is already a requirement in
+# assistant/shopping-assistant, so there is no spec-level change to record.
+skip_specs: true
