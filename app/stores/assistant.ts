@@ -42,6 +42,37 @@ export const useAssistantStore = defineStore('assistant', {
       }
     },
 
+    /**
+     * Opens the panel by itself the first time a visitor arrives, so they
+     * learn the assistant exists without having to find the control.
+     *
+     * The availability check runs before the open here, where openDrawer does
+     * it after. The order differs because the visitor does: someone who
+     * clicked the control asked to see the panel and is owed an answer even
+     * when that answer is "unavailable", while someone who asked for nothing
+     * should not be handed a panel that only apologises.
+     *
+     * The flag is written when the panel actually opens, not when this is
+     * attempted. A shop running without a provider key therefore still greets
+     * the visitor on their next visit after a key is added, rather than
+     * spending their one chance on a version of the shop that had no
+     * assistant.
+     */
+    async autoOpenOnce() {
+      if (this.open || hasBeenGreeted()) return
+
+      try {
+        const { available } = await $fetch<{ available: boolean }>('/api/chat')
+        if (!available) return
+        this.available = true
+      } catch {
+        return
+      }
+
+      this.open = true
+      markGreeted()
+    },
+
     close() {
       this.open = false
     },

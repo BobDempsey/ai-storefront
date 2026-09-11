@@ -33,10 +33,19 @@ export const useColorModeStore = defineStore('color-mode', {
     isDark: (state): boolean =>
       state.mode === 'dark' || (state.mode === 'system' && state.systemPrefersDark),
 
-    /** Label for the control, describing the mode currently in effect. */
+    /**
+     * The scheme actually on screen, which is not the same as `mode`: a
+     * visitor on `system` is rendering one of these two. The control shows and
+     * names this rather than the stored mode, because `system` is not
+     * something the navbar offers.
+     */
+    scheme(): 'light' | 'dark' {
+      return this.isDark ? 'dark' : 'light'
+    },
+
+    /** Label for the control, naming the scheme in effect and the action. */
     label(): string {
-      if (this.mode === 'system') return 'Theme: system'
-      return this.mode === 'dark' ? 'Theme: dark' : 'Theme: light'
+      return this.isDark ? 'Dark theme, switch to light' : 'Light theme, switch to dark'
     }
   },
 
@@ -62,9 +71,20 @@ export const useColorModeStore = defineStore('color-mode', {
       if (isColorMode(mode)) this.mode = mode
     },
 
-    /** light → dark → system → light */
-    cycle() {
-      this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length]!
+    /**
+     * The navbar's two-state control: switch to whichever scheme is not on
+     * screen. Deriving from `isDark` rather than from `mode` is what makes a
+     * visitor still on `system` behave sensibly. Under a dark OS they are
+     * looking at dark, so one activation owes them light; branching on `mode`
+     * would send them to `dark`, which they already had, and the click would
+     * look broken.
+     *
+     * There is deliberately no third state here. `system` remains the default
+     * for a new visitor, remains honoured by the pre-paint script, and remains
+     * reachable through `set()`, but the navbar does not offer it.
+     */
+    toggle() {
+      this.mode = this.isDark ? 'light' : 'dark'
     }
   },
 

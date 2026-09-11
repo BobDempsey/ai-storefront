@@ -11,10 +11,10 @@ const { optinOffer } = useStoreSettings()
 // Client-only; starts the watcher that owns the `.dark` class on <html>.
 colorMode.init()
 
-const themeIcon = computed(() => {
-  if (colorMode.mode === 'system') return 'pi pi-desktop'
-  return colorMode.mode === 'dark' ? 'pi pi-moon' : 'pi pi-sun'
-})
+// Two icons, never three: the control switches between light and dark, so it
+// shows the scheme on screen rather than the stored mode. A visitor still on
+// `system` sees the one they are actually looking at.
+const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun'))
 </script>
 
 <template>
@@ -32,7 +32,7 @@ const themeIcon = computed(() => {
               title="Shop assistant"
               @click="assistant.openDrawer()"
             >
-              <i class="pi pi-comments" />
+              <i class="pi pi-microchip-ai" />
             </button>
             <template #fallback>
               <span class="size-8" />
@@ -52,9 +52,9 @@ const themeIcon = computed(() => {
             <button
               type="button"
               class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
-              :aria-label="`Change theme (currently ${colorMode.mode})`"
+              :aria-label="`Change theme (currently ${colorMode.scheme})`"
               :title="colorMode.label"
-              @click="colorMode.cycle()"
+              @click="colorMode.toggle()"
             >
               <i :class="themeIcon" />
             </button>

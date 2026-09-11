@@ -10,6 +10,13 @@ const submitting = ref(false)
 const orderId = ref('')
 const draftError = ref('')
 
+// First visit only, and only once. The layout wraps this component in
+// ClientOnly, so onMounted is already the client; the store reads the flag
+// from localStorage, which does not exist during SSR either way.
+onMounted(() => {
+  assistant.autoOpenOnce()
+})
+
 // The draft's own details, editable before confirming. Copied out of the draft
 // so an edit is the visitor's, not something the assistant typed.
 const details = reactive({ name: '', email: '', phone: '', notes: '' })
@@ -247,10 +254,16 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
             </p>
           </div>
 
+          <!--
+            The greeting, and storefront copy rather than anything the model
+            produced. It sits outside `assistant.messages`, which is the array
+            sent to the chat route, so it costs no provider call and never
+            enters the history the provider sees.
+          -->
           <p v-if="assistant.isEmpty" class="text-sm text-surface-500">
-            Ask about anything in the shop: what a print is made of, what is in your
-            cart, or how ordering works. I can add things for you and draft an order,
-            but you confirm it yourself.
+            Hi, I'm the shop assistant. Ask me about anything: info on a product, what
+            is in your cart, or how ordering works. I can add things for you and draft
+            an order, but you confirm it yourself.
           </p>
 
           <div
