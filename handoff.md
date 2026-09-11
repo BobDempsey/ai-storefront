@@ -110,8 +110,10 @@ in it until the user dropped both the same day. A real store name, a domain and
 SPF/DKIM are the second, and the user closed that group the same day too: they
 are per-deployment setup, not repo work, and belong in the README as setup
 steps. Do not open work on a domain, SPF/DKIM, a store name or a deploy without
-asking. Nothing is queued as a result: `tasks.md` is empty, and the one idea
-still written down in section 10 is parked rather than next.
+asking. No feature work is queued as a result, and the one idea still written
+down in section 10 is parked rather than next. `tasks.md` holds only the push
+and redeploy that close the gap between local `main` and production
+(section 10), which is itself deploy work and so needs the same ask.
 
 A later session on 2026-09-10 also let a visitor use a promo code through the
 assistant panel, without the assistant being able to produce one: the code is
@@ -141,6 +143,36 @@ corrected below: the capability count above, the change count and table in
 section 2, that section's line about the archive move being uncommitted,
 `server/utils/client-address.ts` and the test tree missing from section 4's
 layout, and the unit-test count in section 10.
+
+Reviewed against the code again on 2026-09-11, working tree clean at `dc44818`.
+The find that matters: **`origin/main` is 31 commits behind local `main`**, so
+everything since the deploy went up on 2026-09-10 is committed but not
+published, and the live store is running none of it (section 10). Four smaller
+claims were corrected in place: the unit-test count and file count and the
+`test:db` count in section 10, the `llm/` line in section 4's tree, and the
+`.mcp.json` line in section 2, which named only the Supabase server. Verified
+still true the same day: 15 archived changes and 12 capabilities with no
+in-flight change, every path in section 4's layout, the 9 seeded products,
+`npm test` green at 156, `npm run test:smoke` green against the production
+alias, and the live sale on at 20% with the promo at 25% and
+`NUXT_PUBLIC_STORE_NAME` still the `Store` placeholder.
+
+Four navbar and assistant changes followed on 2026-09-11, through the OpenSpec
+change `refresh-navbar-and-assistant-entry`: the theme control lost its
+`system` icon and became a two-state toggle, the assistant button swapped
+`pi-comments` for `pi-microchip-ai`, the panel opens itself once on a first
+visit, and its greeting now introduces the assistant in its own voice. The
+assistant itself gained nothing: no tool, no prompt rule changed, and the
+greeting is storefront copy sitting outside `messages`, so it costs no provider
+call and the model never sees it. Unit coverage went from 156 to 180. Verified
+against a running dev server through the `playwright` MCP server: the panel
+opened unasked on a first load and stayed shut on the next page, a visitor on
+`system` under a dark OS saw the moon and went to light on one click, and both
+schemes render the new icons and greeting legibly. Verified on a second dev
+server with the provider key blanked that the panel does not open itself and
+does not spend the visitor's one greeting. `npm test`, `npm run build` and
+`npm run test:e2e` all pass. The two decisions worth knowing before editing any
+of it are in section 3.
 
 ---
 
@@ -316,7 +348,8 @@ anything beyond a trivial fix gets a written, agreed spec before implementation.
 AGENTS.md                 the working agreement, applies to every AI agent
 CLAUDE.md                 points Claude Code at AGENTS.md
 .mcp.json                 Supabase MCP server, scoped to this project and to
-                          the database and docs tools. See AGENTS.md
+                          the database and docs tools, plus the playwright
+                          server added 2026-09-03. See AGENTS.md
 openspec/
   config.yaml             schema: spec-driven, plus project context and rules
   specs/                  accepted specs, by capability (theming/color-mode)
@@ -437,6 +470,23 @@ should be.
   the same two requests the checkout page makes. It never becomes a tool
   argument and never enters the message history. `TOOL_NAMES` is pinned by a
   test so adding a promo tool has to be a deliberate edit. See section 10.
+- **The navbar theme control offers two schemes, not three.** `system` is still
+  the default for a new visitor, still honoured by the pre-paint script and
+  still settable through `set()`, but the navbar no longer shows it and a
+  visitor cannot return to it once they have chosen. `toggle()` derives the
+  next scheme from `isDark` rather than from `mode`, which is what makes a
+  visitor still on `system` behave sensibly: under a dark OS they are looking
+  at dark, so one click owes them light. Branching on `mode` would send them to
+  `dark`, which they already had, and the click would look broken.
+- **The assistant panel opens itself once per browser, then never again.** The
+  flag is a localStorage key of its own (`app/utils/assistant-greeted.ts`), not
+  a `persist` block on the assistant store: that store persists nothing, the
+  conversation is the thing that must never be persisted, and a `pick` list
+  would put that guarantee one careless edit away. A browser that refuses
+  storage is treated as already greeted, because a browser that cannot be read
+  cannot be written either, and the alternative is a panel that opens on every
+  page. The flag is written only when the panel actually opens, so a shop
+  running without a provider key still greets the visitor once a key is added.
 - **Files are catalogue rows, not a second table.** A downloadable file is a
   `products` row with `kind = 'digital'`, so `create_order` keeps its single
   join and stays the only place a price comes from.
@@ -518,10 +568,16 @@ app/
                                  "N% off" Tag beside an already-discounted total
   stores/assistant.ts            the conversation; NOT persisted, fresh per load
   stores/cart.ts                 IDs + quantities only, persisted
-  stores/color-mode.ts           light/dark/system, owns the .dark class
+  stores/color-mode.ts           light/dark/system, owns the .dark class.
+                                 toggle() is what the navbar calls and only
+                                 reaches light and dark; set() still takes
+                                 all three
   types/index.ts                 Product, CartLine, CartPreview, StoreSettings
   utils/money.ts                 formatMoney()
   utils/bytes.ts                 formatBytes(), for file sizes
+  utils/assistant-greeted.ts     the one-per-browser flag behind the panel's
+                                 first-visit auto-open. Deliberately not part
+                                 of the assistant store, which persists nothing
   assets/css/main.css            layer order + Tailwind import
 
 public/
@@ -536,7 +592,8 @@ tests/
                             auto-imports Vitest does not
   db/                       against the live Supabase project, needs npm run dev
   e2e/                      Playwright, cart through placed order
-  llm/                      two real gpt-5-mini calls; the only suite that costs
+  llm/                      eight real gpt-5-mini calls across two files; costs
+                            money, as does the one excluded e2e browser test
   smoke/                    against the deployed site
 
 Also present, not listed above: README.md, package.json, tsconfig.json,
@@ -828,6 +885,27 @@ a different staff address will silently fail until a domain is verified.
   integers before `round` sees it. `v_percent` is `numeric` in `create_order`;
   cast the percentage when checking by hand, or the two look like they
   disagree when they do not.
+- **A clean Playwright context looks exactly like a first-time visitor.** Once
+  the assistant panel gained its first-visit auto-open, every e2e test started
+  from a context with no `assistant-greeted` flag, so the panel opened over the
+  catalogue and swallowed the "Add to cart" click. `tests/e2e/global-setup.ts`
+  now seeds the flag and saves a `storageState` file that `playwright.config.ts`
+  points every test at. Anything else this app comes to do on a first visit
+  needs the same treatment, and the symptom will look like the stale-dev-server
+  hydration failure above rather than like the feature that caused it.
+- **A second dev server needs `NUXT_IGNORE_LOCK=1`.** The Windows dev-lock
+  gotcha above refuses a second `npm run dev` outright. To check behaviour with
+  an environment variable changed, start one with `NUXT_IGNORE_LOCK=1
+  NUXT_PORT=3100` and the variable set on that command, rather than editing
+  `.env`, which loses the real credential the moment the run is killed.
+  `tests/db/chat-guards.test.ts` does exactly this and is the worked example.
+- **A green `npm run test:smoke` does not mean your code is deployed.** It
+  asks the production alias four questions the store has answered correctly
+  since 2026-09-10, so it passes just as well against a build from before
+  anything you wrote. Vercel builds from `origin/main`, not the working tree,
+  so the check that the live site is current is `git status -sb` — if it says
+  `ahead N`, production is N commits old however green the suite is. This is
+  how the 31-commit gap in section 10 went unnoticed.
 
 ---
 
@@ -902,16 +980,23 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — 123 unit tests across 8 files, over `pricing`, `promo`,
+  - `npm test` — 180 unit tests across 14 files, over `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
-    tools, and `confirmations`. It was 60 when this suite landed; the assistant
-    and client-address changes brought the rest. No network, no database, under
-    a second. Run these on every save. `tests/unit/setup.ts` supplies the Nuxt
+    tools, its promo boundary, `confirmations`, the orders route, the customer
+    email, the colour-mode toggle and the panel's first-visit auto-open. It was
+    60 when this suite landed; the assistant, client-address,
+    buyer-confirmation, assistant-promo and navbar changes brought the rest. No
+    network, no database, under a second. Run these on every save. The three
+    newest files test Pinia stores rather than server utilities, which is why
+    `vitest.config.ts` now carries a `~` alias and `setup.ts` stubs
+    `piniaPluginPersistedstate`: a store reads that while its module is being
+    evaluated, so it has to exist before a test file imports one. `tests/unit/setup.ts` supplies the Nuxt
     auto-imports (`createError`, `useSupabase`) that server code expects and
     Vitest does not provide.
-  - `npm run test:db` — 17 tests that call the real `create_order` and
-    `POST /api/orders` against the **live** Supabase project. Needs
-    `npm run dev` already running.
+  - `npm run test:db` — 28 tests across 5 files that call the real
+    `create_order` and `POST /api/orders` against the **live** Supabase
+    project, including the drawer's promo path. Needs `npm run dev` already
+    running.
   - `npm run test:e2e` — Playwright, cart through placed order, including the
     rejected-promo-code clear from `6c70104`. Starts a dev server if none is up,
     and shuts down one it started, so `test:db` afterwards needs one brought
@@ -969,7 +1054,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   domain is bought and verified in Resend. That is a per-deployment setup step
   the adopter takes, explicitly set aside by the user on 2026-09-10 along with
   the custom domain and the `Store` placeholder still standing in for
-  `NUXT_PUBLIC_STORE_NAME` in production.
+  `NUXT_PUBLIC_STORE_NAME` in production. The three were meant to land in the
+  README as setup steps instead; checked 2026-09-11, they have not. `README.md`
+  has a Setup section and it mentions no domain, no SPF/DKIM and no store name,
+  so an adopter is currently told none of it. Writing those steps is repo work
+  and is the one piece of this group that does not need a deploy.
 - ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
   OpenSpec change `add-customer-order-confirmation`. A committed order now
   sends the buyer their own copy as well as notifying staff:
@@ -1049,6 +1138,17 @@ Known gaps, roughly in the order they were prioritized with the user:
   consecutive calls, and the catalogue renders. Still open: no custom domain,
   and `NUXT_PUBLIC_STORE_NAME` is the `Store` placeholder in production
   because that is what `.env` holds.
+- **Production is 31 commits behind local `main`, found 2026-09-11.**
+  `origin/main` is still `e0fd7e1`, the commit that recorded the deploy
+  starting, and Vercel builds from the remote. So the live store predates the
+  whole test suite, the `trust-configured-client-ip` rate-limit fix, the
+  buyer's confirmation email and the assistant's promo field, even though the
+  working tree is clean and every one of those is committed locally. `npm run
+  test:smoke` passing is not evidence to the contrary: its four checks pass
+  against the old build too. Pushing closes the gap and Vercel redeploys on
+  its own, but **ask before doing it** — the user set aside deploy work on
+  2026-09-10, and the rate-limit fix in particular changes who the deployed
+  limiter believes, which is worth flagging before it ships rather than after.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
