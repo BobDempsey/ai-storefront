@@ -125,12 +125,30 @@ describe('the buckets the routes actually use', () => {
     readFileSync(fileURLToPath(new URL(`../../server/api/${path}`, import.meta.url)), 'utf8')
 
   it('keys the assistant on a chat: prefix', () => {
-    expect(source('chat.post.ts')).toContain('`chat:${getRequestIP(')
+    expect(source('chat.post.ts')).toContain('`chat:${address}`')
   })
 
   it('keys orders on the bare address, so the two cannot collide', () => {
     const orders = source('orders.post.ts')
-    expect(orders).toContain("getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'")
+    expect(orders).toContain('address => address')
     expect(orders).not.toContain('chat:')
+  })
+
+  /**
+   * Every limited route goes through the resolver. A route reaching for h3's
+   * forwarded-for option directly would be trusting a header the client
+   * controls, which is the whole thing this guards against.
+   */
+  it('has no route reading a client-supplied forwarded header', () => {
+    for (const route of ['orders.post.ts', 'contact.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
+      expect(source(route)).not.toContain('xForwardedFor')
+      expect(source(route)).toContain('rateLimitByCaller(')
+    }
+  })
+
+  it('leaves no caller pooled under a shared fallback key', () => {
+    for (const route of ['orders.post.ts', 'contact.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
+      expect(source(route)).not.toContain("'unknown'")
+    }
   })
 })
