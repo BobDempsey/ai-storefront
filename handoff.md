@@ -174,6 +174,30 @@ does not spend the visitor's one greeting. `npm test`, `npm run build` and
 `npm run test:e2e` all pass. The two decisions worth knowing before editing any
 of it are in section 3.
 
+A fifth followed the same day, `add-assistant-attention-dot`: a small pulsing
+dot on the navbar's assistant control, shown until the panel is opened in that
+browsing session. **The same change removed the first-visit auto-open described
+in the paragraph above**, at the user's direction, so the paragraph records what
+shipped that morning rather than how the app behaves now. Nothing opens the
+panel except the visitor; the dot is the only cue, and the reasoning is in
+section 3. `assistant-greeted`, `autoOpenOnce()`, their tests and the seeded
+Playwright `storageState` all went with it. A sessionStorage flag for the dot
+went the same way shortly after, when the user settled that a refresh should
+show the dot again: it is now plain store state, so the rebuild a page load
+already does is what brings it back. Unit coverage went 180 to 194, then to 173
+as the removals landed.
+
+Verified against a running dev server and, for the removal, a genuinely clean
+browser profile: a first-time visitor now gets the dot and a closed panel, with
+no `assistant-greeted` written at all; clicking the control opens the panel and
+clears the dot; it stays clear across a navigation and returns in a new session.
+Driving a browser through the whole sequence: the dot shows on load, clears on
+the click, stays clear when the panel is closed again and across an in-app
+navigation, and is back after a reload. It is legible in both schemes, and under
+emulated `prefers-reduced-motion: reduce` it stays at full opacity while the
+pulse ring is gone. `npm test`, `npm run build` and `npm run test:e2e` all pass,
+the e2e suite now without any seeding.
+
 ---
 
 ## 1. What this is
@@ -367,7 +391,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Sixteen changes have been through the full cycle, all in
+Seventeen changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -388,6 +412,7 @@ Sixteen changes have been through the full cycle, all in
 | `2026-09-10-add-customer-order-confirmation` | `specs/ordering/customer-confirmation/` |
 | `2026-09-11-let-assistant-apply-a-promo-code` | additions folded into `specs/assistant/shopping-assistant/` and `specs/promotions/promo-code/` |
 | `2026-09-11-refresh-navbar-and-assistant-entry` | additions folded into `specs/assistant/shopping-assistant/` and `specs/theming/color-mode/` |
+| `2026-09-11-add-assistant-attention-dot` | additions folded into `specs/assistant/shopping-assistant/`, which also lost the first-visit auto-open that change had added hours earlier |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
@@ -479,15 +504,26 @@ should be.
   visitor still on `system` behave sensibly: under a dark OS they are looking
   at dark, so one click owes them light. Branching on `mode` would send them to
   `dark`, which they already had, and the click would look broken.
-- **The assistant panel opens itself once per browser, then never again.** The
-  flag is a localStorage key of its own (`app/utils/assistant-greeted.ts`), not
-  a `persist` block on the assistant store: that store persists nothing, the
-  conversation is the thing that must never be persisted, and a `pick` list
-  would put that guarantee one careless edit away. A browser that refuses
-  storage is treated as already greeted, because a browser that cannot be read
-  cannot be written either, and the alternative is a panel that opens on every
-  page. The flag is written only when the panel actually opens, so a shop
-  running without a provider key still greets the visitor once a key is added.
+- **Nothing opens the assistant panel except the visitor.** A first-visit
+  auto-open was built on 2026-09-11 and removed the same day, at the user's
+  direction, in favour of the attention dot below. Do not rebuild it, or a
+  delayed, scrolled or exit-intent version of it, without asking. The reason it
+  went is worth keeping: it fired once per browser, so it could never reach a
+  returning visitor who had closed the panel, and it opened over the page of
+  someone who had asked for nothing. It also cannot coexist with the dot, which
+  it would clear in the same tick a first-time visitor loaded the page, spending
+  the cue before it was seen. `tests/unit/assistant-dot.test.ts` pins the store
+  as having no such action, so putting one back is a deliberate edit.
+- **The navbar's attention dot is the only thing pointing at the assistant, and
+  it is stored nowhere.** `showDot` is plain state on the assistant store,
+  defaulting to true and cleared by `openDrawer`. That default is the whole
+  mechanism: the store is rebuilt on every page load, so a reload brings the dot
+  back, while an in-app navigation does not, because client-side routing does
+  not rebuild the store. A sessionStorage flag was built for this first and
+  removed on the user's call that a refresh should show the dot again; storing
+  nothing is both the simpler code and the asked-for behaviour, so do not
+  reintroduce a flag without asking. Reduced motion stops the pulse and keeps
+  the dot, rather than hiding it.
 - **Files are catalogue rows, not a second table.** A downloadable file is a
   `products` row with `kind = 'digital'`, so `create_order` keeps its single
   join and stays the only place a price comes from.
@@ -576,9 +612,6 @@ app/
   types/index.ts                 Product, CartLine, CartPreview, StoreSettings
   utils/money.ts                 formatMoney()
   utils/bytes.ts                 formatBytes(), for file sizes
-  utils/assistant-greeted.ts     the one-per-browser flag behind the panel's
-                                 first-visit auto-open. Deliberately not part
-                                 of the assistant store, which persists nothing
   assets/css/main.css            layer order + Tailwind import
 
 public/
@@ -886,14 +919,15 @@ a different staff address will silently fail until a domain is verified.
   integers before `round` sees it. `v_percent` is `numeric` in `create_order`;
   cast the percentage when checking by hand, or the two look like they
   disagree when they do not.
-- **A clean Playwright context looks exactly like a first-time visitor.** Once
-  the assistant panel gained its first-visit auto-open, every e2e test started
-  from a context with no `assistant-greeted` flag, so the panel opened over the
-  catalogue and swallowed the "Add to cart" click. `tests/e2e/global-setup.ts`
-  now seeds the flag and saves a `storageState` file that `playwright.config.ts`
-  points every test at. Anything else this app comes to do on a first visit
-  needs the same treatment, and the symptom will look like the stale-dev-server
-  hydration failure above rather than like the feature that caused it.
+- **A clean Playwright context looks exactly like a first-time visitor.** While
+  the panel had a first-visit auto-open, every e2e test started from a context
+  with no flag set, so the panel opened over the catalogue and swallowed the
+  "Add to cart" click. The symptom was a detached-element timeout three steps
+  later, which reads like the stale-dev-server hydration failure above rather
+  than like the feature that caused it. The workaround was a seeded
+  `storageState`, and both it and the auto-open are gone as of 2026-09-11. The
+  lesson is not: anything this app comes to do unprompted on a first visit will
+  break the suite the same way, and will point somewhere else when it does.
 - **A second dev server needs `NUXT_IGNORE_LOCK=1`.** The Windows dev-lock
   gotcha above refuses a second `npm run dev` outright. To check behaviour with
   an environment variable changed, start one with `NUXT_IGNORE_LOCK=1
@@ -981,14 +1015,16 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — 180 unit tests across 14 files, over `pricing`, `promo`,
+  - `npm test` — 173 unit tests across 13 files, over `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
     tools, its promo boundary, `confirmations`, the orders route, the customer
-    email, the colour-mode toggle and the panel's first-visit auto-open. It was
-    60 when this suite landed; the assistant, client-address,
-    buyer-confirmation, assistant-promo and navbar changes brought the rest. No
-    network, no database, under a second. Run these on every save. The three
-    newest files test Pinia stores rather than server utilities, which is why
+    email, the colour-mode toggle and the navbar attention dot. It was 60 when
+    this suite landed; the assistant, client-address, buyer-confirmation,
+    assistant-promo, navbar and dot changes brought the rest, and removing the
+    auto-open and the dot's storage flag took 21 back off. No network, no
+    database, under a second. Run these on every save. The two newest files test
+    Pinia stores rather than server
+    utilities, which is why
     `vitest.config.ts` now carries a `~` alias and `setup.ts` stubs
     `piniaPluginPersistedstate`: a store reads that while its module is being
     evaluated, so it has to exist before a test file imports one. `tests/unit/setup.ts` supplies the Nuxt

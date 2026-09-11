@@ -32,61 +32,6 @@ they are on, and SHALL NOT discard their cart.
 - **THEN** the assistant control carries a mark that reads as an assistant
 - **AND** no other control in the chrome uses the same mark
 
-### Requirement: The panel introduces itself once on a first visit
-
-The storefront SHALL open the chat panel by itself the first time a visitor
-arrives, so a visitor learns the assistant exists without having to find the
-control. It SHALL do this at most once for that visitor: once the visitor has
-closed the panel, or once the storefront has recorded that it opened, the panel
-SHALL NOT open itself again on any later page or in any later session, until
-the visitor clears site data.
-
-The automatic opening SHALL NOT send a message, SHALL NOT start a conversation,
-and SHALL NOT make any provider call. A visitor SHALL be able to close the panel
-by the same means as a panel they opened themselves, including by keyboard.
-
-Where the assistant is not configured, the panel SHALL NOT open itself, because
-a panel that opens only to report itself unavailable is worse than no panel.
-Where the storefront cannot record that it has opened, it SHALL NOT open itself
-at all, so that a visitor is never shown the panel again on every page they
-visit.
-
-#### Scenario: A visitor's first arrival
-
-- **WHEN** a visitor loads the storefront for the first time and the assistant is configured
-- **THEN** the chat panel opens without the visitor acting
-- **AND** no message is sent and no conversation is started
-
-#### Scenario: The same visitor navigates on
-
-- **WHEN** that visitor closes the panel and opens another page
-- **THEN** the panel stays closed
-- **AND** it stays closed on every later page and later visit
-
-#### Scenario: A returning visitor
-
-- **WHEN** a visitor who has already been shown the panel returns in a later session
-- **THEN** the panel does not open itself
-- **AND** the control in the site chrome still opens it on request
-
-#### Scenario: Closing an automatically opened panel
-
-- **WHEN** a visitor closes the panel that opened itself, using a pointer or the keyboard
-- **THEN** it closes exactly as a panel they had opened themselves
-- **AND** they remain on the same page with their cart intact
-
-#### Scenario: The assistant is not configured
-
-- **WHEN** no provider key is configured and a visitor arrives for the first time
-- **THEN** the panel does not open itself
-- **AND** no page fails to render
-
-#### Scenario: The storefront cannot remember
-
-- **WHEN** the browser blocks access to the storage the flag would be written to
-- **THEN** the panel does not open itself
-- **AND** the rest of the storefront, including the control that opens the panel, works normally
-
 ### Requirement: The panel opens with a greeting from the assistant
 
 Before any message has been exchanged, the panel SHALL show a greeting written
@@ -119,6 +64,81 @@ message, and SHALL return when a visitor starts a new conversation.
 
 - **WHEN** the messages sent to the provider are inspected after a visitor's first question
 - **THEN** the greeting is not among them
+
+### Requirement: The control carries an attention cue until the panel is opened
+
+The control in the site chrome SHALL carry a small visual cue while the visitor
+has not opened the panel since the page was loaded, and SHALL drop that cue as
+soon as they open it.
+
+The cue SHALL be present again after the page is reloaded, whether or not the
+visitor has opened the panel before, so a visitor who has not engaged keeps
+being offered it. Within a single page load, once the panel has been opened the
+cue SHALL NOT return, including after the visitor closes the panel again.
+
+The cue SHALL carry no number, no text and no unread count. It SHALL animate,
+and the cue SHALL remain visible against the chrome behind it in both the light
+and the dark scheme. Where the browser reports `prefers-reduced-motion: reduce`,
+the cue SHALL still be shown but SHALL NOT animate, because a visitor who cannot
+take movement still needs the cue.
+
+The cue SHALL NOT convey information to assistive technology beyond what the
+control's own name already says, since it reports nothing a visitor needs read
+aloud.
+
+#### Scenario: A visitor who has not opened the panel
+
+- **WHEN** a visitor loads a page and has not opened the panel since it loaded
+- **THEN** the control carries the cue
+
+#### Scenario: The visitor opens the panel
+
+- **WHEN** the visitor activates the control and the panel opens
+- **THEN** the cue is gone
+
+#### Scenario: The visitor closes the panel again
+
+- **WHEN** the visitor closes a panel they opened, without reloading the page
+- **THEN** the cue stays gone
+
+#### Scenario: A reload
+
+- **WHEN** a visitor who opened the panel reloads the page
+- **THEN** the control carries the cue again
+
+#### Scenario: A visitor who cannot take movement
+
+- **WHEN** the browser reports `prefers-reduced-motion: reduce`
+- **THEN** the cue is shown without animation
+- **AND** it is not hidden
+
+#### Scenario: Both schemes
+
+- **WHEN** the page renders in either the light or the dark scheme
+- **THEN** the cue is visible against the chrome behind it
+
+#### Scenario: What assistive technology is told
+
+- **WHEN** assistive technology inspects the control while the cue is shown
+- **THEN** the control's name is what it was without the cue
+- **AND** the cue itself announces nothing
+
+### Requirement: Only the visitor opens the panel
+
+The storefront SHALL open the chat panel only in response to the visitor asking
+for it. Nothing else SHALL open it: not a first visit, not elapsed time, not
+scroll position, and not an attempt to leave the page.
+
+#### Scenario: A first-time visitor arrives
+
+- **WHEN** a visitor loads the storefront for the first time
+- **THEN** the panel is closed
+- **AND** the control carries the attention cue instead
+
+#### Scenario: The visitor does nothing
+
+- **WHEN** a visitor reads a page without activating the control
+- **THEN** the panel stays closed for as long as they are on it
 
 ### Requirement: The assistant answers about this shop and declines the rest
 
