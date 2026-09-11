@@ -962,21 +962,22 @@ Known gaps, roughly in the order they were prioritized with the user:
   catalogue rows with `kind = 'digital'`, sold through the same cart and order
   path, and staff email the file by hand after payment. There is still no
   storage bucket and no download route, by decision.
-- **Files are delivered by hand.** **Prioritised 2026-09-10.** Note before
-  designing it: `orders.status` exists, defaults to `'new'`, and is read or
-  written by nothing anywhere in the codebase, so the status a dashboard would
-  set is free to define. `AGENTS.md` currently forbids agents from touching
-  Supabase storage, so standing up a bucket needs either a human or a change to
-  that agreement. The next step here is the one deferred when
-  files were added: when staff mark an order paid, the app emails the customer a
-  time-limited link. That needs the file in storage and an order status the
-  dashboard can set, neither of which exists.
-- **The assistant's daily cap is still unproven.** The 25-message cap is now
-  covered by a test (`tests/db/chat-guards.test.ts`); the
-  75-requests-a-day limit was left untested rather than spend 75 provider calls.
-  It uses the same `rate-limit.ts` module as the order and contact routes but
-  its own `chat:` bucket on a 24-hour window, so it neither spends nor is spent
-  by their allowances.
+- **Files are delivered by hand, and that stays.** Briefly prioritised on
+  2026-09-10, then dropped the same day at the user's direction: staff email
+  the file once payment is arranged, which is what the confirmation email now
+  tells the buyer will happen. Do not build automated delivery without asking.
+  If it is ever revived, the groundwork is worth knowing: `orders.status`
+  exists, defaults to `'new'`, and is read or written by nothing anywhere in
+  the codebase, so the status a dashboard would set is free to define; and
+  `AGENTS.md` forbids agents from touching Supabase storage, so standing up a
+  bucket needs either a human or a change to that agreement.
+- **The assistant's daily cap is unproven, and will stay that way.** The
+  25-message cap is covered by a test (`tests/db/chat-guards.test.ts`); the
+  75-requests-a-day limit was left untested rather than spend 75 provider
+  calls, and on 2026-09-10 the user settled that it is not worth proving. It
+  uses the same `rate-limit.ts` module as the order and contact routes, which
+  the unit tests do cover, but its own `chat:` bucket on a 24-hour window, so
+  it neither spends nor is spent by their allowances.
 - **The assistant has no transcript.** Nothing about a conversation is stored,
   so when a visitor says the bot ordered the wrong thing there is nothing to
   read. Deliberate, and the open question recorded in the change's design.
