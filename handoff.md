@@ -1244,10 +1244,18 @@ Known gaps, roughly in the order they were prioritized with the user:
   `orders@bobdempsey83.com` in `.env` and on both Vercel environments, and
   production was redeployed, since changing a variable does not rebuild what is
   already running. `test:smoke` passes 4/4 against the domain afterwards.
-  **Unconfirmed**: no mail has gone through the new sender yet, so whether a
-  buyer at an arbitrary address actually receives the confirmation is untested.
-  That needs a real order and someone reading an inbox, and it is the last
-  item in `tasks.md` for this shop.
+  **Confirmed the same day, end to end.** A real order was placed against
+  production for `bobdempsey@proton.me`, an address with no connection to the
+  Resend account, and both emails arrived: the buyer's confirmation from
+  `orders@bobdempsey83.com` and the staff notification to the Gmail. Both
+  showed $16.00 subtotal, a 20% store sale of -$3.20 and a $12.80 total,
+  matching the API's own `totalCents`. **Both landed in the inbox, not spam**,
+  and Gmail filed its copy under Updates, which is the SPF and DKIM records
+  doing their job. The order (`f5e7f30c-f343-42d8-abfc-211cadc62a58`) and its
+  items were deleted afterwards through the PostgREST endpoint with the service
+  key, since the `supabase` MCP server was not authorized in that session.
+  Note what could not be used here: a **test order sends no email at all**, so
+  proving delivery needs a real one, with a real row to clean up after.
   **Decided 2026-09-11: the sender is an address on `bobdempsey83.com` with no
   mailbox behind it**, and the user's personal Gmail stays as
   `NUXT_ORDER_ADMIN_EMAIL`. The distinction that settled it: anyone can send
@@ -1273,6 +1281,9 @@ Known gaps, roughly in the order they were prioritized with the user:
   a subdomain of it) in Resend and adding the records it hands back to the
   Route 53 zone `Z071721280HQ6W3TJD8O`, which the `route53-dns` credentials can
   now write directly.
+- ~~The customer confirmation has never reached a real customer.~~ **It has,
+  2026-09-11.** The sandbox sender was the only thing stopping it; see the
+  SPF/DKIM item above for the order that proved it.
 - ~~No customer confirmation email.~~ **Built, 2026-09-10**, through the
   OpenSpec change `add-customer-order-confirmation`. A committed order now
   sends the buyer their own copy as well as notifying staff:
@@ -1288,9 +1299,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   email, a failed re-read sends the buyer nothing at all (staff get a warning
   banner and a dashboard to check against, where a buyer handed a $0.00 order
   with no lines has neither), and neither send can fail the order or the other
-  email. **The sandbox sender still delivers only to the Resend account
-  address, so a real buyer receives nothing until a domain is verified.** Read
-  that silence as the missing domain, not as a bug in this code.
+  email. ~~**The sandbox sender still delivers only to the Resend account
+  address, so a real buyer receives nothing until a domain is verified.**~~
+  **Fixed 2026-09-11**, and verified against a Proton address: the sender is
+  now `orders@bobdempsey83.com` on a domain that had been verified in Resend
+  since 2024. A buyer receives their confirmation.
 - **Each product needs more description text than it has.** The seeded
   descriptions in `supabase/seed.sql` are one line apiece ("Print-in-place PLA,
   92 links, 11" nose to tail."), which is all the catalogue card and

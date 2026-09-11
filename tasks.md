@@ -2,7 +2,6 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Place a test order and confirm the buyer email reaches a non-account address
 - [ ] Write longer product descriptions
 
 ## Next: fif.bobdempsey83.com from the same repo
