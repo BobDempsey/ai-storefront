@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test'
-import { STORAGE_STATE } from './tests/e2e/global-setup'
 
 /**
  * Drives a real browser against `npm run dev`. The orders it places carry the
@@ -32,10 +31,6 @@ export default defineConfig({
     : [['list'], ['html', { outputFolder: 'node_modules/.cache/playwright/report', open: 'never' }]],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
-    // Written by global setup, and carrying the flag that says this browser has
-    // already been shown the assistant panel. Without it every test looks like
-    // a first visit and the panel opens over the page mid-click.
-    storageState: STORAGE_STATE,
     trace: 'retain-on-failure'
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
