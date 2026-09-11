@@ -2,8 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Point NUXT_ORDER_FROM_EMAIL at an address on bobdempsey83.com, then redeploy
-- [ ] Place a test order and confirm the buyer email arrives
+- [ ] Place a test order and confirm the buyer email reaches a non-account address
 - [ ] Write longer product descriptions
 
 ## Next: fif.bobdempsey83.com from the same repo
