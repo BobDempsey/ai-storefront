@@ -367,7 +367,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Fifteen changes have been through the full cycle, all in
+Sixteen changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -387,6 +387,7 @@ Fifteen changes have been through the full cycle, all in
 | `2026-09-10-trust-configured-client-ip` | additions folded into `specs/ordering/failure-reporting/` |
 | `2026-09-10-add-customer-order-confirmation` | `specs/ordering/customer-confirmation/` |
 | `2026-09-11-let-assistant-apply-a-promo-code` | additions folded into `specs/assistant/shopping-assistant/` and `specs/promotions/promo-code/` |
+| `2026-09-11-refresh-navbar-and-assistant-entry` | additions folded into `specs/assistant/shopping-assistant/` and `specs/theming/color-mode/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
