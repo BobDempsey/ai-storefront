@@ -1215,7 +1215,15 @@ Known gaps, roughly in the order they were prioritized with the user:
   the second run fails on a 429 that says nothing about the code. Every request
   without the token is limited exactly as before, which in production is all of
   them.
-- **No SPF/DKIM**, and it is not repo work. Admin mail lands in junk and the
+- **No SPF/DKIM**, and it is not repo work. **Decided 2026-09-11: the sender
+  becomes an address on `bobdempsey83.com` with no mailbox behind it**, and the
+  user's personal Gmail stays as `NUXT_ORDER_ADMIN_EMAIL`. The distinction that
+  settled it: anyone can send mail *to* a Gmail address, but Resend can only
+  send *as* an address whose domain carries DNS records authorizing it, and
+  nobody can add DKIM to Google's zone. Verification needs the domain, not a
+  mailbox, so `orders@bobdempsey83.com` can send with nothing receiving there;
+  a buyer who hits Reply reaches the Gmail through the reply-to the email
+  already sets. So no mailbox has to be bought or hosted. Admin mail lands in junk and the
   buyer confirmation reaches no real customer until a domain is verified in
   Resend. It was set aside by the user on 2026-09-10 as a per-deployment setup
   step, alongside the custom domain and the `Store` placeholder standing in for
