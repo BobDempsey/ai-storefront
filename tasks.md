@@ -2,9 +2,10 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Rename the project to ai-storefront in package.json, the README and the local folder
-- [ ] Rename the GitHub repo and update the git remote URL
-- [ ] Rename the Vercel project and re-link with vercel link
+- [x] Rename the project in package.json and the README
+- [x] Rename the GitHub repo and update the git remote URL
+- [ ] Rename the Vercel project in the dashboard, then re-link with vercel link
+- [ ] Rename the local folder to ai-storefront (do it between sessions)
 - [ ] Set NUXT_PUBLIC_STORE_NAME to "AI Storefront" in .env and on Vercel
 - [ ] Add ai-storefront.bobdempsey83.com to the Vercel project
 - [ ] Add the Route 53 CNAME and wait for Vercel to issue the certificate
