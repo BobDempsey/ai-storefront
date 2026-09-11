@@ -113,7 +113,16 @@ steps. Do not open work on a domain, SPF/DKIM, a store name or a deploy without
 asking. Nothing is queued as a result: `tasks.md` is empty, and the one idea
 still written down in section 10 is parked rather than next.
 
-A later session on 2026-09-10 built the buyer's own order confirmation, the
+A later session on 2026-09-10 also let a visitor use a promo code through the
+assistant panel, without the assistant being able to produce one: the code is
+typed into a field on the draft card rather than said to the model, so nothing
+about it reaches the conversation, the tool list is unchanged and pinned by a
+test, and a real model asked to check or guess codes refuses without revealing
+whether one exists. Unit coverage went from 146 to 156; the paid suites now
+make nine provider calls a run, against the ceiling of ten the user set. See
+section 10 and the decision in section 3.
+
+An earlier session the same day built the buyer's own order confirmation, the
 first of the three template gaps prioritised above, through the OpenSpec change
 `add-customer-order-confirmation` (section 10). Nothing about the order changed:
 the confirmation is rendered from the re-read that already feeds the staff
@@ -325,7 +334,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Fourteen changes have been through the full cycle, all in
+Fifteen changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -344,6 +353,7 @@ Fourteen changes have been through the full cycle, all in
 | `2026-09-10-add-assistant-tests` | none — it added tests, and changed no behaviour to spec |
 | `2026-09-10-trust-configured-client-ip` | additions folded into `specs/ordering/failure-reporting/` |
 | `2026-09-10-add-customer-order-confirmation` | `specs/ordering/customer-confirmation/` |
+| `2026-09-11-let-assistant-apply-a-promo-code` | additions folded into `specs/assistant/shopping-assistant/` and `specs/promotions/promo-code/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
@@ -417,10 +427,16 @@ should be.
   check.** With no accounts, email is all the shop has. Someone using a second
   address gets a second discount; the cost is one discount, and closing it would
   mean building accounts.
-- **The assistant gets no promo tool, ever.** Its permissions are its tool list,
-  so the guarantee that it cannot create, change or apply a code is that no such
-  tool exists and it is never told a code. The system prompt only shapes how it
-  explains the offer and declines.
+- **The assistant gets no promo tool, ever.** Still true, and still the whole
+  guarantee: its permissions are its tool list, so what stops it creating,
+  checking, changing or applying a code is that no such tool exists and it is
+  never told a code. The system prompt only shapes how it explains the offer
+  and declines. A visitor can now use a code through the panel, and this
+  decision is exactly why that was built the way it was: the code is typed into
+  a field on the draft card, lives in the browser, and reaches the server on
+  the same two requests the checkout page makes. It never becomes a tool
+  argument and never enters the message history. `TOOL_NAMES` is pinned by a
+  test so adding a promo tool has to be a deliberate edit. See section 10.
 - **Files are catalogue rows, not a second table.** A downloadable file is a
   `products` row with `kind = 'digital'`, so `create_order` keeps its single
   join and stays the only place a price comes from.
@@ -897,7 +913,14 @@ Known gaps, roughly in the order they were prioritized with the user:
     `POST /api/orders` against the **live** Supabase project. Needs
     `npm run dev` already running.
   - `npm run test:e2e` — Playwright, cart through placed order, including the
-    rejected-promo-code clear from `6c70104`. Starts a dev server if none is up.
+    rejected-promo-code clear from `6c70104`. Starts a dev server if none is up,
+    and shuts down one it started, so `test:db` afterwards needs one brought
+    back. Free: `playwright.config.ts` excludes the one browser test that costs
+    a provider call.
+  - `npm run test:e2e:llm` — that excluded test, through
+    `playwright.llm.config.ts`: a promo code applied on the assistant's draft
+    card, in a browser, through to a placed order. One provider call, because
+    the cart is filled by clicking and a single message asks for the draft.
   - `npm run test:smoke` — checks the deployed site. Fails when the network or
     the deploy is down, which is why it is not in `npm test`.
   - `npm run test:llm` — two real `gpt-5-mini` calls through a running dev
@@ -906,7 +929,11 @@ Known gaps, roughly in the order they were prioritized with the user:
     from the OpenAI dashboard if it matters. What is measured is that a run
     makes two requests, takes about 18 seconds, and that each request is capped
     at five completions by `MAX_TOOL_ROUNDS` in `chat.post.ts`, so ten
-    short-prompt calls is the ceiling.
+    short-prompt calls is the ceiling. It is eight requests now, not two:
+    `tests/llm/assistant-promo.test.ts` added six covering what a real model
+    does when pushed on promo codes. With `test:e2e:llm` that is nine provider
+    calls across the paid suites, against a ceiling of ten the user set on
+    2026-09-10. Adding a tenth means taking one out.
 - **The assistant's own coverage is 35 unit tests plus those two live ones.**
   The unit tests are the ones that matter: they check that `runTool` resolves
   every slug against the database so an invented item cannot reach the browser
@@ -1075,16 +1102,24 @@ Known gaps, roughly in the order they were prioritized with the user:
   is recorded. The staff email now shows a subtotal and a discount row naming
   the code or the store sale, above the total; an undiscounted order's email is
   unchanged. See `openspec/changes/show-promo-code-in-order-email/`.
-- [ ] The shopping assistant (`server/utils/assistant.ts`) should know about
-  promo codes and be able to apply a qualifying one to a draft order, while
-  still being unable to do anything with a code that the app itself does not
-  already support — no creating a code, no reusing one, no inventing a
-  discount. This is new scope: today's decision (section 3) is that the
-  assistant gets no promo tool at all and only explains the offer. **Parked,
-  not queued**, as of 2026-09-10: the user kept the idea here but took it off
-  `tasks.md`, so treat it as an option someone may revive rather than the next
-  thing to build. Reversing the section 3 decision is an ask, not an
-  assumption.
+- ~~The assistant cannot use a promo code.~~ **Built, 2026-09-10**, through
+  the OpenSpec change `let-assistant-apply-a-promo-code`. The draft card in the
+  panel now carries a promo field beside the details it already collects,
+  behaving as the checkout page's does: apply, see the total change, a refused
+  code clears itself. Confirming sends the code with the confirmation, and
+  `create_order` prices, records and redeems it exactly as a checkout order.
+  **The assistant gained nothing.** No tool, no argument, no knowledge of any
+  code; one sentence of `SYSTEM_PROMPT` changed to name the field, and a
+  visitor who types a code at the assistant is told where the field is rather
+  than having it applied. That is the answer to "can the agent be exploited
+  here": it is not in the path at all, rather than being in the path and
+  restrained. `tests/unit/assistant-promo-boundary.test.ts` pins the tool list
+  and asserts no tool result can carry a code;
+  `tests/llm/assistant-promo.test.ts` checks a real model refuses to say
+  whether a code exists, which is what would otherwise make a conversation a
+  way to enumerate codes. Verified live: an order placed through the drawer
+  with `WELCOME25` recorded 1600 to 1200 at 25% with one redemption, and the
+  same address was then refused that code at checkout.
 
 ---
 
