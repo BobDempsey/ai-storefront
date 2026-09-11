@@ -1,5 +1,15 @@
 # Remaining tasks
 
+## Now: ai-storefront.bobdempsey83.com
+
+- [ ] Direct a custom-order request to the contact form
+- [ ] Mark dev mode in the page title and the UI
+- [ ] Add search, with an icon in the navbar and an input beside Shop
+- [ ] Seed enough products to need pagination
+- [ ] Decide whether to rename the assistant to AI Shopping Assistant
+- [ ] Check everything is typed and tested
+- [ ] Explore a faster provider, or streaming, since replies still take six seconds
+
 ## Next: fif.bobdempsey83.com from the same repo
 
 - [ ] Decide between a second Vercel project and a branch
@@ -9,4 +19,3 @@
 - [ ] Point each deployment at its own database and verify the split
 - [ ] Render a share image carrying the second shop's name
 - [ ] Make the smoke test able to check either deployment
-- [ ] need a way to direct users to the contact form when they want to place a custom order

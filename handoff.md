@@ -1354,6 +1354,35 @@ Known gaps, roughly in the order they were prioritized with the user:
   deployment has too, so it does not need editing or hiding when the same code
   runs the other store. The catalogue card's `<h1>Shop</h1>` dropped to an
   `<h2>`, since the page has a real `h1` now.
+- ~~A visitor reading a product page has no way to ask about it.~~ **Done,
+  2026-09-11**, through the OpenSpec change `ask-assistant-about-a-product`.
+  The product page carries an "Ask about this" button that opens the panel with
+  a question naming that product already in the message box, focused, cursor at
+  the end. **It is not sent.** Auto-sending was considered and rejected with the
+  user: it would spend one of the day's 75 requests on every click, including
+  the accidental ones, so the click as shipped costs nothing at all and three
+  end-to-end tests count the POSTs to `/api/chat` to keep it that way.
+  **The assistant gained nothing again**, the same shape as the promo-code work:
+  no tool, no argument, no `SYSTEM_PROMPT` change, no server change. It learns
+  which product from the words of the question, exactly as if they had been
+  typed, so there is no new surface to exploit.
+  Three things to know before editing it. The prefill travels as store state
+  (`prefill` on the assistant store, taken by `takePrefill()`), not a route
+  query, because a query changes a shareable URL and refills the box on reload.
+  **The visitor's own typing wins**: the drawer copies the text only into an
+  empty box, so a half-typed message survives a click. A conversation in
+  progress does not block it, and **that guard was tried and taken back out the
+  same day**. It read as broken: asking about one product, then browsing to
+  another and asking about that one is the ordinary path, and under the guard
+  the second click opened a panel with an empty box and nothing to explain why.
+  Careful and broken looked identical. Note that the conversation only survives
+  in-app navigation; a full page load rebuilds the store and takes it with it,
+  which is why the test for this clicks links rather than calling `goto`.
+  The drawer takes the prefill on open rather than on close, which is what stops
+  one product's question reappearing when the panel is next opened from the
+  navbar.
+  Unit coverage went 173 to 181; the e2e suite went 2 tests to 7, still free,
+  the new ones faking the reply with `page.route` so no provider is called.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
@@ -1381,8 +1410,36 @@ Known gaps, roughly in the order they were prioritized with the user:
 - **The assistant has no transcript.** Nothing about a conversation is stored,
   so when a visitor says the bot ordered the wrong thing there is nothing to
   read. Deliberate, and the open question recorded in the change's design.
-- **The assistant does not stream.** A reply lands whole, after a pause of a few
-  seconds while the tool loop runs.
+- **The assistant does not stream.** A reply lands whole, after a pause while
+  the tool loop runs. That pause was **29 seconds** until 2026-09-11, and is now
+  6 to 8, through the OpenSpec change `cap-assistant-reasoning-effort`. The
+  cause was not the shop: `gpt-5-mini` is a reasoning model and
+  `server/api/chat.post.ts` had never set `reasoning_effort`, so it deliberated
+  before every turn. Measured on one question with the route's own prompt and
+  tools, the default spent 3.4s, 4.5s and 21.1s over three rounds and 896
+  reasoning tokens, the last round alone burning 768; at `low` the same question
+  took 6.4s over two rounds and spent 64. The database leg is about 0.2s warm.
+  **The extra round is the part worth remembering**: thinking harder sent the
+  model back to look things up again rather than answer, so the reasoning
+  setting bought a whole extra round trip as well as the thinking.
+  `low` rather than `minimal`, which measured no faster and leaves less room for
+  the rules in `SYSTEM_PROMPT`. Timed through the running route afterwards: 6.7s
+  and 8.1s for two catalogue questions.
+  Six seconds is still a wait with nothing on screen, so the same change gave
+  the panel a spinner and a label that turns from "Thinking" to "Almost there"
+  after three seconds (`PATIENCE_MS` in `AssistantDrawer.vue`). The turn is the
+  point: a label that never moves stops being read and starts reading as a page
+  that has hung. It is announced through `role="status"`, and the timer is
+  cleared on both edges so a second question starts at "Thinking" rather than
+  inheriting the end of the first.
+  **One caveat, recorded rather than resolved.** The first `npm run test:llm`
+  run against the new setting failed one of the six promo tests, and two
+  subsequent runs of that file passed 6/6, as did a later full run at 8/8 and
+  `test:e2e:llm`. The failing assertion was not captured before the rerun, so it
+  cannot be said for certain whether it was a bad minute at the provider, which
+  `vitest.llm.config.ts` warns about in its own docstring, or the lower setting
+  being marginal. If a promo test fails again, put `REASONING_EFFORT` back to
+  the default first and see whether it stops.
 - **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
   ordering does not change it. Briefly prioritised on 2026-09-10, then dropped
   the same day at the user's direction: staff flip the boolean in the Supabase
