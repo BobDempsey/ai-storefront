@@ -1,6 +1,24 @@
 # Remaining tasks
 
-- [ ] Buy a domain and host its DNS in Route 53
-- [ ] Add Route 53 records pointing the domain at Vercel
-- [ ] Add Resend SPF/DKIM records in Route 53 and verify the domain
-- [ ] Set a real store name in production
+## Now: ai-storefront.bobdempsey83.com
+
+- [ ] Rename the project to ai-storefront in package.json, the README and the local folder
+- [ ] Rename the GitHub repo and update the git remote URL
+- [ ] Rename the Vercel project and re-link with vercel link
+- [ ] Set NUXT_PUBLIC_STORE_NAME to "AI Storefront" in .env and on Vercel
+- [ ] Add ai-storefront.bobdempsey83.com to the Vercel project
+- [ ] Add the Route 53 CNAME and wait for Vercel to issue the certificate
+- [ ] Decide which domain Resend verifies, then add its SPF/DKIM records in Route 53
+- [ ] Point NUXT_ORDER_FROM_EMAIL at the verified domain, in .env and on Vercel
+- [ ] Redeploy, since adding an env var does not rebuild an existing deployment
+- [ ] Update the smoke test URL, the README and handoff.md for the new domain
+- [ ] Place a test order and confirm the buyer email reaches a non-account address
+
+## Next: fif.bobdempsey83.com from the same repo
+
+- [ ] Decide whether the second shop is a second Vercel project or a branch
+- [ ] Create the second Vercel deployment and give it its own environment variables
+- [ ] Add fif.bobdempsey83.com and its Route 53 CNAME
+- [ ] Create a second Supabase project for AI Storefront from schema.sql and seed.sql
+- [ ] Point each deployment at its own Supabase project and verify they cannot see each other's orders
+- [ ] Make the smoke test able to check either deployment

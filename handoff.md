@@ -102,7 +102,11 @@ address at all. Vercel had been hiding the original bug for the same class of
 reason. Check what the host actually supplies rather than what the code assumes
 it supplies.
 
-**This repository is a template**, which is how the remaining work was
+**This repository is a template, and is about to run two shops from one code
+base** — the demo at `ai-storefront.bobdempsey83.com` and the real shop at
+`fif.bobdempsey83.com`, each with its own Supabase project and environment
+variables. Section 10 opens with that plan and the one open question in it.
+Being a template is also how the remaining work was
 prioritised on 2026-09-10: fix what every adopter inherits, and leave what is
 particular to this shop. The customer confirmation email was the first group
 and is built (section 10); stock decrementing and paid-order file delivery were
@@ -1018,6 +1022,42 @@ were re-verified against the code on 2026-08-31.
   Submit to resend. See the top of this document.
 
 ## 10. Not done yet
+
+**The plan agreed on 2026-09-11, and the shape of everything below.** This repo
+is about to become two shops running the same code:
+
+- **AI Storefront**, at `ai-storefront.bobdempsey83.com`, the template's own
+  demo. This is the one being set up first, out of the existing deployment.
+- **Forged in Filament**, at `fif.bobdempsey83.com`, the real 3D-printing shop
+  the catalogue was built for.
+
+Both are subdomains of `bobdempsey83.com`, whose DNS is in Route 53, so there is
+no domain to buy: each needs a CNAME pointing at Vercel, and Vercel issues the
+certificate once it resolves.
+
+The repo, the Vercel project, the GitHub repo and the local folder are all
+called `ecommerce-store` and are being renamed to `ai-storefront`. The public
+name a customer sees, `NUXT_PUBLIC_STORE_NAME`, becomes "AI Storefront" on that
+deployment and "Forged in Filament" on the other.
+
+Each shop gets its own Supabase project. The existing one is already called
+`forged in filament`, so it stays with that shop, and the **new** project is the
+one for AI Storefront, built from `supabase/schema.sql` and `supabase/seed.sql`.
+Note the sequencing trap in that: the `ai-storefront` deployment will be live
+against the `forged in filament` database for a while, because the rename
+happens first and the split happens later. Until it is repointed, orders placed
+on the demo land in the real shop's tables.
+
+**The open question is whether the second shop needs a branch at all.** The user
+suggested one, and it may not be necessary: nothing in the code differs between
+the two shops. The store name, the Supabase credentials, the Resend sender and
+the domain are all environment variables, so two Vercel projects built from the
+same branch would do it, with no ongoing merge to keep them in step. A branch
+only earns its keep if the two shops' code has to diverge, and today it does
+not. Decide this before building the second deployment, because it is expensive
+to undo.
+
+`tasks.md` carries both phases as a checklist.
 
 Known gaps, roughly in the order they were prioritized with the user:
 
