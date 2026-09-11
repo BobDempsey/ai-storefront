@@ -1304,11 +1304,24 @@ Known gaps, roughly in the order they were prioritized with the user:
   **Fixed 2026-09-11**, and verified against a Proton address: the sender is
   now `orders@bobdempsey83.com` on a domain that had been verified in Resend
   since 2024. A buyer receives their confirmation.
-- **Each product needs more description text than it has.** The seeded
-  descriptions in `supabase/seed.sql` are one line apiece ("Print-in-place PLA,
-  92 links, 11" nose to tail."), which is all the catalogue card and
-  `app/pages/products/[slug].vue` have to show, and it is now also what the
-  share tags put in a link preview.
+- ~~Each product needs more description text than it has.~~ **Done,
+  2026-09-11.** All nine descriptions are now a paragraph of three or four
+  sentences, keeping the original terse spec line as the opener and adding what
+  the thing is for, how it behaves and how to look after it. Multi-paragraph
+  copy was considered and rejected: the Files tab renders the description
+  straight into a card, so a long one has to stay one block.
+  **Two places hold this text, and they are not the same place.**
+  `supabase/seed.sql` seeds a fresh project, and the live `products` rows are
+  what the running shop reads, so both were written; the live ones went through
+  the PostgREST endpoint with the service key. A change to the seed alone would
+  have looked like it worked locally and changed nothing on the site. No
+  redeploy was needed, since descriptions are read per request.
+  The longer copy broke something small on its way in: the product page had
+  been passing the whole description to `useSeoMeta`, so `<meta name=
+  "description">` and `og:description` went from one line to a 300-character
+  paragraph that a search result or a link preview truncates mid-sentence. A
+  `summarize()` helper in `app/pages/products/[slug].vue` now takes the lead
+  sentence, which is why the opener is still written to stand on its own.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need

@@ -1,9 +1,5 @@
 # Remaining tasks
 
-## Now: ai-storefront.bobdempsey83.com
-
-- [ ] Write longer product descriptions
-
 ## Next: fif.bobdempsey83.com from the same repo
 
 - [ ] Decide between a second Vercel project and a branch

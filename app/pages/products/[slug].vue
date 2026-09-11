@@ -16,11 +16,22 @@ if (!product.value) {
 // default share image stands rather than a broken product one.
 const { siteUrl } = useRuntimeConfig().public
 
+// Catalogue descriptions run to a paragraph, and a search result or a link
+// preview shows about 160 characters before it cuts. Take the lead sentence
+// instead, which is the one written to carry the product on its own, and fall
+// back to a hard trim if a description ever arrives without a full stop.
+function summarize(text: string | null | undefined) {
+  if (!text) return ''
+  const stop = text.indexOf('. ')
+  if (stop !== -1 && stop < 200) return text.slice(0, stop + 1)
+  return text.length > 160 ? `${text.slice(0, 157).trimEnd()}…` : text
+}
+
 useSeoMeta({
   title: () => product.value?.name,
-  description: () => product.value?.description ?? '',
+  description: () => summarize(product.value?.description),
   ogTitle: () => product.value?.name,
-  ogDescription: () => product.value?.description ?? '',
+  ogDescription: () => summarize(product.value?.description),
   ogType: 'website',
   ogImage: () => {
     const path = product.value?.image_url
