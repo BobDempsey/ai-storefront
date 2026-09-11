@@ -697,6 +697,11 @@ a different staff address will silently fail until a domain is verified.
   Git Bash, not PowerShell, so hand them
   `powershell -ExecutionPolicy Bypass -File "<path>"` rather than a bare `&`
   call, which is a Bash syntax error.
+- **A bind probe on `127.0.0.1` reports a busy port as free.** Nuxt's dev
+  server binds IPv6, so `net.createServer().listen(port, '127.0.0.1')`
+  succeeds while a server is still answering on `[::1]`. Ask over HTTP instead;
+  the same fact is why `curl 127.0.0.1:3000` hangs where `http://[::1]:3000`
+  works.
 - **A Playwright click can land before Vue hydrates, and then does nothing.**
   Nuxt server-renders the markup, so "Add to cart" is visible and clickable
   before any listener is attached. Playwright clicks the moment it is visible,
@@ -800,6 +805,25 @@ Known gaps, roughly in the order they were prioritized with the user:
     rejected-promo-code clear from `6c70104`. Starts a dev server if none is up.
   - `npm run test:smoke` — checks the deployed site. Fails when the network or
     the deploy is down, which is why it is not in `npm test`.
+  - `npm run test:llm` — two real `gpt-5-mini` calls through a running dev
+    server, added 2026-09-10. The only script that spends money. **The dollar
+    cost of a run was not measured**: the route logs no token usage, so read it
+    from the OpenAI dashboard if it matters. What is measured is that a run
+    makes two requests, takes about 18 seconds, and that each request is capped
+    at five completions by `MAX_TOOL_ROUNDS` in `chat.post.ts`, so ten
+    short-prompt calls is the ceiling.
+- **The assistant's own coverage is 35 unit tests plus those two live ones.**
+  The unit tests are the ones that matter: they check that `runTool` resolves
+  every slug against the database so an invented item cannot reach the browser
+  as an intent, that an out-of-stock product and a second copy of a file are
+  refused, that a draft carries no confirmation into the history the provider
+  sees, and that a confirmation is spent exactly once. The live pair exists for
+  the one thing they cannot cover: whether the model still calls the tools at
+  all. Every unit test would pass in full if it stopped.
+- **`tests/db/chat-guards.test.ts` starts a second dev server on port 3100**
+  with `NUXT_OPENAI_API_KEY` blank, to prove the 503. It kills the process tree
+  in teardown and waits for the port; a bare `kill()` leaves Nuxt holding it on
+  Windows, because `npm run dev` is a shell wrapping the real process.
 - **Test orders live in the live database.** There is no throwaway project, so
   the tests write real rows and mark them `is_test`. Anything reading orders as
   business to fulfil must filter `where not is_test`; the Supabase dashboard's
@@ -833,7 +857,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   files were added: when staff mark an order paid, the app emails the customer a
   time-limited link. That needs the file in storage and an order status the
   dashboard can set, neither of which exists.
-- **The assistant's daily cap is unproven.** The 25-message cap is verified; the
+- **The assistant's daily cap is still unproven.** The 25-message cap is now
+  covered by a test (`tests/db/chat-guards.test.ts`); the
   75-requests-a-day limit was left untested rather than spend 75 provider calls.
   It uses the same `rate-limit.ts` module as the order and contact routes but
   its own `chat:` bucket on a 24-hour window, so it neither spends nor is spent
