@@ -1176,17 +1176,15 @@ Known gaps, roughly in the order they were prioritized with the user:
   consecutive calls, and the catalogue renders. Still open: no custom domain,
   and `NUXT_PUBLIC_STORE_NAME` is the `Store` placeholder in production
   because that is what `.env` holds.
-- **Production is 31 commits behind local `main`, found 2026-09-11.**
-  `origin/main` is still `e0fd7e1`, the commit that recorded the deploy
-  starting, and Vercel builds from the remote. So the live store predates the
-  whole test suite, the `trust-configured-client-ip` rate-limit fix, the
-  buyer's confirmation email and the assistant's promo field, even though the
-  working tree is clean and every one of those is committed locally. `npm run
-  test:smoke` passing is not evidence to the contrary: its four checks pass
-  against the old build too. Pushing closes the gap and Vercel redeploys on
-  its own, but **ask before doing it** — the user set aside deploy work on
-  2026-09-10, and the rate-limit fix in particular changes who the deployed
-  limiter believes, which is worth flagging before it ships rather than after.
+- ~~Production is 31 commits behind local `main`.~~ **Closed 2026-09-11.**
+  `main` was pushed at `7419568`, 40 commits on from `e0fd7e1`, and Vercel's
+  GitHub integration built and promoted it on its own. Verified beyond the
+  smoke check, which proves nothing about currency: a browser against the
+  production alias shows the `pi-microchip-ai` icon, the attention dot, the
+  two-state theme control and the new greeting, so the test suite, the
+  rate-limit fix, the buyer confirmation, the assistant promo field and both of
+  today's UI changes are all live. Note that the deployed rate limiter now
+  believes only `NUXT_TRUSTED_IP_HEADER`, which is set to Vercel's own header.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
