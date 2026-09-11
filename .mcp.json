@@ -4,6 +4,10 @@
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=wfhhkdmgouyxnrxnbaeo&features=database,docs"
     },
+    "resend": {
+      "type": "http",
+      "url": "https://mcp.resend.com/mcp"
+    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
