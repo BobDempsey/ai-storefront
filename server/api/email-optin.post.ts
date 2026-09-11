@@ -4,8 +4,9 @@ import { subscribeEmail } from '~~/server/utils/subscribe'
 export default defineEventHandler(async event => {
   // A bucket of its own, like contact's: opt-in spam must not spend the
   // allowance another route needs.
-  rateLimit(
-    `email-optin:${getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'}`,
+  rateLimitByCaller(
+    event,
+    address => `email-optin:${address}`,
     5,
     10 * 60_000,
     'Too many attempts. Please try again later.'

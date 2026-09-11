@@ -5,8 +5,9 @@ import { subscribeQuietly } from '~~/server/utils/subscribe'
 export default defineEventHandler(async event => {
   // A bucket of its own: contact spam from one origin must not spend the
   // allowance that origin needs to place an order.
-  rateLimit(
-    `contact:${getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'}`,
+  rateLimitByCaller(
+    event,
+    address => `contact:${address}`,
     3,
     10 * 60_000,
     'Too many messages. Please try again later.'

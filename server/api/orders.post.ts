@@ -37,8 +37,9 @@ export default defineEventHandler(async event => {
   // limiter still guards every request that does not hold the token, which in
   // production is all of them.
   if (!isTest) {
-    rateLimit(
-      getRequestIP(event, { xForwardedFor: true }) ?? 'unknown',
+    rateLimitByCaller(
+      event,
+      address => address,
       5,
       10 * 60_000,
       'Too many orders. Please try again later.'

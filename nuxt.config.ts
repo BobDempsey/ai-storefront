@@ -68,6 +68,11 @@ export default defineNuxtConfig({
     // Empty by default, which is what makes an unconfigured server unable to
     // create a test order at all.
     testOrderToken: '',
+    // Which header the rate limiter may believe about who is calling. The
+    // default is Vercel's, because that is where this deploys; a proxy on top
+    // of Vercel can overwrite x-forwarded-for but not this one. Set it to your
+    // own proxy's header, or empty to use the connection address alone.
+    trustedIpHeader: 'x-vercel-forwarded-for',
     public: {
       storeName: 'Store'
     }

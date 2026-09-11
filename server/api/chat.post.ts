@@ -12,8 +12,9 @@ const REQUESTS_PER_DAY = 75
 const MAX_TOOL_ROUNDS = 4
 
 export default defineEventHandler(async event => {
-  rateLimit(
-    `chat:${getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'}`,
+  rateLimitByCaller(
+    event,
+    address => `chat:${address}`,
     REQUESTS_PER_DAY,
     24 * 60 * 60_000,
     'You have reached the assistant limit for today. The rest of the shop still works.'
