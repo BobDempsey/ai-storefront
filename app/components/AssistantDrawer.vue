@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CartIntent, CartPreview, OrderResponse } from '~/types'
+import type { CartIntent, CartPreview, OrderPromoErrorData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 const assistant = useAssistantStore()
@@ -25,8 +25,109 @@ watch(
       notes: draft.customer.notes ?? ''
     })
     draftError.value = ''
+    clearPromo()
   }
 )
+
+/**
+ * The promo code, typed here by the visitor rather than said to the assistant.
+ *
+ * This field is the whole reason the assistant can offer a discount without
+ * being able to produce one. The value lives in the browser and goes to the
+ * server on the same two requests the checkout page makes. It is never sent to
+ * the chat route, never becomes a tool argument, and never enters the message
+ * history the provider sees, so there is no code for a talked-around model to
+ * apply, invent or check.
+ */
+const promoCode = ref('')
+/** The code the draft was last priced with. Typing alone changes nothing. */
+const appliedCode = ref('')
+const applying = ref(false)
+const promoPreview = ref<CartPreview | null>(null)
+
+function clearPromo() {
+  promoCode.value = ''
+  appliedCode.value = ''
+  promoPreview.value = null
+}
+
+const promoStatus = computed(() => promoPreview.value?.promoStatus)
+const promoPercent = computed(() => promoPreview.value?.lines[0]?.salePercent ?? 0)
+
+/**
+ * The card's figures: the code's prices once applied, the draft's otherwise.
+ *
+ * The lines move with the total deliberately. Showing the draft's sale-priced
+ * lines under a code-priced total gives a card whose numbers do not add up,
+ * which is what the first version of this did.
+ */
+const codeApplied = computed(() => promoStatus.value === 'applied')
+
+const draftLines = computed(() =>
+  codeApplied.value
+    ? promoPreview.value!.lines.map(line => ({
+        name: line.name,
+        quantity: line.quantity,
+        amountCents: line.price_cents * line.quantity
+      }))
+    : (assistant.draft?.lines ?? [])
+)
+
+const draftTotalCents = computed(() =>
+  codeApplied.value
+    ? promoPreview.value!.subtotalCents
+    : (assistant.draft?.totalCents ?? 0)
+)
+
+// The same four messages the checkout page shows, in the same words: a buyer
+// who typed a code is owed the reason it failed, so they can fix it.
+const promoMessage = computed(() => {
+  switch (promoStatus.value) {
+    case 'applied':
+      return { severity: 'success' as const, text: `Code applied. ${promoPercent.value}% off.` }
+    case 'unknown':
+      return { severity: 'error' as const, text: "That promo code isn't recognised." }
+    case 'inactive':
+      return { severity: 'error' as const, text: 'That promo code is no longer valid.' }
+    case 'used':
+      return { severity: 'error' as const, text: 'That promo code has already been used.' }
+    default:
+      return null
+  }
+})
+
+/**
+ * Re-prices the draft with the typed code, through the endpoint the checkout
+ * page uses, so the two cannot price one code differently.
+ */
+async function applyPromoCode() {
+  const code = promoCode.value.trim()
+  if (!code) {
+    clearPromo()
+    return
+  }
+
+  applying.value = true
+  appliedCode.value = code
+  try {
+    promoPreview.value = await $fetch<CartPreview>('/api/cart/preview', {
+      method: 'POST',
+      body: { items: cart.items, promoCode: code, email: details.email || undefined }
+    })
+    // A rejected code must not sit in the field. Leaving it there means the
+    // next Confirm resends it and the order 400s on a code already refused,
+    // which is the bug 6c70104 fixed on the checkout page.
+    if (promoStatus.value !== 'applied') {
+      promoCode.value = ''
+      appliedCode.value = ''
+    }
+  } catch {
+    clearPromo()
+    draftError.value = 'The promo code could not be checked. Please try again.'
+  } finally {
+    applying.value = false
+  }
+}
 
 /**
  * Applies what the assistant proposed through the ordinary cart store, so the
@@ -60,15 +161,23 @@ async function confirmDraft() {
       body: {
         customer: { ...details },
         items: cart.items,
-        // The one value the assistant never held.
-        confirmation: assistant.draft.confirmation
+        // Both values the assistant never held: the confirmation the server
+        // minted beside the draft, and the code the visitor typed into the
+        // field. create_order resolves the code again and prices the order.
+        confirmation: assistant.draft.confirmation,
+        promoCode: appliedCode.value || undefined
       }
     })
     orderId.value = id
     assistant.dismissDraft()
     cart.clear()
+    clearPromo()
   } catch (error: any) {
     draftError.value = error?.statusMessage ?? 'The order could not be submitted. Please try again.'
+    // A code create_order refused at submit is dropped, not left on the draft:
+    // Confirm again would resend it and fail the same way. The visitor can
+    // place the order without it, or type a different one.
+    if ((error?.data?.data as OrderPromoErrorData | undefined)?.promoStatus) clearPromo()
   } finally {
     submitting.value = false
   }
@@ -78,6 +187,7 @@ function startAgain() {
   assistant.reset()
   orderId.value = ''
   draftError.value = ''
+  clearPromo()
 }
 
 /**
@@ -166,7 +276,7 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
 
             <ul class="mb-3 space-y-1 text-sm">
               <li
-                v-for="line in assistant.draft.lines"
+                v-for="line in draftLines"
                 :key="line.name"
                 class="flex justify-between gap-4"
               >
@@ -175,9 +285,12 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
               </li>
             </ul>
 
-            <p class="mb-3 flex justify-between border-t border-surface-200 pt-2 text-sm font-medium dark:border-surface-800">
-              <span>Total</span>
-              <span>{{ formatMoney(assistant.draft.totalCents) }}</span>
+            <p class="mb-3 flex items-center justify-between gap-2 border-t border-surface-200 pt-2 text-sm font-medium dark:border-surface-800">
+              <span class="flex items-center gap-2">
+                Total
+                <Tag v-if="codeApplied" severity="danger" :value="`${promoPercent}% off`" />
+              </span>
+              <span>{{ formatMoney(draftTotalCents) }}</span>
             </p>
 
             <div class="flex flex-col gap-2">
@@ -185,6 +298,39 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
               <InputText v-model="details.email" placeholder="Email" size="small" />
               <InputText v-model="details.phone" placeholder="Phone (optional)" size="small" />
               <Textarea v-model="details.notes" placeholder="Notes (optional)" rows="2" auto-resize />
+
+              <!-- Typed by the visitor, never by the assistant. See the script. -->
+              <div class="flex gap-2">
+                <InputText
+                  v-model="promoCode"
+                  placeholder="Promo code (optional)"
+                  size="small"
+                  maxlength="60"
+                  autocomplete="off"
+                  class="flex-1"
+                  aria-describedby="draft-promo-message"
+                  :disabled="submitting"
+                  @keydown.enter.prevent="applyPromoCode"
+                />
+                <Button
+                  type="button"
+                  label="Apply"
+                  size="small"
+                  outlined
+                  :loading="applying"
+                  :disabled="submitting || (!promoCode.trim() && !appliedCode)"
+                  @click="applyPromoCode"
+                />
+              </div>
+              <Message
+                v-if="promoMessage"
+                id="draft-promo-message"
+                :severity="promoMessage.severity"
+                size="small"
+                variant="simple"
+              >
+                {{ promoMessage.text }}
+              </Message>
             </div>
 
             <Message v-if="draftError" severity="error" class="mt-3">{{ draftError }}</Message>
