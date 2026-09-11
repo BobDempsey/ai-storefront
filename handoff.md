@@ -61,7 +61,7 @@ authorization is session-specific, not a standing state. **Verified
 
 The same session added a global `Cache-Control: no-store` route rule in
 `nuxt.config.ts` (`10110a3`, verified with `npm run build`), created a public
-GitHub repo at `https://github.com/BobDempsey/ecommerce-store` and pushed
+GitHub repo (then `ecommerce-store`, renamed to `ai-storefront` on 2026-09-11) and pushed
 `main` to it, then started a Vercel deploy from that repo (see section 10).
 A `vercel` MCP server is configured (outside this project's `.mcp.json`, at
 the user's Claude Code level); like `supabase` it needs an interactive OAuth
@@ -699,7 +699,9 @@ NUXT_ORDER_ADMIN_EMAIL      SET — the owner's address, which is also the Resen
 NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             SERVER ONLY. Blank it and the drawer reports the
                             assistant unavailable; nothing else changes
-NUXT_PUBLIC_STORE_NAME      PLACEHOLDER — still "Store", not "forged in filament"
+NUXT_PUBLIC_STORE_NAME      SET — "AI Storefront" as of 2026-09-11. Still the
+                            `Store` placeholder on Vercel until it is set there
+                            and the deployment is rebuilt
 NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             limiter believes about who is calling. Not a secret.
                             Set it to your host's header if you leave Vercel;
@@ -1035,10 +1037,20 @@ Both are subdomains of `bobdempsey83.com`, whose DNS is in Route 53, so there is
 no domain to buy: each needs a CNAME pointing at Vercel, and Vercel issues the
 certificate once it resolves.
 
-The repo, the Vercel project, the GitHub repo and the local folder are all
-called `ecommerce-store` and are being renamed to `ai-storefront`. The public
-name a customer sees, `NUXT_PUBLIC_STORE_NAME`, becomes "AI Storefront" on that
-deployment and "Forged in Filament" on the other.
+The rename to `ai-storefront` is **partly done as of 2026-09-11**. `package.json`
+and the README title carry the new name, and the GitHub repo is now
+`BobDempsey/ai-storefront` with the git remote updated; Vercel's GitHub
+integration followed that rename on its own and kept deploying. Two pieces are
+outstanding and need a human: the **Vercel project** is still `ecommerce-store`,
+which the CLI cannot rename (no `vercel project rename`, so it is the
+dashboard), and the **local folder** is still `ecommerce-store`, best renamed
+between sessions since it moves the working directory out from under a running
+one. Renaming the Vercel project also changes the `.vercel.app` alias, which
+`tests/smoke/production.test.ts` hardcodes.
+
+The public name a customer sees, `NUXT_PUBLIC_STORE_NAME`, is "AI Storefront"
+in `.env` as of 2026-09-11 and becomes "Forged in Filament" on the other
+deployment. It is still `Store` on Vercel.
 
 Each shop gets its own Supabase project. The existing one is already called
 `forged in filament`, so it stays with that shop, and the **new** project is the
@@ -1241,7 +1253,8 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
-  `https://github.com/BobDempsey/ecommerce-store` (public, created with `gh
+  `https://github.com/BobDempsey/ai-storefront`, created as `ecommerce-store`
+  and renamed 2026-09-11 (public, created with `gh
   repo create --public --source=. --remote=origin --push`) after confirming
   nothing tracked in the repo carries a real secret: `.env` is untracked,
   `.env.example` holds only placeholders, and a grep across the tree for

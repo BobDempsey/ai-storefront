@@ -6,7 +6,8 @@
 - [x] Rename the GitHub repo and update the git remote URL
 - [ ] Rename the Vercel project in the dashboard, then re-link with vercel link
 - [ ] Rename the local folder to ai-storefront (do it between sessions)
-- [ ] Set NUXT_PUBLIC_STORE_NAME to "AI Storefront" in .env and on Vercel
+- [x] Set NUXT_PUBLIC_STORE_NAME to "AI Storefront" in .env
+- [ ] Set NUXT_PUBLIC_STORE_NAME on Vercel and redeploy
 - [ ] Add ai-storefront.bobdempsey83.com to the Vercel project
 - [ ] Add the Route 53 CNAME and wait for Vercel to issue the certificate
 - [ ] Decide which domain Resend verifies, then add its SPF/DKIM records in Route 53
