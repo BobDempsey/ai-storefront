@@ -10,13 +10,6 @@ const submitting = ref(false)
 const orderId = ref('')
 const draftError = ref('')
 
-// First visit only, and only once. The layout wraps this component in
-// ClientOnly, so onMounted is already the client; the store reads the flag
-// from localStorage, which does not exist during SSR either way.
-onMounted(() => {
-  assistant.autoOpenOnce()
-})
-
 // The draft's own details, editable before confirming. Copied out of the draft
 // so an edit is the visitor's, not something the assistant typed.
 const details = reactive({ name: '', email: '', phone: '', notes: '' })

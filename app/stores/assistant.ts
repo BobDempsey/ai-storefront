@@ -16,6 +16,13 @@ const MAX_MESSAGES = 25
 export const useAssistantStore = defineStore('assistant', {
   state: () => ({
     open: false,
+    /**
+     * Whether the navbar shows the attention dot. True until the visitor opens
+     * the panel, and nothing stores it: the store is rebuilt on every page
+     * load, so a refresh brings the dot back. Navigating inside the app does
+     * not, because that does not rebuild the store.
+     */
+    showDot: true,
     available: true,
     pending: false,
     ended: false,
@@ -32,6 +39,7 @@ export const useAssistantStore = defineStore('assistant', {
   actions: {
     async openDrawer() {
       this.open = true
+      this.showDot = false
       // Cheap, and the answer can change between deploys, so ask each time the
       // drawer opens rather than trusting a value from page load.
       try {
@@ -40,37 +48,6 @@ export const useAssistantStore = defineStore('assistant', {
       } catch {
         this.available = false
       }
-    },
-
-    /**
-     * Opens the panel by itself the first time a visitor arrives, so they
-     * learn the assistant exists without having to find the control.
-     *
-     * The availability check runs before the open here, where openDrawer does
-     * it after. The order differs because the visitor does: someone who
-     * clicked the control asked to see the panel and is owed an answer even
-     * when that answer is "unavailable", while someone who asked for nothing
-     * should not be handed a panel that only apologises.
-     *
-     * The flag is written when the panel actually opens, not when this is
-     * attempted. A shop running without a provider key therefore still greets
-     * the visitor on their next visit after a key is added, rather than
-     * spending their one chance on a version of the shop that had no
-     * assistant.
-     */
-    async autoOpenOnce() {
-      if (this.open || hasBeenGreeted()) return
-
-      try {
-        const { available } = await $fetch<{ available: boolean }>('/api/chat')
-        if (!available) return
-        this.available = true
-      } catch {
-        return
-      }
-
-      this.open = true
-      markGreeted()
     },
 
     close() {

@@ -27,12 +27,23 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
           <ClientOnly>
             <button
               type="button"
-              class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+              class="relative inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
               aria-label="Open the shop assistant"
               title="Shop assistant"
               @click="assistant.openDrawer()"
             >
               <i class="pi pi-microchip-ai" />
+              <!--
+                Points at a panel the visitor has not opened yet on this page
+                load. Unlike the cart badge below it carries no value and gets
+                no sr-only companion: it says "look here", which the button's
+                own aria-label already covers, so announcing it would be noise.
+              -->
+              <span
+                v-if="assistant.showDot"
+                aria-hidden="true"
+                class="assistant-dot absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-surface-0 dark:bg-emerald-400 dark:ring-surface-900"
+              />
             </button>
             <template #fallback>
               <span class="size-8" />
@@ -105,3 +116,44 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
     </footer>
   </div>
 </template>
+
+<style scoped>
+/*
+ * The attention dot's pulse. A local keyframes rule rather than Tailwind's
+ * animate-pulse, which fades opacity to 0.5 and back: that reads as a fade, and
+ * this wants a ring that grows and clears.
+ */
+.assistant-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: inherit;
+  animation: assistant-dot-pulse 2s ease-out infinite;
+}
+
+@keyframes assistant-dot-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/*
+ * Motion off, dot still there. Hiding it would take the cue away from exactly
+ * the visitors most likely to have reduced motion set for accessibility
+ * reasons; the dot itself carries the meaning and the animation only draws the
+ * eye to it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .assistant-dot::after {
+    animation: none;
+    display: none;
+  }
+}
+</style>
