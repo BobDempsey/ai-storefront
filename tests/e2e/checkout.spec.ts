@@ -70,6 +70,27 @@ async function orderIdFromConfirmation(page: Page) {
   return id!
 }
 
+test('the dev server says it is not the live shop, without getting in the way', async ({ page }) => {
+  await page.goto('/')
+  await hydrated(page)
+
+  const banner = page.getByTestId('deploy-env-banner')
+  await expect(banner).toBeVisible()
+  await expect(banner).toContainText('Development')
+
+  // Above the header, not over it, so the first control on the page is still
+  // reachable. A banner that covers a button is worse than no banner.
+  await expect(page.getByRole('button', { name: 'Add to cart' }).first()).toBeVisible()
+  await page.getByRole('button', { name: 'Add to cart' }).first().click()
+  await expect
+    .poll(async () => (await page.context().cookies()).some(c => c.name === 'cart'), {
+      timeout: 10_000
+    })
+    .toBe(true)
+
+  await expect(page).toHaveTitle(/^\[Development\] /)
+})
+
 test('a customer can take a product from the catalogue through to a placed order', async ({
   page
 }) => {

@@ -2,7 +2,12 @@
 const cart = useCartStore()
 const colorMode = useColorModeStore()
 const assistant = useAssistantStore()
-const { storeName, siteUrl } = useRuntimeConfig().public
+const { storeName, siteUrl, deployEnv } = useRuntimeConfig().public
+
+// Empty on the live shop, and everything below keys off that. See
+// app/utils/deploy-env.ts for why silence rather than a flag means production.
+const environment = resolveDeployEnv(deployEnv as string | undefined, import.meta.dev)
+const environmentLabel = computed(() => deployEnvLabel(environment))
 
 // Names the discount in the footer's opt-in invitation, so the copy tracks the
 // active code rather than a number written into the page.
@@ -17,7 +22,14 @@ colorMode.init()
 // ship the first shop's name. A page that sets no title of its own gets the
 // store name alone.
 useHead({
-  titleTemplate: title => (title ? `${title} · ${storeName}` : storeName)
+  // The tab carries the environment as well as the page, because someone with
+  // six tabs open reads the title and not the page, and that is exactly when
+  // the wrong window gets used. On the live shop `environmentLabel` is empty
+  // and this composes the title it always did.
+  titleTemplate: title => {
+    const page = title ? `${title} · ${storeName}` : storeName
+    return environmentLabel.value ? `[${environmentLabel.value}] ${page}` : page
+  }
 })
 
 // Defaults for every page's link preview. A page that sets its own title or
@@ -28,7 +40,7 @@ useHead({
 useSeoMeta({
   ogSiteName: storeName,
   ogType: 'website',
-  ogTitle: () => `${storeName} — handmade 3D prints and printable files`,
+  ogTitle: () => `${storeName}: 3D-printed goods and printable files`,
   ogDescription: 'Browse the catalogue and submit an order request.',
   ogImage: siteUrl ? `${siteUrl}/og-image.png` : undefined,
   ogImageWidth: siteUrl ? 1200 : undefined,
@@ -45,6 +57,24 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
 
 <template>
   <div class="min-h-screen flex flex-col bg-surface-100 text-surface-900 dark:bg-surface-950 dark:text-surface-0">
+    <!--
+      Above the header rather than fixed over it, so it can never cover a
+      control. A corner badge was the alternative and is easy to stop seeing;
+      this is meant to be hard to ignore. Nothing renders on the live shop.
+
+      No role="status": this is static text present on load, which a screen
+      reader reads in document order anyway, and a live region here would
+      collide with the assistant's own waiting indicator.
+    -->
+    <p
+      v-if="environmentLabel"
+      class="bg-amber-400 px-4 py-1.5 text-center text-sm font-medium text-amber-950 dark:bg-amber-500 dark:text-amber-950"
+      data-testid="deploy-env-banner"
+    >
+      <i class="pi pi-exclamation-triangle mr-1.5 text-xs" aria-hidden="true" />
+      {{ environmentLabel }}. This is not the live shop.
+    </p>
+
     <header class="sticky top-0 z-50 border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
       <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>

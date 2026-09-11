@@ -95,6 +95,14 @@ they never heard back. Add the records, then send yourself a test order.
 defaults to Vercel's header; if you deploy elsewhere and leave it, every visitor
 shares one rate-limit bucket.
 
+**Leave `NUXT_PUBLIC_DEPLOY_ENV` unset in production.** Name it on anything that
+is not the live shop (`preview` on a preview deployment) and the storefront
+carries a bar saying so, and puts it in the tab title too. Unset means the live
+shop and renders nothing, so forgetting it is safe; typing it in production is
+what you have to avoid. A dev server marks itself without the variable, because
+`import.meta.dev` tells it. A preview cannot: its build is identical to
+production's.
+
 **Point the smoke test at your own domain.** `SMOKE_BASE_URL` overrides the
 default in `tests/smoke/production.test.ts`. Give it the custom domain rather
 than a per-deployment URL: those sit behind Vercel's deployment protection and

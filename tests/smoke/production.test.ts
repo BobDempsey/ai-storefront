@@ -49,6 +49,16 @@ describe(`the deployed store at ${BASE}`, () => {
     expect(html).toContain('Add to cart')
   })
 
+  it('carries no non-production marker', async () => {
+    // The one failure this cannot be allowed to have: a deployment env named on
+    // the live shop puts an amber bar in front of every customer. Unset and
+    // "production" both render nothing, so this catches the value being typed
+    // in by mistake, or copied across from Preview.
+    const html = await (await fetch(BASE)).text()
+    expect(html).not.toContain('deploy-env-banner')
+    expect(html).not.toContain('This is not the live shop')
+  })
+
   it('reports its own misconfiguration rather than passing quietly', async () => {
     // The failure mode this file was written for: the routes answer 500 with
     // this message when Supabase is not configured. If that ever comes back,

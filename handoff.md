@@ -764,6 +764,12 @@ NUXT_PUBLIC_SITE_URL        SET — https://ai-storefront.bobdempsey83.com, no
                             The origin the share tags build an absolute image
                             URL from; an unset one omits the share image rather
                             than emitting a relative path every consumer drops
+NUXT_PUBLIC_DEPLOY_ENV      development in `.env`, preview on Vercel Preview,
+                            deliberately UNSET on Production. Names a deployment
+                            that is not the live shop, which then carries an
+                            amber bar and a tab-title prefix. Unset and
+                            "production" both render nothing, so the live shop
+                            is the case that needs no configuration
 NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             limiter believes about who is calling. Not a secret.
                             Set it to your host's header if you leave Vercel;
@@ -1383,6 +1389,27 @@ Known gaps, roughly in the order they were prioritized with the user:
   navbar.
   Unit coverage went 173 to 181; the e2e suite went 2 tests to 7, still free,
   the new ones faking the reply with `page.route` so no provider is called.
+- ~~A dev server, a preview and the live shop look identical.~~ **Done,
+  2026-09-11**, through the OpenSpec change `mark-non-production-deployments`.
+  Anything that is not the live shop now carries an amber bar above the header
+  and its name in the tab title. The prompt for it was real: a delivery test the
+  same day placed a genuine order against production that had to be deleted by
+  hand, and until the two shops' databases are split every deployment writes to
+  the same `orders` table.
+  **The asymmetry is the design, and is what to preserve.** `NUXT_PUBLIC_DEPLOY_ENV`
+  names the environment, and both unset and `production` render nothing, so the
+  live shop is the case that needs no configuration and the only way to put a
+  bar in front of a customer is to actively type a value. A boolean meaning
+  "not production" would have failed the other way. `tests/smoke/production.test.ts`
+  asserts the live domain serves no banner.
+  Two things that bite. **A Vercel preview cannot detect itself**: its build is
+  byte-identical to production's, so `import.meta.dev` is false there and the
+  variable has to be set by hand, which it now is. And the bar carries **no
+  `role="status"`**, deliberately: it is static text, and a live region there
+  collided with the assistant's waiting indicator, which broke an end-to-end
+  test with a strict-mode violation on `getByRole('status')`.
+  The resolver is `app/utils/deploy-env.ts`, unit-tested over the cases that
+  decide whether anything renders at all.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need

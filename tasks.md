@@ -2,8 +2,6 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Direct a custom-order request to the contact form
-- [ ] Mark dev mode in the page title and the UI
 - [ ] Add search, with an icon in the navbar and an input beside Shop
 - [ ] Seed enough products to need pagination
 - [ ] Decide whether to rename the assistant to AI Shopping Assistant
@@ -19,3 +17,4 @@
 - [ ] Point each deployment at its own database and verify the split
 - [ ] Render a share image carrying the second shop's name
 - [ ] Make the smoke test able to check either deployment
+- [ ] Direct a custom-order request to the contact form

@@ -79,7 +79,14 @@ export default defineNuxtConfig({
       // relative image path, so the share tags have to build a full URL and
       // nothing in a request tells a prerendered page what its own origin is.
       // Empty means the share image is omitted rather than emitted broken.
-      siteUrl: ''
+      siteUrl: '',
+      // Which deployment this is: 'development', 'preview', or anything else
+      // you want named on screen. Empty means the live shop and renders nothing,
+      // so a deployment that was never told about this behaves as it always
+      // has. 'production' means the same. A dev server falls back to
+      // 'development' on its own; a Vercel preview cannot, because its build
+      // looks exactly like production, so set it there by hand.
+      deployEnv: ''
     }
   }
 })
