@@ -4,7 +4,7 @@
 
 - [x] Rename the project in package.json and the README
 - [x] Rename the GitHub repo and update the git remote URL
-- [ ] Rename the Vercel project in the dashboard, then re-link with vercel link
+- [x] Rename the Vercel project (project ID unchanged, so no re-link needed)
 - [ ] Rename the local folder to ai-storefront (do it between sessions)
 - [x] Set NUXT_PUBLIC_STORE_NAME to "AI Storefront" in .env
 - [ ] Set NUXT_PUBLIC_STORE_NAME on Vercel and redeploy
@@ -13,7 +13,7 @@
 - [ ] Decide which domain Resend verifies, then add its SPF/DKIM records in Route 53
 - [ ] Point NUXT_ORDER_FROM_EMAIL at the verified domain, in .env and on Vercel
 - [ ] Redeploy, since adding an env var does not rebuild an existing deployment
-- [ ] Update the smoke test URL, the README and handoff.md for the new domain
+- [ ] Point the smoke test at the custom domain once it resolves
 - [ ] Place a test order and confirm the buyer email reaches a non-account address
 - [ ] Add Open Graph tags and a share image, so a texted link previews properly
 
