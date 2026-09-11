@@ -42,10 +42,19 @@ const committedItems = [
   }
 ]
 
+/** What the route asked `create_order` for, so a test can read `p_is_test`. */
+const rpcArgs: Record<string, unknown>[] = []
+
+/** Every call the route made to the rate limiter, so exemption is observable. */
+const rateLimitCalls: unknown[] = []
+
 /** A Supabase client shaped like the chains the order route builds. */
 function supabaseStub(options: { order?: unknown; orderError?: unknown; itemsError?: unknown }) {
   return {
-    rpc: async () => ({ data: ORDER_ID, error: null }),
+    rpc: async (_name: string, args: Record<string, unknown>) => {
+      rpcArgs.push(args)
+      return { data: ORDER_ID, error: null }
+    },
     from(table: string) {
       const result =
         table === 'orders'
@@ -80,9 +89,14 @@ async function loadRoute(options: {
   vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
   vi.stubGlobal('getHeader', (_event: unknown, name: string) => headers[name.toLowerCase()])
   vi.stubGlobal('readBody', async () => body)
-  vi.stubGlobal('rateLimitByCaller', () => {})
+  vi.stubGlobal('rateLimitByCaller', (...args: unknown[]) => {
+    rateLimitCalls.push(args)
+  })
   vi.stubGlobal('useSupabase', () => supabaseStub(options))
-  useRuntimeConfigReturning(options.runtimeConfig ?? { testOrderToken: 'secret-token' })
+  // `public` always exists at runtime, so it always exists here: a test that
+  // omitted it would pass against a shape production never produces.
+  const config = options.runtimeConfig ?? { testOrderToken: 'secret-token' }
+  useRuntimeConfigReturning({ public: {}, ...config })
 
   vi.resetModules()
   const module = await import('~~/server/api/orders.post')
@@ -92,6 +106,8 @@ async function loadRoute(options: {
 beforeEach(() => {
   sendOrderEmail.mockResolvedValue(undefined)
   sendCustomerEmail.mockResolvedValue(undefined)
+  rpcArgs.length = 0
+  rateLimitCalls.length = 0
 })
 
 afterEach(() => {
@@ -197,5 +213,114 @@ describe('neither email can affect the order or the other email', () => {
 
     expect(sendOrderEmail).toHaveBeenCalledTimes(1)
     expect(logged).toHaveBeenCalled()
+  })
+})
+
+/**
+ * Which orders count as business, and which do not.
+ *
+ * Two conditions decide it and they are deliberately not the same boolean: the
+ * secret also skips the rate limiter, and the deployment must not. Production
+ * is the case that needs no configuration, so the tests that matter most are
+ * the ones asserting nothing happens when nothing is set.
+ */
+describe('what makes an order a test', () => {
+  const isTest = () => rpcArgs[0]!.p_is_test
+
+  it('does not, on the live shop, with no token', async () => {
+    const handler = await loadRoute()
+
+    await handler({})
+
+    expect(isTest()).toBe(false)
+    expect(sendOrderEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('does, for a request carrying the token the server holds', async () => {
+    const handler = await loadRoute({ headers: { 'x-test-order-token': 'secret-token' } })
+
+    await handler({})
+
+    expect(isTest()).toBe(true)
+    expect(sendOrderEmail).not.toHaveBeenCalled()
+  })
+
+  it('does, on a development deployment, with no token at all', async () => {
+    const handler = await loadRoute({
+      runtimeConfig: { testOrderToken: 'secret-token', public: { deployEnv: 'development' } }
+    })
+
+    await handler({})
+
+    expect(isTest()).toBe(true)
+    expect(sendOrderEmail).not.toHaveBeenCalled()
+    expect(sendCustomerEmail).not.toHaveBeenCalled()
+  })
+
+  it('does, on a preview deployment', async () => {
+    const handler = await loadRoute({
+      runtimeConfig: { testOrderToken: 'secret-token', public: { deployEnv: 'preview' } }
+    })
+
+    await handler({})
+
+    expect(isTest()).toBe(true)
+  })
+
+  it('does not, when the deployment names itself production', async () => {
+    const handler = await loadRoute({
+      runtimeConfig: { testOrderToken: 'secret-token', public: { deployEnv: 'production' } }
+    })
+
+    await handler({})
+
+    expect(isTest()).toBe(false)
+    expect(sendOrderEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('cannot be claimed by the request', async () => {
+    // The environment is the server's own. A browser that sends these gets an
+    // ordinary order, which is what stops an unbilled, unnotified order being
+    // placed by anyone who reads the source.
+    const handler = await loadRoute({
+      headers: { 'x-deploy-env': 'development', 'x-vercel-env': 'preview' },
+      runtimeConfig: { testOrderToken: 'secret-token', public: { deployEnv: '' } }
+    })
+
+    await handler({})
+
+    expect(isTest()).toBe(false)
+    expect(sendOrderEmail).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('who skips the rate limiter', () => {
+  it('the token does', async () => {
+    const handler = await loadRoute({ headers: { 'x-test-order-token': 'secret-token' } })
+
+    await handler({})
+
+    expect(rateLimitCalls).toHaveLength(0)
+  })
+
+  it('a development deployment does not, though its orders are tests', async () => {
+    // A person clicking through a dev server should meet the limiter a customer
+    // meets. Exempting them would mean it is never exercised outside CI.
+    const handler = await loadRoute({
+      runtimeConfig: { testOrderToken: 'secret-token', public: { deployEnv: 'development' } }
+    })
+
+    await handler({})
+
+    expect(rpcArgs[0]!.p_is_test).toBe(true)
+    expect(rateLimitCalls).toHaveLength(1)
+  })
+
+  it('an ordinary caller does not', async () => {
+    const handler = await loadRoute()
+
+    await handler({})
+
+    expect(rateLimitCalls).toHaveLength(1)
   })
 })

@@ -2,6 +2,7 @@ import { orderSchema, mergeItems } from '~~/server/utils/schemas'
 import { sendCustomerEmail, sendOrderEmail } from '~~/server/utils/email'
 import { spendConfirmation } from '~~/server/utils/confirmations'
 import { subscribeQuietly } from '~~/server/utils/subscribe'
+import { resolveDeployEnv } from '~~/app/utils/deploy-env'
 
 /**
  * `create_order` raises a bare `unavailable_item`, so the route works out which
@@ -21,22 +22,47 @@ async function findUnavailableIds(supabase: ReturnType<typeof useSupabase>, ids:
 }
 
 export default defineEventHandler(async event => {
-  // A test order is declared by a header carrying the server's own token, not
-  // by the build environment, so the branches below are the ones production
-  // runs. `testOrderToken` is empty unless someone set it, and an empty token
-  // matches nothing, so an unconfigured server cannot produce a test order.
-  // A wrong or missing token is not an error: the request simply becomes an
-  // ordinary order, so a real customer can never be refused by this.
-  const { testOrderToken } = useRuntimeConfig()
-  const isTest =
+  // An order is a test in either of two cases, and they are kept apart on
+  // purpose: one of them also skips the rate limiter and the other must not.
+  //
+  // The first is the header carrying the server's own token. `testOrderToken`
+  // is empty unless someone set it, and an empty token matches nothing, so an
+  // unconfigured server cannot produce a test order this way. A wrong or
+  // missing token is not an error: the request simply becomes an ordinary
+  // order, so a real customer can never be refused by this.
+  const config = useRuntimeConfig(event)
+  const { testOrderToken } = config
+  const hasTestToken =
     Boolean(testOrderToken) && getHeader(event, 'x-test-order-token') === testOrderToken
 
-  // A caller holding the token does not spend the customer allowance. The suite
-  // shares one IP with everything else on the machine, and five orders per ten
-  // minutes is gone after a single run of the database and browser tests. The
-  // limiter still guards every request that does not hold the token, which in
-  // production is all of them.
-  if (!isTest) {
+  // The second is the deployment. An order placed by a person clicking through
+  // a dev server or a preview is not business anyone should act on, and until
+  // the two shops' databases are split it lands in the same table as the real
+  // thing. Read from the server's own config, never from the request, so a
+  // browser cannot claim to be a preview and place an order nobody is told
+  // about. `import.meta.dev` is deliberately not consulted: the banner falls
+  // back to it because a missing warning on a laptop is cosmetic, but whether
+  // an order counts as business is not, so this follows only what the
+  // deployment was configured to be.
+  //
+  // An earlier comment here said the build environment must not decide this,
+  // because production would then run a branch no test exercised. That was
+  // about NODE_ENV. Production leaves NUXT_PUBLIC_DEPLOY_ENV unset and so takes
+  // the same path it always has; the new branch belongs to dev and preview and
+  // is covered by its own tests.
+  const isNonProduction = Boolean(
+    resolveDeployEnv(config.public.deployEnv as string | undefined, false)
+  )
+
+  const isTest = hasTestToken || isNonProduction
+
+  // Only the token skips the customer allowance. The suite shares one IP with
+  // everything else on the machine, and five orders per ten minutes is gone
+  // after a single run of the database and browser tests. That reasoning does
+  // not cover a person clicking through a dev server, and exempting them would
+  // mean the limiter is never met outside CI, which is how a broken limiter
+  // reaches production unnoticed.
+  if (!hasTestToken) {
     rateLimitByCaller(
       event,
       address => address,

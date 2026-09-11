@@ -1229,7 +1229,28 @@ Known gaps, roughly in the order they were prioritized with the user:
   default view will not. Each test deletes its own rows in an `afterEach`, and
   `sweepStaleTestOrders` clears anything older than an hour that a crashed run
   left behind. A test order never emails staff.
-- **`POST /api/orders` marks an order as a test only for a request carrying the
+- **`POST /api/orders` marks an order as a test in two cases as of 2026-09-11**,
+  and the second is new: **any order placed on a deployment that names itself
+  something other than the live shop**, through `NUXT_PUBLIC_DEPLOY_ENV`. No
+  header, nothing asked of the caller. Clicking through a dev server or a
+  preview therefore produces no staff email and nothing anyone has to fulfil,
+  which matters because every deployment still writes to the same `orders`
+  table until the shops are split. The environment is read from the server's own
+  runtime config, never from the request, so a browser cannot claim to be a
+  preview.
+  **This reverses half of a decision recorded below, and the reasoning is worth
+  reading before reversing it back.** The original rule was that the build
+  environment must not decide this, because production would then run a branch
+  no test exercised. That was about `NODE_ENV`. Production leaves
+  `NUXT_PUBLIC_DEPLOY_ENV` unset and so takes exactly the path it always has;
+  the new branch belongs to dev and preview and has its own tests.
+  **The rate-limit exemption deliberately did not widen**, so the two conditions
+  are no longer one boolean: the token still skips the limiter, a non-production
+  deployment does not. A person clicking through a dev server should meet the
+  limiter a customer meets, or it is never exercised outside CI, which is how a
+  broken limiter reaches production unnoticed. See
+  `openspec/changes/mark-non-production-orders-as-tests/`.
+  The original rule, still true for the header: **a request carrying the
   `x-test-order-token` header matching `NUXT_TEST_ORDER_TOKEN`.** A wrong or
   missing token yields an ordinary order rather than an error, and an unset
   token means no request can mark anything, which is the production setting.
