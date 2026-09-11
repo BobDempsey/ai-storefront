@@ -223,6 +223,12 @@ with the smoke test pointed at it. Both are written up in section 10, which is
 also where the surprises are: Vercel's per-domain CNAME target, and why
 `vercel domains inspect` cannot read it.
 
+A `resend` MCP server was added to `.mcp.json` the same day (`776202f`), the
+hosted `https://mcp.resend.com/mcp` endpoint rather than the npx one, because
+that file is tracked in a public repo and the stdio form wants `RESEND_API_KEY`
+written into it. Like `supabase` it authorizes by OAuth per session. Using it
+is what turned up the already-verified domain recorded in section 10.
+
 The same session then gave the storefront a browser tab title and link
 previews. Pages had been setting bare titles, so a tab read "Shop" with the
 shop's name nowhere on it; a `titleTemplate` in `app/layouts/default.vue` now
@@ -1215,15 +1221,30 @@ Known gaps, roughly in the order they were prioritized with the user:
   the second run fails on a 429 that says nothing about the code. Every request
   without the token is limited exactly as before, which in production is all of
   them.
-- **No SPF/DKIM**, and it is not repo work. **Decided 2026-09-11: the sender
-  becomes an address on `bobdempsey83.com` with no mailbox behind it**, and the
-  user's personal Gmail stays as `NUXT_ORDER_ADMIN_EMAIL`. The distinction that
-  settled it: anyone can send mail *to* a Gmail address, but Resend can only
-  send *as* an address whose domain carries DNS records authorizing it, and
-  nobody can add DKIM to Google's zone. Verification needs the domain, not a
-  mailbox, so `orders@bobdempsey83.com` can send with nothing receiving there;
-  a buyer who hits Reply reaches the Gmail through the reply-to the email
-  already sets. So no mailbox has to be bought or hosted. Admin mail lands in junk and the
+- ~~No SPF/DKIM.~~ **Already done, discovered 2026-09-11.** `bobdempsey83.com`
+  has been verified in Resend since 2024-11-30 (domain id
+  `fd7aee32-37ae-4f0c-bbf8-db933882d86e`, region us-east-1, sending enabled),
+  and all three records it asks for are live in Route 53: the DKIM TXT at
+  `resend._domainkey`, and at `send.` an MX to
+  `feedback-smtp.us-east-1.amazonses.com` priority 10 plus an SPF TXT of
+  `v=spf1 include:amazonses.com ~all`. Confirmed twice, through the Resend MCP
+  server and by reading the zone back with the AWS CLI. **So this was never
+  blocked; the sandbox sender was.** Every note in this document about mail
+  being undeliverable traces to `NUXT_ORDER_FROM_EMAIL` still being
+  `onboarding@resend.dev`, not to a missing domain. Pointing it at an address on
+  the verified domain is what closes them, and it is now the only step left.
+  **Decided 2026-09-11: the sender is an address on `bobdempsey83.com` with no
+  mailbox behind it**, and the user's personal Gmail stays as
+  `NUXT_ORDER_ADMIN_EMAIL`. The distinction that settled it: anyone can send
+  mail *to* a Gmail address, but Resend can only send *as* an address whose
+  domain carries DNS records authorizing it, and nobody can add DKIM to
+  Google's zone. Verification needs the domain, not a mailbox, so
+  `orders@bobdempsey83.com` can send with nothing receiving there; a buyer who
+  hits Reply reaches the Gmail through the reply-to the email already sets. No
+  mailbox has to be bought or hosted.
+  A Route 53 quirk if these ever need rewriting: TXT values must be
+  double-quoted, and the DKIM key is over 255 characters, so it is stored as
+  two quoted strings concatenated. Admin mail lands in junk and the
   buyer confirmation reaches no real customer until a domain is verified in
   Resend. It was set aside by the user on 2026-09-10 as a per-deployment setup
   step, alongside the custom domain and the `Store` placeholder standing in for

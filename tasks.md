@@ -2,8 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Verify bobdempsey83.com in Resend and add its SPF/DKIM records
-- [ ] Point NUXT_ORDER_FROM_EMAIL at a no-mailbox address on it, then redeploy
+- [ ] Point NUXT_ORDER_FROM_EMAIL at an address on bobdempsey83.com, then redeploy
 - [ ] Place a test order and confirm the buyer email arrives
 - [ ] Write longer product descriptions
 
