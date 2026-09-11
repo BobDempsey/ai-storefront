@@ -1033,20 +1033,31 @@ is about to become two shops running the same code:
 - **Forged in Filament**, at `fif.bobdempsey83.com`, the real 3D-printing shop
   the catalogue was built for.
 
-Both are subdomains of `bobdempsey83.com`, whose DNS is in Route 53, so there is
-no domain to buy: each needs a CNAME pointing at Vercel, and Vercel issues the
-certificate once it resolves.
+Both are subdomains of `bobdempsey83.com`, so there is no domain to buy: each
+needs a CNAME pointing at Vercel, and Vercel issues the certificate once it
+resolves. Confirmed 2026-09-11 that the zone really is in Route 53 and not
+managed by Vercel: the domain answers with `awsdns-*` nameservers, and
+`vercel domains ls` reports zero domains on the account. So the records go in
+Route 53, not in Vercel's own DNS.
 
 The rename to `ai-storefront` is **partly done as of 2026-09-11**. `package.json`
 and the README title carry the new name, and the GitHub repo is now
 `BobDempsey/ai-storefront` with the git remote updated; Vercel's GitHub
-integration followed that rename on its own and kept deploying. Two pieces are
-outstanding and need a human: the **Vercel project** is still `ecommerce-store`,
-which the CLI cannot rename (no `vercel project rename`, so it is the
-dashboard), and the **local folder** is still `ecommerce-store`, best renamed
-between sessions since it moves the working directory out from under a running
-one. Renaming the Vercel project also changes the `.vercel.app` alias, which
-`tests/smoke/production.test.ts` hardcodes.
+integration followed that rename on its own and kept deploying. The **Vercel project** was renamed the same day, in
+Settings then General then Project Name, since the CLI has no
+`vercel project rename`. Two things turned out better than expected and are
+worth not re-worrying about: the **project ID does not change**, so
+`.vercel/project.json` stayed valid and `vercel link` did not need rerunning,
+and the **generated `.vercel.app` aliases did not change either**.
+`ecommerce-store-theta-sable.vercel.app` still serves the site and no
+`ai-storefront-*` alias was created, so the URL hardcoded in
+`tests/smoke/production.test.ts` still works. Vercel's GitHub integration also
+followed the repo rename on its own and kept deploying.
+
+The one piece still outstanding is the **local folder**, still
+`C:\Users\bobde\Desktop\ecommerce-store`. Rename it between sessions: doing it
+from inside a session moves the working directory out from under the session
+doing it.
 
 The public name a customer sees, `NUXT_PUBLIC_STORE_NAME`, is "AI Storefront"
 in `.env` as of 2026-09-11 and becomes "Forged in Filament" on the other
