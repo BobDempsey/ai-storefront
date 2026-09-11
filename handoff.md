@@ -1312,12 +1312,26 @@ Known gaps, roughly in the order they were prioritized with the user:
   `/api/products` and `/api/store-settings` both return 200 on five
   consecutive calls, and the catalogue renders. The custom domain landed
   2026-09-11 (below), and the store name with it.
-- **Preview has no environment variables at all.** Found 2026-09-11: `vercel
-  env ls preview` returns none, so a preview deployment builds unconfigured and
-  serves the error page production served on 2026-09-10. This document said all
-  seven were set on Production and Preview; only Production is true. Nothing
-  currently depends on it, because deploys come from pushes to `main`, which is
-  Production. It bites the first time a branch or a pull request is previewed.
+- ~~Preview has no environment variables at all.~~ **Fixed 2026-09-11.** It
+  really had none, despite this document having claimed since 2026-09-10 that
+  all seven were set on both, so any branch or pull-request preview would have
+  built unconfigured and served the error page production served on 2026-09-10.
+  Eight are now set on Preview, the seven from `.env` plus the new
+  `NUXT_PUBLIC_SITE_URL`. `NUXT_TEST_ORDER_TOKEN` is still deliberately absent
+  from both, so no deployed request can mark an order as a test.
+  **Unverified, and not cheaply verifiable**: a preview URL sits behind Vercel's
+  deployment protection and answers a login page to anything that is not a
+  signed-in browser, so `test:smoke` cannot be pointed at one, and a successful
+  build proves nothing either — production built cleanly with empty values.
+  The first real preview is the test.
+  Two consequences worth knowing before using one. **Preview shares the
+  production database**, because it holds the same `NUXT_SUPABASE_URL`, so an
+  order placed on a preview is a real row in the real `orders` table; that is
+  the same trap section 10 opens with for the two shops, and it goes away when
+  the databases split. And **`NUXT_PUBLIC_SITE_URL` on Preview names the
+  production domain**, so a preview page's share tags advertise production URLs.
+  Harmless, since nobody pastes a protected preview link, and the alternative is
+  a value that changes with every deployment.
 - ~~No Open Graph tags, so a texted link previews as a bare URL.~~ **Done,
   2026-09-11.** Defaults live in `app/layouts/default.vue` beside the
   `titleTemplate`, and `app/pages/products/[slug].vue` overrides the title,

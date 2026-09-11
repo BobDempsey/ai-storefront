@@ -2,7 +2,6 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Set the seven environment variables on Vercel Preview, which has none
 - [ ] Verify a domain in Resend and add its SPF/DKIM records
 - [ ] Point NUXT_ORDER_FROM_EMAIL at that domain and redeploy
 - [ ] Place a test order and confirm the buyer email arrives
