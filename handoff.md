@@ -204,6 +204,12 @@ emulated `prefers-reduced-motion: reduce` it stays at full opacity while the
 pulse ring is gone. `npm test`, `npm run build` and `npm run test:e2e` all pass,
 the e2e suite now without any seeding.
 
+Verified on a running dev server at 1280px and 390px, in both schemes, that the
+new homepage introduction (section 10) reads correctly and that its button
+opens the assistant panel. `npm test` at 173, `npm run build` and
+`npm run test:e2e` all pass, and the section is live at the domain with
+`test:smoke` 4/4 after it.
+
 Reviewed against the code again later on 2026-09-11, working tree clean at
 `e72f94a` and `origin/main` level with local `main`. The rename is finished: the
 **local folder is now `ai-storefront`** too, which section 10 still had as the
@@ -1322,6 +1328,23 @@ Known gaps, roughly in the order they were prioritized with the user:
   paragraph that a search result or a link preview truncates mid-sentence. A
   `summarize()` helper in `app/pages/products/[slug].vue` now takes the lead
   sentence, which is why the opener is still written to stand on its own.
+- ~~The homepage never said what the shop was, or that it had an assistant.~~
+  **Done, 2026-09-11.** An introduction sits above the catalogue card in
+  `app/pages/index.vue`: what the shop sells, that ordering is a request rather
+  than a checkout, and a panel naming four things the assistant can do with an
+  "Ask the assistant" button that calls `openDrawer()`. **Each bullet is
+  written against a tool in `server/utils/assistant.ts`**, not against the idea
+  of the feature, and the `CAN_DO` array carries a comment saying to keep them
+  in step; `tests/unit/assistant-promo-boundary.test.ts` already pins the tool
+  list, so a tool arriving without the copy following is at least visible. The
+  section also states what the assistant cannot do, because a visitor who knows
+  it cannot place an order or produce a discount reads a refusal as the design
+  rather than a failure, and because the alternative is spending one of the 25
+  messages finding out. **Nothing in it is specific to this shop**: it renders
+  `storeName` and describes the assistant, both of which the Forged in Filament
+  deployment has too, so it does not need editing or hiding when the same code
+  runs the other store. The catalogue card's `<h1>Shop</h1>` dropped to an
+  `<h2>`, since the page has a real `h1` now.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need
