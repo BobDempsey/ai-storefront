@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DigitalProduct, Product } from '~/types'
+import type { CataloguePage, DigitalProduct, Product } from '~/types'
 import { formatBytes } from '~/utils/bytes'
 
 const route = useRoute()
@@ -60,14 +60,14 @@ watch(typed, value => {
     // Both pages reset in the same write: page four of the old results says
     // nothing about the new ones, and a separate watcher would flash the old
     // page and leave a useless history entry behind.
-    router.replace(addressFor({ q: next, page: 1, filePage: 1 }))
+    void router.replace(addressFor({ q: next, page: 1, filePage: 1 }))
   }, 250)
 })
 onBeforeUnmount(() => clearTimeout(pending))
 
 /** PrimeVue's Paginator counts from zero and reports rows offsets. */
 function goToPage(kind: 'page' | 'filePage', event: { page: number }) {
-  router.push(addressFor({ [kind]: event.page + 1 }))
+  void router.push(addressFor({ [kind]: event.page + 1 }))
 }
 
 const searchInput = useTemplateRef<{ $el: HTMLElement } | HTMLInputElement>('searchInput')
@@ -79,13 +79,6 @@ function focusSearch() {
 function clearSearch() {
   typed.value = ''
   focusSearch()
-}
-
-interface CataloguePage<T> {
-  items: T[]
-  total: number
-  page: number
-  perPage: number
 }
 
 // One request per tab, each keyed on the term and on that tab's own page, so

@@ -2,7 +2,7 @@ import { contactSchema } from '~~/server/utils/schemas'
 import { sendContactEmail } from '~~/server/utils/email'
 import { subscribeQuietly } from '~~/server/utils/subscribe'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event): Promise<ContactResponse> => {
   // A bucket of its own: contact spam from one origin must not spend the
   // allowance that origin needs to place an order.
   rateLimitByCaller(

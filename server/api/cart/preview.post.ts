@@ -1,5 +1,5 @@
 import { cartPreviewSchema, mergeItems } from '~~/server/utils/schemas'
-import { checkPromoCode, type PromoStatus } from '~~/server/utils/promo'
+import { checkPromoCode } from '~~/server/utils/promo'
 
 /**
  * Resolves cart line IDs to current catalog prices. The browser stores only
@@ -56,6 +56,6 @@ export default defineEventHandler(async event => {
     // IDs the browser still holds that no longer exist in the catalog.
     missing: merged.filter(i => !data?.some(p => p.id === i.product_id)).map(i => i.product_id),
     // Absent unless a code was sent, so nothing that ignores it sees a change.
-    promoStatus: (promo?.status ?? undefined) as PromoStatus | undefined
+    promoStatus: promo?.status ?? undefined
   }
 })

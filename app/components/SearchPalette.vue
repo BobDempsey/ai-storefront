@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Product } from '~/types'
+import type { CataloguePage, Product } from '~/types'
 import { formatMoney } from '~/utils/money'
 
 /**
@@ -33,11 +33,6 @@ watch(typed, value => {
 })
 onBeforeUnmount(() => clearTimeout(pending))
 
-interface CataloguePage {
-  items: Product[]
-  total: number
-}
-
 // The panel asks for one page of eight and shows what comes back. It does not
 // page: a visitor who wants the rest takes the term to the catalogue page
 // through the row below, which is the thing that pages.
@@ -50,7 +45,9 @@ const { data, status } = await useFetch<CataloguePage>('/api/products', {
   // Keeps the previous answer on screen while the next one is in flight, so
   // the list does not blink empty between keystrokes.
   keepalive: true,
-  default: () => ({ items: [], total: 0 })
+  // A whole page, not a stub: the shared CataloguePage type is what caught
+  // this one, since the panel's own copy of the shape had no page fields.
+  default: (): CataloguePage => ({ items: [], total: 0, page: 1, perPage: LIMIT })
 })
 
 const results = computed(() => data.value?.items ?? [])
@@ -83,13 +80,13 @@ function close() {
 
 function open(product: Product) {
   close()
-  router.push(`/products/${product.slug}`)
+  void router.push(`/products/${product.slug}`)
 }
 
 function seeAll() {
   const q = term.value
   close()
-  router.push(q ? { path: '/', query: { q } } : '/')
+  void router.push(q ? { path: '/', query: { q } } : '/')
 }
 
 function choose() {

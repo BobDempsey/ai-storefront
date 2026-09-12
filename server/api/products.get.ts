@@ -18,7 +18,7 @@ async function countMatching({ kind, term }: { kind?: string; term: string | nul
   return count ?? 0
 }
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event): Promise<CataloguePage> => {
   const parsed = catalogueQuerySchema.safeParse(getQuery(event))
   if (!parsed.success) {
     throw createError({

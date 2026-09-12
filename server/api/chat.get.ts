@@ -3,6 +3,8 @@
  * the key that decides it. A false here is what the drawer renders as
  * "unavailable" instead of offering a text box that cannot work.
  */
-export default defineEventHandler(() => ({
+import type { ChatAvailability } from '#shared/types/api'
+
+export default defineEventHandler((): ChatAvailability => ({
   available: Boolean(useRuntimeConfig().openaiApiKey)
 }))

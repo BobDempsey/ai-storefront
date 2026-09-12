@@ -1,7 +1,7 @@
 import { emailOptinSchema } from '~~/server/utils/schemas'
 import { subscribeEmail } from '~~/server/utils/subscribe'
 
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event): Promise<EmailOptinResponse> => {
   // A bucket of its own, like contact's: opt-in spam must not spend the
   // allowance another route needs.
   rateLimitByCaller(
