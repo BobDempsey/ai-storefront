@@ -1,0 +1,35 @@
+# Runs the checks that need nothing but the repo: the typecheck, the linter and
+# the unit tests. The other suites are deliberately absent. test:db and
+# test:llm write to the live Supabase project and spend provider calls, and
+# test:e2e and test:smoke need a running server or a deployment, so none of
+# them belongs on a pull request from a fork.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first, since only the latest
+# commit's result is worth anything.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --legacy-peer-deps is required: PrimeVue 4 and the Nuxt module disagree
+      # about a peer range, and npm refuses the tree without it.
+      - run: npm ci --legacy-peer-deps
+
+      # typecheck, lint and the 236 unit tests. No network, no database.
+      - run: npm run check
