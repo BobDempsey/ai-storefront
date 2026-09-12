@@ -33,22 +33,30 @@ watch(typed, value => {
 })
 onBeforeUnmount(() => clearTimeout(pending))
 
-const { data, status } = await useFetch<Product[]>('/api/products', {
-  query: { q: term },
+interface CataloguePage {
+  items: Product[]
+  total: number
+}
+
+// The panel asks for one page of eight and shows what comes back. It does not
+// page: a visitor who wants the rest takes the term to the catalogue page
+// through the row below, which is the thing that pages.
+const LIMIT = 8
+
+const { data, status } = await useFetch<CataloguePage>('/api/products', {
+  query: { q: term, perPage: LIMIT },
   // The panel is client-only, so there is nothing to prefetch on the server.
   server: false,
   // Keeps the previous answer on screen while the next one is in flight, so
   // the list does not blink empty between keystrokes.
   keepalive: true,
-  default: () => []
+  default: () => ({ items: [], total: 0 })
 })
 
-// Capped, because a panel is a shortcut rather than the catalogue page. The
-// "see all" row below carries a visitor who wants the rest, and it appears
-// whenever there is a rest to want.
-const LIMIT = 8
-const results = computed(() => (data.value ?? []).slice(0, LIMIT))
-const overflow = computed(() => Math.max((data.value?.length ?? 0) - LIMIT, 0))
+const results = computed(() => data.value?.items ?? [])
+// What the catalogue page would show beyond this panel, which is why the row
+// below can say how many more there are without fetching them.
+const overflow = computed(() => Math.max((data.value?.total ?? 0) - results.value.length, 0))
 const loading = computed(() => status.value === 'pending')
 const empty = computed(() => !loading.value && results.value.length === 0)
 
@@ -185,7 +193,7 @@ function choose() {
           Search the shop for "{{ term }}"
           <template v-if="overflow">({{ overflow }} more)</template>
         </span>
-        <span v-else>Browse all {{ (data ?? []).length }} items</span>
+        <span v-else>Browse all {{ data?.total ?? 0 }} items</span>
       </li>
     </ul>
 

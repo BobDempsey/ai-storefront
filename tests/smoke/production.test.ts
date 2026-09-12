@@ -26,12 +26,17 @@ describe(`the deployed store at ${BASE}`, () => {
     const response = await get('/api/products')
     expect(response.status).toBe(200)
 
-    const products = (await response.json()) as { id: string; price_cents: number }[]
-    expect(Array.isArray(products)).toBe(true)
-    expect(products.length).toBeGreaterThan(0)
+    const page = (await response.json()) as {
+      items: { id: string; price_cents: number }[]
+      total: number
+    }
+    expect(Array.isArray(page.items)).toBe(true)
+    expect(page.items.length).toBeGreaterThan(0)
     // A misconfigured server answers 500 before it gets here, but an empty
-    // array would be a quieter version of the same outage.
-    expect(products[0].price_cents).toBeGreaterThan(0)
+    // page would be a quieter version of the same outage.
+    expect(page.items[0].price_cents).toBeGreaterThan(0)
+    // The catalogue is longer than one page, which is why it pages at all.
+    expect(page.total).toBeGreaterThanOrEqual(page.items.length)
   })
 
   it('serves the store settings', async () => {

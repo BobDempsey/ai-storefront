@@ -252,6 +252,39 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+Pagination followed the same day, through the OpenSpec change
+`add-catalogue-pagination`: six items a page, each tab paging on its own.
+**The response shape of `/api/products` changed** from a bare array to
+`{ items, total, page, perPage }`, because a total is what the controls and the
+per-tab counts both need and an array cannot carry one; every consumer is in
+this repo and moved in the same commit, `tests/smoke/production.test.ts`
+included. Four decisions worth knowing. **Each kind fetches its own page**, so
+the request takes `kind` and the two tabs cannot share a page number that would
+put one of them past its end. **Paging uses `push` where searching uses
+`replace`**: a page change is a deliberate step Back should undo, and typing is
+not. **Changing the term resets both page numbers in the same URL write**, not
+in a watcher afterwards, which would flash the old page and leave a useless
+history entry. And **a page past the end is an empty page, not an error**:
+PostgREST answers a range past the end with its own 416, so the route catches
+that one code and re-counts, or a stale link would reach a visitor as a broken
+shop. The controls are PrimeVue's `Paginator`, which already collapses to arrows
+and a current page at 390px; measured there at 309px wide with 40px targets and
+no sideways scroll.
+
+**The catalogue is twelve printed goods now, not six.** Six more were seeded so
+pagination is visible rather than theoretical, written to both `supabase/seed.sql`
+and the live `products` rows, the same two places the description rewrite needed.
+They carry **generated placeholder images** rather than photographs, made
+headlessly through the repo's own Playwright the way `og-image.png` was; replacing
+`public/images/<slug>.jpg` needs no code change. Unit coverage went 219 to 225,
+`test:db` 40 to 46 and the e2e suite 20 to 28. Verified against a running dev
+server: page two holds six different items, Back returns to page one, a reload of
+`?page=2` reproduces it, paging the products leaves the files tab where it was,
+searching from page two lands on the first page of the results, and an order
+placed from page two priced correctly at the sale ($21.00 to $16.80) and was
+deleted afterwards. `npm test`, `npm run build`, `npm run test:e2e` and
+`npm run test:db` all pass.
+
 Catalogue search followed on 2026-09-11, through the OpenSpec change
 `add-catalogue-search`: a magnifier in the navbar and a field beside the `Shop`
 heading, filtering both tabs as the visitor types. Three decisions are worth

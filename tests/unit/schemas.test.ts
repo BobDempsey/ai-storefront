@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  MAX_PAGE_SIZE,
+  PAGE_SIZE,
   catalogueQuerySchema,
   contactSchema,
   emailOptinSchema,
@@ -161,5 +163,36 @@ describe('catalogueQuerySchema', () => {
 
   it('rejects a term longer than the cap', () => {
     expect(catalogueQuerySchema.safeParse({ q: 'x'.repeat(201) }).success).toBe(false)
+  })
+})
+
+describe('catalogueQuerySchema paging', () => {
+  it('defaults to the first page at the storefront page size', () => {
+    const parsed = catalogueQuerySchema.parse({})
+    expect(parsed.page).toBe(1)
+    expect(parsed.perPage).toBe(PAGE_SIZE)
+  })
+
+  it('reads a page number out of the query string, where it is text', () => {
+    expect(catalogueQuerySchema.parse({ page: '3' }).page).toBe(3)
+  })
+
+  it('rejects a page below one, which has no meaning', () => {
+    expect(catalogueQuerySchema.safeParse({ page: '0' }).success).toBe(false)
+    expect(catalogueQuerySchema.safeParse({ page: '-2' }).success).toBe(false)
+  })
+
+  it('rejects a fractional page', () => {
+    expect(catalogueQuerySchema.safeParse({ page: '1.5' }).success).toBe(false)
+  })
+
+  it('accepts a page size up to the maximum and refuses more', () => {
+    expect(catalogueQuerySchema.parse({ perPage: String(MAX_PAGE_SIZE) }).perPage).toBe(MAX_PAGE_SIZE)
+    expect(catalogueQuerySchema.safeParse({ perPage: String(MAX_PAGE_SIZE + 1) }).success).toBe(false)
+  })
+
+  it('takes the kind, which is what lets the two tabs page separately', () => {
+    expect(catalogueQuerySchema.parse({ kind: 'digital' }).kind).toBe('digital')
+    expect(catalogueQuerySchema.safeParse({ kind: 'sideways' }).success).toBe(false)
   })
 })

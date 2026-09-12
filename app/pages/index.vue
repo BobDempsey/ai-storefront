@@ -23,21 +23,52 @@ watch(term, value => {
   if (value !== typed.value.trim()) typed.value = value
 })
 
+// Which page each tab is on, one-based, because the number is shown to a
+// person. Two numbers rather than one: the tabs hold different counts, so a
+// shared number would put one of them past its end whenever the other paged on.
+const page = computed(() => pageFrom(route.query.page))
+const filePage = computed(() => pageFrom(route.query.filePage))
+
+function pageFrom(value: unknown) {
+  const n = Number(Array.isArray(value) ? value[0] : value)
+  return Number.isInteger(n) && n > 0 ? n : 1
+}
+
+/** The address as it should read, with first pages and an empty term left out
+ *  of it, so an unsearched, unpaged catalogue keeps the plain `/` it has. */
+function addressFor(next: { q?: string; page?: number; filePage?: number }) {
+  const query: Record<string, string> = {}
+  const q = next.q ?? term.value
+  const p = next.page ?? page.value
+  const fp = next.filePage ?? filePage.value
+  if (q) query.q = q
+  if (p > 1) query.page = String(p)
+  if (fp > 1) query.filePage = String(fp)
+  return { query }
+}
+
 // `replace`, not `push`: ten keystrokes must not become ten history entries,
 // or Back walks the visitor through their own typing one letter at a time.
+// Paging below uses `push`, because a page change is a deliberate step Back
+// should undo.
 let pending: ReturnType<typeof setTimeout> | undefined
 watch(typed, value => {
   clearTimeout(pending)
   pending = setTimeout(() => {
     const next = value.trim()
     if (next === term.value) return
-    const query = { ...route.query }
-    if (next) query.q = next
-    else delete query.q
-    router.replace({ query })
+    // Both pages reset in the same write: page four of the old results says
+    // nothing about the new ones, and a separate watcher would flash the old
+    // page and leave a useless history entry behind.
+    router.replace(addressFor({ q: next, page: 1, filePage: 1 }))
   }, 250)
 })
 onBeforeUnmount(() => clearTimeout(pending))
+
+/** PrimeVue's Paginator counts from zero and reports rows offsets. */
+function goToPage(kind: 'page' | 'filePage', event: { page: number }) {
+  router.push(addressFor({ [kind]: event.page + 1 }))
+}
 
 const searchInput = useTemplateRef<{ $el: HTMLElement } | HTMLInputElement>('searchInput')
 function focusSearch() {
@@ -50,15 +81,30 @@ function clearSearch() {
   focusSearch()
 }
 
-// Keyed on the term, so the catalogue is refetched when it changes rather than
-// filtered in the browser. A client-side filter can only search the rows the
-// page happens to hold, which is wrong the moment the catalogue is paginated.
-const { data: products, error } = await useFetch<Product[]>('/api/products', {
-  query: { q: term },
+interface CataloguePage<T> {
+  items: T[]
+  total: number
+  page: number
+  perPage: number
+}
+
+// One request per tab, each keyed on the term and on that tab's own page, so
+// the two page independently. Filtering and paging both happen in the database:
+// a client-side filter could only search the rows the page already holds.
+const { data: productPage, error } = await useFetch<CataloguePage<Product>>('/api/products', {
+  query: { q: term, page, kind: 'physical' },
   // The list keeps what it has while the next answer is in flight, so typing
   // does not flash an empty catalogue between keystrokes.
   keepalive: true
 })
+
+const { data: filePage_, error: fileError } = await useFetch<CataloguePage<DigitalProduct>>(
+  '/api/products',
+  {
+    query: { q: term, page: filePage, kind: 'digital' },
+    keepalive: true
+  }
+)
 
 // What the assistant can actually do, in the visitor's terms. Each line maps to
 // a tool in server/utils/assistant.ts: get_product, then search_catalogue,
@@ -73,16 +119,18 @@ const CAN_DO = [
   'Add items to your cart (with your approval)'
 ]
 
-const physical = computed(() => products.value?.filter(p => p.kind !== 'digital') ?? [])
-const files = computed(
-  () => products.value?.filter((p): p is DigitalProduct => p.kind === 'digital') ?? []
-)
+const physical = computed(() => productPage.value?.items ?? [])
+const files = computed(() => filePage_.value?.items ?? [])
+
+// The totals, not the rendered lengths: a visitor on page one of twelve items
+// should be told there are twelve, not six.
+const physicalTotal = computed(() => productPage.value?.total ?? 0)
+const filesTotal = computed(() => filePage_.value?.total ?? 0)
+const perPage = computed(() => productPage.value?.perPage ?? 6)
 
 const searching = computed(() => term.value.length > 0)
-// Both counts come off the one filtered response, so the numbers and the lists
-// under them cannot disagree.
 const nothingMatched = computed(
-  () => searching.value && !physical.value.length && !files.value.length
+  () => searching.value && !physicalTotal.value && !filesTotal.value
 )
 
 // Icon classes are presentation, so the format maps to one here rather than
@@ -240,12 +288,12 @@ useSeoMeta({
             Each tab says how many of its own items matched, so a visitor
             reading one tab can see the other holds results without opening it.
           -->
-          <Badge v-if="searching" :value="physical.length" severity="secondary" />
+          <Badge v-if="searching" :value="physicalTotal" severity="secondary" />
         </Tab>
         <Tab value="files" class="flex items-center gap-2">
           <i class="pi pi-file" />
           Files
-          <Badge v-if="searching" :value="files.length" severity="secondary" />
+          <Badge v-if="searching" :value="filesTotal" severity="secondary" />
         </Tab>
       </TabList>
 
@@ -255,7 +303,7 @@ useSeoMeta({
             Could not load products. Check the Supabase configuration in <code>.env</code>.
           </Message>
 
-          <p v-else-if="searching && !physical.length" class="text-sm text-surface-500">
+          <p v-else-if="searching && !physicalTotal" class="text-sm text-surface-500">
             No products match "{{ term }}".
           </p>
 
@@ -297,18 +345,34 @@ useSeoMeta({
               </div>
             </article>
           </div>
+
+          <!--
+            PrimeVue's own control rather than a hand-rolled one: it already
+            collapses to arrows and a current page at phone width, which is the
+            case this has to survive, and the theme applies to it unchanged.
+            Hidden entirely while everything fits on one page.
+          -->
+          <Paginator
+            v-if="!error && physicalTotal > perPage"
+            :rows="perPage"
+            :total-records="physicalTotal"
+            :first="(page - 1) * perPage"
+            class="mt-6"
+            data-testid="products-paginator"
+            @page="goToPage('page', $event)"
+          />
         </TabPanel>
 
         <TabPanel value="files" class="pt-6">
-          <Message v-if="error" severity="error">
+          <Message v-if="fileError" severity="error">
             Could not load files. Check the Supabase configuration in <code>.env</code>.
           </Message>
 
-          <p v-else-if="searching && !files.length" class="text-sm text-surface-500">
+          <p v-else-if="searching && !filesTotal" class="text-sm text-surface-500">
             No files match "{{ term }}".
           </p>
 
-          <p v-else-if="!files.length" class="text-sm text-surface-500">
+          <p v-else-if="!filesTotal" class="text-sm text-surface-500">
             No files are listed yet.
           </p>
 
@@ -350,6 +414,16 @@ useSeoMeta({
               />
             </article>
           </div>
+
+          <Paginator
+            v-if="!fileError && filesTotal > perPage"
+            :rows="perPage"
+            :total-records="filesTotal"
+            :first="(filePage - 1) * perPage"
+            class="mt-6"
+            data-testid="files-paginator"
+            @page="goToPage('filePage', $event)"
+          />
         </TabPanel>
 
       </TabPanels>

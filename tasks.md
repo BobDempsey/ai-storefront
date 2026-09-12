@@ -3,7 +3,7 @@
 ## Now: ai-storefront.bobdempsey83.com
 
 - [x] Add search: a quick search panel in the navbar and a field beside Shop
-- [ ] Seed enough products to need pagination - develop pagination (discuss options)
+- [x] Seed enough products to need pagination - develop pagination (discuss options)
 - [ ] Decide whether to rename the assistant to AI Shopping Assistant
 - [ ] Check everything is typed and tested
 - [ ] Explore a faster provider, or streaming, since replies still take six seconds

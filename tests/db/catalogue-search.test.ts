@@ -12,12 +12,31 @@ import { BASE_URL } from './client'
  * has nothing to clean up.
  */
 
-const catalogue = async (q?: string) => {
-  const url = q === undefined ? '/api/products' : `/api/products?q=${encodeURIComponent(q)}`
-  const res = await fetch(`${BASE_URL}${url}`)
-  expect(res.status).toBe(200)
-  return (await res.json()) as { slug: string; name: string; description: string | null }[]
+interface Row {
+  slug: string
+  name: string
+  description: string | null
 }
+interface CataloguePage {
+  items: Row[]
+  total: number
+  page: number
+  perPage: number
+}
+
+/** One catalogue page. `perPage` is raised past the catalogue's size wherever a
+ *  test is about matching rather than paging, so the two concerns stay apart. */
+const request = async (params: Record<string, string | number> = {}) => {
+  const query = new URLSearchParams(
+    Object.entries(params).map(([k, v]) => [k, String(v)])
+  ).toString()
+  const res = await fetch(`${BASE_URL}/api/products${query ? `?${query}` : ''}`)
+  expect(res.status).toBe(200)
+  return (await res.json()) as CataloguePage
+}
+
+const catalogue = async (q?: string) =>
+  (await request(q === undefined ? { perPage: 48 } : { q, perPage: 48 })).items
 
 /** The tool's rule, run here over the unfiltered catalogue. */
 const matches = (
@@ -86,6 +105,48 @@ describe('GET /api/products?q=', () => {
 
   it('rejects an over-long term rather than running it', async () => {
     const res = await fetch(`${BASE_URL}/api/products?q=${'x'.repeat(201)}`)
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('GET /api/products paging', () => {
+  it('answers with one page and the total for the whole catalogue', async () => {
+    const first = await request()
+    expect(first.items.length).toBeLessThanOrEqual(first.perPage)
+    expect(first.total).toBeGreaterThan(first.items.length)
+    expect(first.page).toBe(1)
+  })
+
+  it('does not repeat an item across two pages', async () => {
+    const [one, two] = [await request({ page: 1 }), await request({ page: 2 })]
+    const slugs = new Set(one.items.map(i => i.slug))
+    for (const item of two.items) expect(slugs.has(item.slug)).toBe(false)
+    expect(two.total).toBe(one.total)
+  })
+
+  it('pages each kind on its own count', async () => {
+    const physical = await request({ kind: 'physical' })
+    const digital = await request({ kind: 'digital' })
+    const all = await request()
+
+    expect(physical.total + digital.total).toBe(all.total)
+    expect(physical.items.every(i => !digital.items.some(d => d.slug === i.slug))).toBe(true)
+  })
+
+  it('answers a page past the end with an empty page and the true total', async () => {
+    const end = await request({ page: 999 })
+    expect(end.items).toEqual([])
+    expect(end.total).toBe((await request()).total)
+  })
+
+  it('counts the matches for a search, not the rows on the page', async () => {
+    const page = await request({ q: 'p', perPage: 1 })
+    expect(page.items).toHaveLength(1)
+    expect(page.total).toBeGreaterThan(1)
+  })
+
+  it('refuses a page size past the maximum rather than serving it', async () => {
+    const res = await fetch(`${BASE_URL}/api/products?perPage=500`)
     expect(res.status).toBe(400)
   })
 })

@@ -33,8 +33,8 @@ beforeAll(async () => {
     throw new Error(`no dev server answering at ${BASE_URL}; run "npm run dev" first`)
   }
 
-  const products = (await health.json()) as { id: string; kind: string }[]
-  productId = products.find(p => p.kind === 'physical')!.id
+  const { items } = (await health.json()) as { items: { id: string; kind: string }[] }
+  productId = items.find(p => p.kind === 'physical')!.id
 })
 
 afterEach(async () => {

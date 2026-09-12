@@ -67,8 +67,8 @@ beforeAll(async () => {
   // Note the price this returns is already sale-discounted when a sale is on,
   // where subtotal_cents on the order is the catalogue price. So the id is all
   // that is taken from here; the figures come from the committed rows.
-  const products = (await health.json()) as { id: string; kind: string }[]
-  productId = products.find(p => p.kind === 'physical')!.id
+  const { items } = (await health.json()) as { items: { id: string; kind: string }[] }
+  productId = items.find(p => p.kind === 'physical')!.id
 
   const { data: code } = await db()
     .from('promo_codes')

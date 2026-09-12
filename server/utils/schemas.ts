@@ -85,11 +85,23 @@ export const searchCatalogueArgs = z.object({
   kind: z.enum(['physical', 'digital']).optional()
 })
 
-/** The `q` on a catalogue request: what the visitor typed into the search
- *  field. Capped rather than unbounded, since it reaches an ilike pattern, and
- *  optional because an unfiltered catalogue is the ordinary case. */
+/** How many items a catalogue page holds, and the most a caller may ask for.
+ *  Six is two rows of the shop page's three-column grid. The maximum is the
+ *  storefront's protection rather than the caller's setting: without it a
+ *  request could ask for the whole table in one page. */
+export const PAGE_SIZE = 6
+export const MAX_PAGE_SIZE = 48
+
+/** A catalogue request: what the visitor typed into the search field, which
+ *  kind of item is wanted, and which page of it. The term is capped because it
+ *  reaches an ilike pattern; every field is optional, because an unfiltered
+ *  first page of everything is the ordinary case. */
 export const catalogueQuerySchema = z.object({
-  q: z.string().trim().max(200).optional()
+  q: z.string().trim().max(200).optional(),
+  kind: z.enum(['physical', 'digital']).optional(),
+  // One-based, because the number is shown to a person.
+  page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(PAGE_SIZE)
 })
 
 export const getProductArgs = z.object({
