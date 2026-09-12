@@ -15,4 +15,4 @@
       *Six tests drove the old field. One of them, "one Back leaves the page", changed meaning rather than mechanics: "see all" pushes, so one Back now returns to the unsearched catalogue and a second leaves it. The spec delta says so.*
 - [x] 3.2 Run `npm run check` and `npm run build`; verify both pass
 - [x] 3.3 Drive it in a browser at 1280px and 390px in both schemes; verify the panel opens, carries the term, closes on Escape and leaves the cart alone
-- [ ] 3.4 Update `handoff.md` and the root `tasks.md`
+- [x] 3.4 Update `handoff.md` and the root `tasks.md`

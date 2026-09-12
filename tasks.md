@@ -2,8 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Archive the open-panel-from-catalogue-field change
-- [ ] Push the six unpushed commits and redeploy (ask first)
+- [ ] Push and redeploy (ask first)
 
 ## Next: fif.bobdempsey83.com from the same repo
 

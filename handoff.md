@@ -808,7 +808,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Twenty-six changes have been through the full cycle, all in
+Twenty-seven changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -839,13 +839,13 @@ Twenty-six changes have been through the full cycle, all in
 | `2026-09-12-enforce-typescript` | none — it typechecks the repo, and changed no behaviour to spec |
 | `2026-09-12-deepen-typescript` | none — same, and archived with 3 optional tasks open |
 | `2026-09-12-type-product-kind` | none — `skip_specs`: the two kinds and every rule about them are unchanged, only where the rule is enforced |
+| `2026-09-12-open-panel-from-catalogue-field` | modifications folded into `specs/catalog/catalogue-search/`, the first change here to rewrite an accepted requirement rather than add one |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
 All four were archived later on 2026-09-12, and `openspec/changes/` holds
-nothing but `archive/` and `open-panel-from-catalogue-field`, which is complete
-and awaiting archiving. The two catalogue changes brought new capabilities,
+nothing but `archive/`. The two catalogue changes brought new capabilities,
 `catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
 to fifteen. The two typing changes brought none: they added no behaviour a spec
 describes. `deepen-typescript` was archived at 21 of 24, with the
@@ -869,7 +869,10 @@ archived in one session on 2026-09-03 (section 1); its spec is now
 Specs cover theming, contact, five ordering capabilities, the catalogue's
 file products and store-wide sale, the shopping assistant, the newsletter,
 promo codes, the deployment banner and the catalogue's search and pagination:
-fifteen capabilities as of 2026-09-12. Everything else in this document predates OpenSpec and is not
+fifteen capabilities as of 2026-09-12. `catalog/catalogue-search` is the one
+whose accepted text has been rewritten rather than extended, when the catalogue
+page's field became a launcher; the requirement it replaced described a field
+that filtered in place. Everything else in this document predates OpenSpec and is not
 backed by a spec, including the storefront tabs added on 2026-09-01. New work
 should be.
 
@@ -2087,8 +2090,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   user still asks to be asked.
 - ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
   `deepen-typescript` went with them. `type-product-kind` arrived afterwards and
-  was archived the same day. `open-panel-from-catalogue-field` followed on
-  2026-09-12 and is complete but not yet archived. See section 2.
+  was archived the same day, as was `open-panel-from-catalogue-field`. There is
+  no change in flight. See section 2.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
