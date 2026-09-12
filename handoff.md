@@ -1630,14 +1630,31 @@ against the `forged in filament` database for a while, because the rename
 happens first and the split happens later. Until it is repointed, orders placed
 on the demo land in the real shop's tables.
 
-**The open question is whether the second shop needs a branch at all.** The user
-suggested one, and it may not be necessary: nothing in the code differs between
-the two shops. The store name, the Supabase credentials, the Resend sender and
-the domain are all environment variables, so two Vercel projects built from the
-same branch would do it, with no ongoing merge to keep them in step. A branch
+~~The open question is whether the second shop needs a branch at all.~~
+**Settled 2026-09-12: a second Vercel project built from `main`, not a branch.**
+Nothing in the code differs between the two shops. The store name, the Supabase
+credentials, the Resend sender and the domain are all environment variables, so
+two projects from one branch do it with no merge to keep them in step. A branch
 only earns its keep if the two shops' code has to diverge, and today it does
-not. Decide this before building the second deployment, because it is expensive
-to undo.
+not; if that ever changes, a configuration flag is the smaller answer and a
+branch is still available.
+
+**Also settled the same day: the real shop keeps the existing database and the
+demo moves.** The existing project is `wfhhkdmgouyxnrxnbaeo`, already named
+`forged in filament`, and repointing a deployment is the risky half of the work,
+so it is done to the shop where a mistake costs least. The demo sells nothing.
+The cost, accepted deliberately: the demo's existing rows stay behind in the
+real shop's database, because no column records which shop took an order and
+matching them after the fact would be guesswork.
+
+**The plan is written up as the OpenSpec change `split-into-two-shops`**,
+proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel
+agents: four streams over disjoint files and accounts, then a verification gate.
+Stream B, the demo's new database, is the only one that can take a shop offline,
+so serialise around it if anything has to be. Two new capabilities come with it,
+`storefront/shop-identity` and `contact/custom-order-request`, and
+`ordering/test-order` is modified, because "the live shop" stops being one thing
+once two of them are live and each deployment has to judge itself.
 
 `tasks.md` carries both phases as a checklist.
 

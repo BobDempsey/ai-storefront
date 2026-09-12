@@ -2,16 +2,22 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-Nothing outstanding. The demo is live and current at `11e3a98`, which is also
-what `origin/main` points at.
+Nothing outstanding. The demo is live and current, and level with
+what `origin/main` points at (`d6768b4` as this was written).
 
 ## Next: fif.bobdempsey83.com from the same repo
 
-- [ ] Decide between a second Vercel project and a branch
-- [ ] Create the second deployment with its own environment variables
-- [ ] Add fif.bobdempsey83.com and its Route 53 CNAME
-- [ ] Create a second Supabase project from schema.sql and seed.sql
-- [ ] Point each deployment at its own database and verify the split
-- [ ] Render a share image carrying the second shop's name
-- [ ] Make the smoke test able to check either deployment
-- [ ] Direct a custom-order request to the contact form
+Planned as the OpenSpec change `split-into-two-shops`, with four streams that
+can run in parallel and a verification gate after them. Run `/opsx:apply` to
+start; the change's own tasks.md is the working list.
+
+- [ ] Stream A: second Vercel project, its env vars and the Route 53 CNAME
+- [ ] Stream B: new Supabase project for the demo, and repoint it
+- [ ] Stream C: per-shop share image, and a smoke test that checks either shop
+- [ ] Stream D: custom-order requests from an empty search
+- [ ] Gate: drive both shops, place an order on each, confirm they share nothing
+- [ ] Update README.md and AGENTS.md, which describe a single-shop template
+
+Decided 2026-09-12, do not reopen without asking: a second Vercel project rather
+than a branch, and the real shop keeps the existing database while the demo
+moves to the new one.

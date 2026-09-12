@@ -1,0 +1,62 @@
+> **Four streams, three of which run in parallel.** Groups 1, 2, 3 and 4 touch
+> disjoint files and disjoint accounts, so one agent can take each. Group 5 is a
+> gate and starts only when all four are done. Group 2 is the only one that can
+> take the demo offline: if streams have to be serialised, serialise around it.
+>
+> An agent on any stream must touch nothing outside its own group's files.
+> `design.md` says what will bite before you hit it; read it first.
+
+## 1. Stream A: the second shop's deployment
+
+Needs Vercel account access. Writes no application code.
+
+- [ ] 1.1 Create a second Vercel project from the same GitHub repo and the `main` branch; verify it builds and the generated `.vercel.app` alias serves the catalogue rather than an error page
+- [ ] 1.2 Set all nine environment variables on Production and Preview from the real shop's values, with `NUXT_PUBLIC_STORE_NAME` as "Forged in Filament" **(new env values, no new variable names)**; verify with `vercel env ls` that each is present, then confirm none is an empty string, which beats its default and reports the app unconfigured
+- [ ] 1.3 Leave `NUXT_TEST_ORDER_TOKEN` unset on both environments and `NUXT_PUBLIC_DEPLOY_ENV` unset on Production and `preview` on Preview; verify an order placed on Production is recorded as real and one placed on a preview is recorded as a test
+- [ ] 1.4 Add `fif.bobdempsey83.com` to the project against Production, read the **per-domain** CNAME target off its Domains tab, and write that record into Route 53 zone `Z071721280HQ6W3TJD8O`; verify by reading the record back with the AWS CLI and loading the domain over TLS
+- [ ] 1.5 Redeploy after the variables are set, since adding one does not rebuild what is already running; verify the deployed build serves "Forged in Filament" rather than the placeholder
+
+## 2. Stream B: the demo's own database
+
+Needs Supabase account access and the MCP server authorised. **This is the only
+stream that can take the demo offline.**
+
+- [ ] 2.1 Create a new Supabase project for the demo and record its ref; verify the project reports itself healthy before anything is run against it
+- [ ] 2.2 Run `supabase/schema.sql` against it **(this creates every table, every RLS policy and `create_order`: a schema and RLS change on a new project)**; verify every table exists, RLS is on for each, and `products` is the only publicly readable one
+- [ ] 2.3 Run `supabase/seed.sql` against it; verify it holds 15 products, 12 physical and 3 digital, and that `store_settings` and `promo_codes` carry their default rows
+- [ ] 2.4 Call `create_order` directly against the new project for one physical and one digital line; verify both commit with the right totals, then delete the rows
+- [ ] 2.5 Repoint the demo's Vercel project at the new `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_KEY` **(new env values)** and redeploy; verify the live demo serves its catalogue from the new project and that `npm run db:types` still produces no diff, since the schema is identical
+- [ ] 2.6 Place one real order on the live demo and confirm it appears in the new project and **not** in `wfhhkdmgouyxnrxnbaeo`; verify by querying both, then delete it
+
+## 3. Stream C: per-shop assets and checks
+
+Writes `tests/smoke/production.test.ts` and one new image. No account access.
+
+- [ ] 3.1 Render a share image carrying "Forged in Filament", headlessly through the repo's own Playwright the way `og-image.png` was made; verify the file is 1200x630 and the name is legible at preview size
+- [ ] 3.2 Decide and implement how a deployment finds its own share image, so neither shop serves the other's **(may need a new env var; state it in the change notes if so)**; verify each shop's rendered `og:image` is an absolute URL to its own file
+- [ ] 3.3 Make the smoke test check either deployment by naming it, rather than defaulting to one domain and being overridden by hand; verify it passes against both shops' addresses and that its output says which shop it checked
+- [ ] 3.4 Add a smoke assertion that the shop reports its own configured name rather than the placeholder; verify it fails against a deployment with `NUXT_PUBLIC_STORE_NAME` unset
+
+## 4. Stream D: custom-order requests
+
+The only stream with application code. Touches the contact path, the shop page
+and the assistant's prompt.
+
+- [ ] 4.1 Offer a custom-order request beside the existing "clear the search" offer when a search matches nothing; verify it does not appear when the search matches at least one item
+- [ ] 4.2 Carry the searched term into the request as store state rather than a route query, the way the product-page prefill does; verify a reload does not refill the box and a shared URL does not carry the term
+- [ ] 4.3 Deliver a custom-order request through the existing contact path, marked so staff can tell it from an ordinary message; verify no order, cart line or redemption is created and that a failed send is reported to the visitor
+- [ ] 4.4 Add one sentence to the assistant's system prompt naming where to ask, and **add no tool**; verify `tests/unit/assistant-promo-boundary.test.ts` still pins the tool list unchanged
+- [ ] 4.5 Cover the new behaviour with unit tests and one end-to-end test that counts the POSTs to `/api/chat` to prove the offer costs no provider call; verify `npm run check` and `npm run test:e2e` pass
+
+## 5. Verification, and the gate
+
+Starts only when groups 1 to 4 are done. Every failure this change can introduce
+is a configuration one that a green build and a green suite both miss.
+
+- [ ] 5.1 Load both shops in a browser at 1280px and 390px in both schemes; verify each shows its own name, its own catalogue and a clean console with no hydration mismatch
+- [ ] 5.2 Place a real order on each shop and confirm each lands in its own database and neither appears in the other's; verify the staff email and the buyer confirmation both arrive, then delete both orders
+- [ ] 5.3 Share a link to each shop and check the preview; verify each carries its own name and its own image
+- [ ] 5.4 Run `npm run test:smoke` against both addresses; verify both pass and each names the shop it checked
+- [ ] 5.5 Confirm the shops share no state: exhaust the order rate limit on one and verify the other still accepts an order from the same caller
+- [ ] 5.6 Update `README.md` and `AGENTS.md`, which describe a single-shop template, with the checklist this produced; verify the instructions name only things that exist
+- [ ] 5.7 Update `handoff.md` and the root `tasks.md` with what shipped, what was measured and what was decided
