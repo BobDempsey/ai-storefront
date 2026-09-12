@@ -252,6 +252,24 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+Reviewed against the code again on 2026-09-11, working tree clean at `be36082`.
+The four changes that had shipped since the last review were sitting complete
+and unarchived, all their tasks ticked: `ask-assistant-about-a-product`,
+`cap-assistant-reasoning-effort`, `mark-non-production-deployments` and
+`mark-non-production-orders-as-tests`. All four are archived now, their delta
+specs synced into the main tree, which gained a thirteenth capability,
+`storefront/deployment-banner`, and folded the rest into
+`specs/assistant/shopping-assistant/` and `specs/ordering/test-order/`.
+`openspec validate --specs --strict` passes 13 of 13 and `npm test` is green at
+198. Five stale claims were corrected in place: the change count and table in
+section 2 and that section's `.mcp.json` and spec-coverage lines,
+`app/utils/deploy-env.ts` missing from section 4's tree,
+`NUXT_TRUSTED_IP_HEADER` listed in section 6 as a `.env` entry when it is the
+default in `nuxt.config.ts`, and the unit-test count in section 10. The find
+that matters is in section 10: **`origin/main` is six commits behind local
+`main` again**, so the prefill, the latency work and both deployment changes are
+committed and none of them is live.
+
 ---
 
 ## 1. What this is
@@ -427,7 +445,8 @@ AGENTS.md                 the working agreement, applies to every AI agent
 CLAUDE.md                 points Claude Code at AGENTS.md
 .mcp.json                 Supabase MCP server, scoped to this project and to
                           the database and docs tools, plus the playwright
-                          server added 2026-09-03. See AGENTS.md
+                          server added 2026-09-03 and the hosted resend server
+                          added 2026-09-11. See AGENTS.md
 openspec/
   config.yaml             schema: spec-driven, plus project context and rules
   specs/                  accepted specs, by capability (theming/color-mode)
@@ -445,7 +464,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Seventeen changes have been through the full cycle, all in
+Twenty-one changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -467,6 +486,10 @@ Seventeen changes have been through the full cycle, all in
 | `2026-09-11-let-assistant-apply-a-promo-code` | additions folded into `specs/assistant/shopping-assistant/` and `specs/promotions/promo-code/` |
 | `2026-09-11-refresh-navbar-and-assistant-entry` | additions folded into `specs/assistant/shopping-assistant/` and `specs/theming/color-mode/` |
 | `2026-09-11-add-assistant-attention-dot` | additions folded into `specs/assistant/shopping-assistant/`, which also lost the first-visit auto-open that change had added hours earlier |
+| `2026-09-11-ask-assistant-about-a-product` | additions folded into `specs/assistant/shopping-assistant/` |
+| `2026-09-11-cap-assistant-reasoning-effort` | additions folded into `specs/assistant/shopping-assistant/` |
+| `2026-09-11-mark-non-production-deployments` | `specs/storefront/deployment-banner/` |
+| `2026-09-11-mark-non-production-orders-as-tests` | additions folded into `specs/ordering/test-order/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
@@ -484,9 +507,10 @@ archived in one session on 2026-09-03 (section 1); its spec is now
 `808d678`, the archive as `093888e`, and this document's record of both as
 `a6fb5a2` and `40b0b0c`.
 
-Specs cover theming, contact, three ordering capabilities, the catalogue's
-file products and store-wide sale, the shopping assistant, the newsletter and
-promo codes. Everything else in this document predates OpenSpec and is not
+Specs cover theming, contact, five ordering capabilities, the catalogue's
+file products and store-wide sale, the shopping assistant, the newsletter,
+promo codes and the deployment banner: thirteen capabilities as of
+2026-09-11. Everything else in this document predates OpenSpec and is not
 backed by a spec, including the storefront tabs added on 2026-09-01. New work
 should be.
 
@@ -664,6 +688,9 @@ app/
                                  reaches light and dark; set() still takes
                                  all three
   types/index.ts                 Product, CartLine, CartPreview, StoreSettings
+  utils/deploy-env.ts            deployEnvLabel(), the one place that decides
+                                 whether a deployment calls itself something
+                                 other than the live shop
   utils/money.ts                 formatMoney()
   utils/bytes.ts                 formatBytes(), for file sizes
   assets/css/main.css            layer order + Tailwind import
@@ -772,6 +799,8 @@ NUXT_PUBLIC_DEPLOY_ENV      development in `.env`, preview on Vercel Preview,
                             is the case that needs no configuration
 NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             limiter believes about who is calling. Not a secret.
+                            NOT in `.env`: that value is the default in
+                            `nuxt.config.ts`, and `.env.example` carries it.
                             Set it to your host's header if you leave Vercel;
                             empty means the connection address alone
 NUXT_TEST_ORDER_TOKEN       SET locally — a random hex string. SERVER ONLY. Lets a
@@ -1170,13 +1199,15 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — 173 unit tests across 13 files, over `pricing`, `promo`,
+  - `npm test` — 198 unit tests across 15 files, over `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
-    tools, its promo boundary, `confirmations`, the orders route, the customer
-    email, the colour-mode toggle and the navbar attention dot. It was 60 when
+    tools, its promo boundary, its product prefill, `confirmations`, the orders
+    route, the customer email, the colour-mode toggle, the navbar attention dot
+    and the deployment environment. It was 60 when
     this suite landed; the assistant, client-address, buyer-confirmation,
     assistant-promo, navbar and dot changes brought the rest, and removing the
-    auto-open and the dot's storage flag took 21 back off. No network, no
+    auto-open and the dot's storage flag took 21 back off. The prefill,
+    reasoning-effort and two deployment changes took it 173 to 198. No network, no
     database, under a second. Run these on every save. The two newest files test
     Pinia stores rather than server
     utilities, which is why
@@ -1584,6 +1615,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   believes only `NUXT_TRUSTED_IP_HEADER`, which is set to Vercel's own header.
   A second push the same day (`f023612`) took the phone-width catalogue fix
   live; verified at 390px against the production alias, a card measures 324px.
+  **The gap is open again as of 2026-09-11**: `origin/main` sits at `8366129`
+  and local `main` at `be36082`, six commits ahead, so the product-page prefill,
+  the assistant latency work, the deployment banner and the non-production test
+  orders are all committed and none of them is live. Pushing is deploy work and
+  needs an ask, which is why it sits in `tasks.md` rather than being done.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to

@@ -3,10 +3,12 @@
 ## Now: ai-storefront.bobdempsey83.com
 
 - [ ] Add search, with an icon in the navbar and an input beside Shop
-- [ ] Seed enough products to need pagination
+- [ ] Seed enough products to need pagination - develop pagination (discuss options)
 - [ ] Decide whether to rename the assistant to AI Shopping Assistant
 - [ ] Check everything is typed and tested
 - [ ] Explore a faster provider, or streaming, since replies still take six seconds
+- [x] Archive the four completed OpenSpec changes
+- [ ] Push main and redeploy (ask first)
 
 ## Next: fif.bobdempsey83.com from the same repo
 
