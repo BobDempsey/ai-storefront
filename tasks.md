@@ -15,7 +15,9 @@
 ## Getting more out of TypeScript
 
 - [ ] Run `npm run test:llm` once, to confirm the typed chat loop still works
-- [ ] Generate Supabase types from the schema, so a column rename is a type error
+- [ ] Generate Supabase types and pass them to `createClient<Database>`: the client
+      in `server/utils/supabase.ts` is a bare `SupabaseClient` today, so every row
+      it returns is loosely typed and a renamed column is a runtime bug
 - [ ] Type the API routes' responses so the browser and the server share one shape
 - [ ] Replace the `as any` casts in the assistant tests with the tools' real types
 - [ ] Add ESLint with the TypeScript rules, since the checker catches no smells

@@ -280,9 +280,18 @@ have explained. Unit coverage went 225 to 236. `npm test`, `npm run build`,
 run**, since it spends provider calls, so the typed chat loop is verified by the
 checker and the build rather than against the real provider. That run is the
 first item under the new "Getting more out of TypeScript" heading in `tasks.md`,
-which also holds what this change deliberately left out: generated Supabase
-types, typed route responses, the tests' own `as any` casts, ESLint,
-`noUncheckedIndexedAccess` and a CI to run the check in.
+which also holds what this change deliberately left out: typed route responses,
+the tests' own `as any` casts, ESLint, `noUncheckedIndexedAccess` and a CI to
+run the check in.
+
+**The biggest gap left is the database.** `useSupabase()` in
+`server/utils/supabase.ts` returns a bare `SupabaseClient` with no `Database`
+generic, and no generated types exist: `supabase/` holds `schema.sql` and
+`seed.sql` and nothing else. So every `.from('products').select(...)` in the
+repo is checked against nothing, and a renamed column is a runtime bug that
+reaches a visitor rather than a type error that stops a build. Closing it means
+generating types from the schema and passing them to `createClient<Database>`,
+which is the first real item on that list after the `test:llm` run.
 
 Three things were settled on 2026-09-11 and should not be reopened without
 asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps
