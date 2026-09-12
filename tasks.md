@@ -4,9 +4,10 @@
 
 - [x] Add search: a quick search panel in the navbar and a field beside Shop
 - [x] Seed enough products to need pagination - develop pagination (discuss options)
-- [ ] Decide whether to rename the assistant to AI Shopping Assistant
+- [x] Decide on the name - no rename, the project and the assistant keep theirs
 - [ ] Check everything is typed and tested
-- [ ] Explore a faster provider, or streaming, since replies still take six seconds
+- [x] Explore a faster provider, or streaming - dropped, six seconds is accepted
+- [ ] Replace the six placeholder product images (needs a Pexels API key)
 - [x] Archive the four completed OpenSpec changes
 - [x] Push main and redeploy (ask first)
 

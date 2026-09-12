@@ -252,6 +252,26 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+Three things were settled on 2026-09-11 and should not be reopened without
+asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps
+"AI Shop Assistant", since the last rename had only just finished across the
+repo, the Vercel project, the local folder and the live domain. **The
+assistant's six-second reply is accepted**, so the faster-provider and streaming
+idea is dropped rather than parked; `cap-assistant-reasoning-effort` already took
+it from 29 seconds, and the panel says it is working while the visitor waits.
+And **the shop field names its shortcut**, reading "Search the shop (Ctrl+K)" at
+a smaller placeholder size, where the quick search panel's own field says only
+"Search the shop" because naming the shortcut that opened it would be noise.
+
+**The six new products still carry placeholder images**, and finding real ones
+is the one piece of this work left outstanding. Openverse, the keyless free-image
+API, was tried and is not usable for these: it answered a headphone stand with a
+1940s radio operator, a phone dock with the Nuremberg trials and a seed tray with
+bread loaves, and the two genuinely relevant results were CC-BY rather than
+attribution-free. The six existing photographs came from Pexels, whose API needs
+a free key this machine does not have, so **the next attempt needs that key**
+rather than another search. It sits in `tasks.md`.
+
 Pagination followed the same day, through the OpenSpec change
 `add-catalogue-pagination`: six items a page, each tab paging on its own.
 **The response shape of `/api/products` changed** from a bare array to
