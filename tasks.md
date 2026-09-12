@@ -2,7 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Push and redeploy (ask first)
+Nothing outstanding. The demo is live and current at `7b43267`.
 
 ## Next: fif.bobdempsey83.com from the same repo
 

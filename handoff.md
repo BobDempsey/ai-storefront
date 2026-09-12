@@ -307,6 +307,15 @@ is still no build step and no external image host, which is the promise section
 1 makes about the catalogue. Every `NuxtImg` states its intrinsic width and
 height so a card cannot jump while the photo lands.
 
+**In production it is not IPX at all.** Nuxt's Vercel preset swaps the provider
+on deploy, so a live card's `src` reads
+`/_vercel/image?url=%2Fimages%2F...&w=640&q=80` while the same page locally
+reads `/_ipx/q_80&s_640x640/...`. Both honour the same `NuxtImg` props, so
+nothing in the templates cares, but two things follow: Vercel's optimizer has
+its own per-plan transformation quota, and a bug that only appears at one of
+the two will not reproduce at the other. Check which provider is answering
+before chasing an image problem.
+
 **There is a CI now, and it is green.** `.github/workflows/check.yml` runs
 `npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
 every pull request, and deliberately runs nothing else: `test:db` and
@@ -2079,7 +2088,11 @@ Known gaps, roughly in the order they were prioritized with the user:
   12 commits behind local `main`, the last push still being `8289dd0`, so
   catalogue search, pagination, the six new products, the typecheck, the route
   types and ESLint are all committed and none of them is live. The live shop
-  still serves nine products with no search box. **The gap reached 23 commits
+  still serves nine products with no search box. **Closed again on 2026-09-12**,
+  pushed at `7b43267` with CI green in a minute and verified live: the catalogue
+  field is readonly and opens the panel seeded with the term, the tab strip
+  renders no scroll arrow, the console is clean, and photos come back from
+  Vercel's optimizer. **The gap reached 23 commits
   and was closed the same day.** `main` was pushed at `6afbb56` with the user's
   go-ahead, Vercel built and promoted it, and the new CI passed on its first
   run. Verified live at the domain rather than by the smoke test, which proves
