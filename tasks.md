@@ -2,7 +2,8 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-Nothing outstanding. The demo is live and current at `7b43267`.
+Nothing outstanding. The demo is live and current at `11e3a98`, which is also
+what `origin/main` points at.
 
 ## Next: fif.bobdempsey83.com from the same repo
 

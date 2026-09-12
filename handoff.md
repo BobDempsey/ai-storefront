@@ -316,6 +316,15 @@ its own per-plan transformation quota, and a bug that only appears at one of
 the two will not reproduce at the other. Check which provider is answering
 before chasing an image problem.
 
+**The README and `AGENTS.md` both claimed `products.kind` comes back as
+`string`**, which the enum had made false, and both said `server/utils/rows.ts`
+goes away with it, which it does not: the three file columns are tied to the
+kind by a check constraint and no Postgres type expresses conditional
+nullability, so that half of the file stays. Corrected 2026-09-12, along with
+adding `@nuxt/image` to the README's stack table and a CI step to its setup.
+Worth a look whenever this document records a change: the two files an adopter
+reads go stale from the same edits, and neither is covered by a test.
+
 **There is a CI now, and it is green.** `.github/workflows/check.yml` runs
 `npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
 every pull request, and deliberately runs nothing else: `test:db` and
@@ -2092,7 +2101,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   pushed at `7b43267` with CI green in a minute and verified live: the catalogue
   field is readonly and opens the panel seeded with the term, the tab strip
   renders no scroll arrow, the console is clean, and photos come back from
-  Vercel's optimizer. **The gap reached 23 commits
+  Vercel's optimizer. A documentation commit followed at `11e3a98`, also pushed
+  and green, and `origin/main` is level with local `main` as this was written. **The gap reached 23 commits
   and was closed the same day.** `main` was pushed at `6afbb56` with the user's
   go-ahead, Vercel built and promoted it, and the new CI passed on its first
   run. Verified live at the domain rather than by the smoke test, which proves
