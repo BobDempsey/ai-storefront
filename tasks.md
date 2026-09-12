@@ -14,13 +14,16 @@
 
 ## Getting more out of TypeScript
 
+- [x] Type the API routes' responses - shapes live in shared/types/api.ts now
+- [x] Replace the `as any` casts in the assistant tests with the tools' real types
+- [x] Typecheck the test suites, which nuxt typecheck never covered (43 errors, fixed)
+- [x] Add ESLint with the TypeScript rules - npm run lint, and npm run check for all
+- [ ] Decide the database types: supply a Supabase token, or hand-write Database
+      from schema.sql. The CLI cannot read a schema file, so nothing generates
+      until this is settled, and 23 lint warnings are waiting on it
+- [ ] Pass Database to createClient in server/utils/supabase.ts, then put the
+      no-unsafe-* rules back to error
 - [ ] Run `npm run test:llm` once, to confirm the typed chat loop still works
-- [ ] Generate Supabase types and pass them to `createClient<Database>`: the client
-      in `server/utils/supabase.ts` is a bare `SupabaseClient` today, so every row
-      it returns is loosely typed and a renamed column is a runtime bug
-- [ ] Type the API routes' responses so the browser and the server share one shape
-- [ ] Replace the `as any` casts in the assistant tests with the tools' real types
-- [ ] Add ESLint with the TypeScript rules, since the checker catches no smells
 - [ ] Try `noUncheckedIndexedAccess` and see how much it costs to satisfy
 - [ ] Run the typecheck in CI, once there is a CI to run it in
 - [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)

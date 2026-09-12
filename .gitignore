@@ -32,3 +32,7 @@ logs
 # already ignored above. These two cover a run that overrides outputDir.
 playwright-report
 test-results
+
+# Build info from the tests typecheck, and the Supabase CLI's scratch dir.
+*.tsbuildinfo
+supabase/.temp/

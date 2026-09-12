@@ -252,6 +252,54 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+**The typecheck was not checking the tests.** Found on 2026-09-12 while applying
+`deepen-typescript`, and it is the correction to the paragraph below: Nuxt's four
+generated projects cover `app/`, `server/` and `shared/` and nothing else, so a
+deliberate `const x: number = 'text'` in a test file passed the whole run. That
+is also why the assistant tests' `as any` casts had never been questioned.
+`tsconfig.tests.json` covers the suites and the root config files now, it is
+referenced from `tsconfig.json`, and `npm run typecheck` runs both projects. It
+found 43 errors in the suites on its first run, all fixed; one `!` on the three
+fixture exports in `catalogue-stub.ts` accounted for 25 of them. An `any` had
+survived the earlier change too: its grep was for `: any`, which does not match
+the `Record<string, any>` on `present()` in `server/utils/assistant.ts`.
+
+The same change gave the API **one declared shape per route**. They live in
+`shared/types/api.ts`, which Nuxt 4 exposes to `app/` and `server/` alike, and
+`app/types/index.ts` re-exports them so no app import changed. Each route now
+annotates its return with the type its caller reads, which caught a real
+mismatch on the first run: the quick search panel's `useFetch` default returned
+`{ items: [], total: 0 }`, not a whole `CataloguePage`.
+
+**The assistant's tool results are declared rather than derived, and the reason
+is worth keeping.** The first version took `Awaited<ReturnType<typeof runTool>>`
+and pulled each branch out with `Extract`, on the reasoning that a derived type
+cannot drift. It drifts the worse way: rename a field inside the switch and
+`Extract` matches nothing, so the branch becomes `never`, every test reading it
+still compiles, and the check meant to catch the rename hides it. Verified by
+renaming `subtotal` to `total` and watching the typecheck stay green. Declared
+interfaces with `runTool` annotated now fail at the return statement instead.
+
+**ESLint is in, with type-aware rules, and it is not in `npm test`.** The full
+run reached 36 seconds against 20 without it, past the threshold the design set,
+so `npm test` keeps the typecheck and the tests, `npm run lint` runs the linter,
+and `npm run check` runs everything. It earned itself immediately: 10 floating
+promises in the app, all navigations and refreshes nobody awaited. Two rules are
+off with reasons - `require-await` in the test stubs, which must be async to
+stub an async API, and `vue/no-multiple-template-root`, which is the Vue 2 shape
+of the world. **23 warnings remain and they are all one problem**: `useSupabase()`
+returns a bare `SupabaseClient`, so every row is `any` and every assignment from
+one is unsafe. They are `warn` rather than silenced per file, and they go back to
+`error` when the generated `Database` type lands.
+
+**That generation is blocked and needs a decision.** `supabase gen types` reads
+a live database or a local Docker one (`--local`, `--linked`, `--project-id`,
+`--db-url`) and cannot read a schema file at all. The project ref is known; a
+personal access token and the database password are not on this machine. So the
+choice is a token, or hand-writing `Database` from `supabase/schema.sql`. Until
+it is made, `openspec/changes/deepen-typescript/` stays open at task 6.2, with
+its findings in that folder's `notes.md`.
+
 **The repo typechecks now**, through the OpenSpec change `enforce-typescript`:
 `npm test` runs `vue-tsc` before a single assertion, so a type error fails the
 run the way a failing test does, and `npm run test:unit` stays for the fast
