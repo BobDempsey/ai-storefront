@@ -21,12 +21,12 @@ Needs Vercel account access. Writes no application code.
 Needs Supabase account access and the MCP server authorised. **This is the only
 stream that can take the demo offline.**
 
-- [ ] 2.1 Create a new Supabase project for the demo and record its ref; verify the project reports itself healthy before anything is run against it
-- [ ] 2.2 Run `supabase/schema.sql` against it **(this creates every table, every RLS policy and `create_order`: a schema and RLS change on a new project)**; verify every table exists, RLS is on for each, and `products` is the only publicly readable one
-- [ ] 2.3 Run `supabase/seed.sql` against it; verify it holds 15 products, 12 physical and 3 digital, and that `store_settings` and `promo_codes` carry their default rows
-- [ ] 2.4 Call `create_order` directly against the new project for one physical and one digital line; verify both commit with the right totals, then delete the rows
-- [ ] 2.5 Repoint the demo's Vercel project at the new `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_KEY` **(new env values)** and redeploy; verify the live demo serves its catalogue from the new project and that `npm run db:types` still produces no diff, since the schema is identical
-- [ ] 2.6 Place one real order on the live demo and confirm it appears in the new project and **not** in `wfhhkdmgouyxnrxnbaeo`; verify by querying both, then delete it
+- [x] 2.1 Create a new Supabase project for the demo and record its ref; verify the project reports itself healthy before anything is run against it
+- [x] 2.2 Run `supabase/schema.sql` against it **(this creates every table, every RLS policy and `create_order`: a schema and RLS change on a new project)**; verify every table exists, RLS is on for each, and `products` is the only publicly readable one
+- [x] 2.3 Run `supabase/seed.sql` against it; verify it holds 15 products, 12 physical and 3 digital, and that `store_settings` and `promo_codes` carry their default rows
+- [x] 2.4 Call `create_order` directly against the new project for one physical and one digital line; verify both commit with the right totals, then delete the rows
+- [x] 2.5 Repoint the demo's Vercel project at the new `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_KEY` **(new env values)** and redeploy; verify the live demo serves its catalogue from the new project and that `npm run db:types` still produces no diff, since the schema is identical
+- [x] 2.6 Place one real order on the live demo and confirm it appears in the new project and **not** in `wfhhkdmgouyxnrxnbaeo`; verify by querying both, then delete it
 
 ## 3. Stream C: per-shop assets and checks
 
