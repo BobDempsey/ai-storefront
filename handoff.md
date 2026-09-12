@@ -1832,6 +1832,17 @@ Known gaps, roughly in the order they were prioritized with the user:
   test with a strict-mode violation on `getByRole('status')`.
   The resolver is `app/utils/deploy-env.ts`, unit-tested over the cases that
   decide whether anything renders at all.
+- **TypeScript is pinned to `^5.9.0`, and it is parked rather than forgotten.**
+  Moved out of `tasks.md` on 2026-09-12 because nothing here unblocks it: the
+  blocker is upstream. `npm i -D typescript` installs 7.0.2, whose package
+  exports no longer carry `./lib/tsc`, and `vue-tsc@3` resolves exactly that
+  path, so the install typechecks nothing. **What to watch for is a `vue-tsc`
+  release that resolves TypeScript 7's exports**, not a TypeScript release. The
+  check when someone revisits it is two commands: bump both, then run
+  `npm run check`. If `vue-tsc` still cannot find `./lib/tsc`, put the pin back
+  and leave this note alone. There is no deadline on it and nothing in the repo
+  is waiting: 5.9 typechecks the whole codebase today, including the test
+  suites and `noUncheckedIndexedAccess`.
 - **No admin order screen** — Supabase dashboard by decision.
 - **No Turnstile/captcha** — phase 2. See the rate-limiting caveat above.
 - **No product variants or categories** — user confirmed phase 1 doesn't need

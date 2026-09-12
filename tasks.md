@@ -11,10 +11,9 @@
 
 ## Getting more out of TypeScript
 
-- [ ] Commit .github/workflows/check.yml and watch its first run. The workflow
-      is written and npm ci resolves, but nothing has run it: GitHub only sees
-      it once main is pushed
-- [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)
+- [ ] Watch the CI's first run. .github/workflows/check.yml is written and
+      committed and npm ci resolves, but GitHub has never seen it: it only runs
+      once main is pushed
 - [x] Make products.kind a real Postgres enum. Done, 2026-09-12. The generated
       row now says 'physical' | 'digital' and productKind()/withProductKind()
       are gone. server/utils/rows.ts stays: withProductFiles() still narrows the
