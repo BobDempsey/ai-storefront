@@ -21,8 +21,11 @@ const isColorMode = (value: unknown): value is ColorMode =>
  * the DOM.
  */
 export const useColorModeStore = defineStore('color-mode', {
-  state: () => ({
-    mode: 'system' as ColorMode,
+  state: (): { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean } => ({
+    // Annotated on the function rather than asserted on the literal: the
+    // assertion widened nothing, and the state's type is what every getter and
+    // action below is checked against.
+    mode: 'system',
     /** What the OS reported at load. Not tracked live; see design.md. */
     systemPrefersDark: false,
     /** Guards the client bootstrap so the watcher is only ever created once. */

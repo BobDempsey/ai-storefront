@@ -64,7 +64,7 @@ const isFile = computed(() => product.value?.kind === 'digital')
  */
 function askAboutThis() {
   if (!product.value) return
-  assistant.openDrawer(`Tell me more about the ${product.value.name}.`)
+  void assistant.openDrawer(`Tell me more about the ${product.value.name}.`)
 }
 
 function addToCart() {

@@ -8,8 +8,11 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "typecheck": "nuxt typecheck",
+    "typecheck": "nuxt typecheck && tsc -p tsconfig.tests.json",
+    "typecheck:tests": "tsc -p tsconfig.tests.json",
+    "lint": "eslint .",
     "test": "npm run typecheck && vitest run",
+    "check": "npm run typecheck && npm run lint && vitest run",
     "test:unit": "vitest run",
     "test:watch": "vitest",
     "test:db": "vitest run --config vitest.db.config.ts",
@@ -37,9 +40,12 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@nuxt/eslint-config": "^1.17.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.2",
+    "eslint": "^10.10.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0",
     "vue-tsc": "^3.3.11"
   }

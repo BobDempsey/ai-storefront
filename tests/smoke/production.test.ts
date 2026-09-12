@@ -34,7 +34,7 @@ describe(`the deployed store at ${BASE}`, () => {
     expect(page.items.length).toBeGreaterThan(0)
     // A misconfigured server answers 500 before it gets here, but an empty
     // page would be a quieter version of the same outage.
-    expect(page.items[0].price_cents).toBeGreaterThan(0)
+    expect(page.items[0]!.price_cents).toBeGreaterThan(0)
     // The catalogue is longer than one page, which is why it pages at all.
     expect(page.total).toBeGreaterThanOrEqual(page.items.length)
   })

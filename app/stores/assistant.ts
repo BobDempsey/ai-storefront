@@ -1,6 +1,6 @@
 import { errorStatus, messageFor } from '~/utils/errors'
 import { defineStore } from 'pinia'
-import type { CartIntent, ChatMessage, ChatResponse, OrderDraft } from '~/types'
+import type { ChatMessage, ChatResponse, OrderDraft } from '~/types'
 
 /** Matches the cap the chat route enforces, so the drawer can say so first. */
 const MAX_MESSAGES = 25
@@ -35,7 +35,7 @@ export const useAssistantStore = defineStore('assistant', {
     available: true,
     pending: false,
     ended: false,
-    error: '' as string,
+    error: '',
     messages: [] as ChatMessage[],
     draft: null as OrderDraft | null
   }),

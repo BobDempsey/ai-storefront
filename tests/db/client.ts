@@ -15,7 +15,9 @@ function env(): Record<string, string> {
   const out: Record<string, string> = {}
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
     const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim())
-    if (match) out[match[1]] = match[2].replace(/^"|"$/g, '')
+    // Both groups exist whenever the pattern matched; the compiler cannot
+    // see that through a RegExpExecArray.
+    if (match) out[match[1]!] = match[2]!.replace(/^"|"$/g, '')
   }
   return out
 }

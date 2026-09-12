@@ -1,0 +1,24 @@
+{
+  // The test suites, which `nuxt typecheck` does not look at: its four
+  // generated projects cover app/, server/ and shared/, and nothing else. That
+  // gap is how the assistant tests' `as any` casts sat unchecked, and how a
+  // deliberate `const x: number = 'text'` in a test file passed the whole run.
+  //
+  // It extends the generated app config for Nuxt's aliases and DOM lib, and
+  // re-states `.nuxt/nuxt.d.ts` in `include` because an `include` here replaces
+  // the inherited one, and that file is what carries the auto-imported names
+  // (`$fetch`, `watch`, `useSupabase`) the code under test relies on.
+  "extends": "./.nuxt/tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    ".nuxt/nuxt.d.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts",
+    "vitest.*.config.ts",
+    "playwright.config.ts",
+    "playwright.*.config.ts"
+  ]
+}

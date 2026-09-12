@@ -112,6 +112,7 @@ describe('mergeItems', () => {
 
   it('renames productId to the product_id create_order expects', () => {
     const [merged] = mergeItems([{ productId: uuid, quantity: 1 }])
+    if (!merged) throw new Error('mergeItems returned nothing')
     expect(merged).toEqual({ product_id: uuid, quantity: 1 })
     expect('productId' in merged).toBe(false)
   })

@@ -33,7 +33,7 @@ export async function subscribeEmail(email: string): Promise<{ isNew: boolean }>
       await sendWelcomeEmail(email)
     } catch (err) {
       console.error('[subscribe] welcome email failed:', err)
-      throw new Error('welcome email could not be sent')
+      throw new Error('welcome email could not be sent', { cause: err })
     }
   }
 

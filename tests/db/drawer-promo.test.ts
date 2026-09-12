@@ -103,7 +103,7 @@ describe('a code entered on the draft card', () => {
     expect(Number(b.discount_percent)).toBe(25)
     // The code beat the sale, so the recorded subtotal is the catalogue price
     // and the total is 25% under it.
-    expect(b.total_cents).toBeLessThan(b.subtotal_cents!)
+    expect(b.total_cents).toBeLessThan(b.subtotal_cents)
     expect(b.total_cents).toBe(Math.round(b.subtotal_cents! * 0.75))
   })
 

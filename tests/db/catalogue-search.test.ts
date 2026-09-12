@@ -40,7 +40,7 @@ const catalogue = async (q?: string) =>
 
 /** The tool's rule, run here over the unfiltered catalogue. */
 const matches = (
-  rows: { name: string; description: string | null }[],
+  rows: Row[],
   term: string
 ) => rows.filter(r => `${r.name} ${r.description ?? ''}`.toLowerCase().includes(term.toLowerCase()))
 
@@ -81,7 +81,7 @@ describe('GET /api/products?q=', () => {
     }
     expect(word, 'no description-only word to search for').toBeTruthy()
 
-    const filtered = await catalogue(word!)
+    const filtered = await catalogue(word)
     expect(filtered.map(p => p.slug)).toContain(row!.slug)
   })
 

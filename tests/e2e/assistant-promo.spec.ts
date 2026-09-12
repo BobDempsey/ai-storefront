@@ -93,7 +93,7 @@ test('@llm a code entered on the draft card prices and redeems the order', async
   expect(order!.is_test).toBe(true)
   expect(order!.discount_source).toBe('code')
   expect(order!.promo_code_snapshot).toBe(promoCode)
-  expect(order!.total_cents).toBeLessThan(order!.subtotal_cents!)
+  expect(order!.total_cents).toBeLessThan(order!.subtotal_cents)
 
   const { data: redemptions } = await db()
     .from('promo_redemptions')

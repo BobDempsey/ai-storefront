@@ -35,7 +35,7 @@ describe('checkPromoCode', () => {
       promo_redemptions: noRedemption
     })
     await checkPromoCode('  welcome25 ', 'buyer@example.com')
-    expect(calls[0].filters.code).toBe('WELCOME25')
+    expect(calls[0]!.filters.code).toBe('WELCOME25')
   })
 
   it('lower-cases the email before looking for a redemption', async () => {

@@ -68,8 +68,8 @@ async function applyPromoCode() {
 }
 
 onMounted(() => {
-  if (cart.isEmpty) navigateTo('/cart')
-  else refresh()
+  if (cart.isEmpty) void navigateTo('/cart')
+  else void refresh()
 })
 
 // Products the server named in a 409. Kept alongside the preview's own stock

@@ -288,7 +288,7 @@ async function refreshCart() {
 }
 
 watch(() => [assistant.open, cart.items] as const, ([open]) => {
-  if (open) refreshCart()
+  if (open) void refreshCart()
 }, { deep: true, immediate: true })
 </script>
 

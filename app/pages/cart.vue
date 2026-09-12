@@ -15,7 +15,7 @@ const { data: preview, refresh, status } = await useFetch<CartPreview>('/api/car
 // The store hydrates from its persisted cookie after mount, so fetch once it is
 // ready.
 onMounted(() => {
-  if (!cart.isEmpty) refresh()
+  if (!cart.isEmpty) void refresh()
 })
 
 // Drop lines whose product has disappeared from the catalogue. This runs
@@ -42,7 +42,7 @@ function updateQuantity(productId: string, quantity: number) {
   cart.setQuantity(productId, quantity)
   // Removing the last line empties the cart, and the preview endpoint rejects an
   // empty items array. Nothing needs pricing at that point, so skip the fetch.
-  if (!cart.isEmpty) refresh()
+  if (!cart.isEmpty) void refresh()
 }
 
 useSeoMeta({ title: 'Your cart', robots: 'noindex' })

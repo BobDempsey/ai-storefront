@@ -41,7 +41,7 @@ beforeAll(async () => {
   if (error || !products || products.length < 2) {
     throw new Error('need two in-stock physical products to test against')
   }
-  ;[productA, productB] = products
+  ;[productA, productB] = products as [typeof productA, typeof productB]
 
   // The store-wide sale is shared state on a live project, so its setting is
   // captured here and put back in afterAll rather than left however a test

@@ -27,7 +27,7 @@ const ask = (messages: { role: string; content: string }[], items?: unknown[]) =
 interface ChatReply {
   reply: string
   intents: { action: string; productId: string; quantity: number; name: string }[]
-  draft: unknown | null
+  draft: unknown
 }
 
 beforeAll(async () => {
@@ -67,6 +67,7 @@ describe('the assistant, against the real provider', () => {
     expect(body.intents).toHaveLength(1)
 
     const [intent] = body.intents
+    if (!intent) throw new Error('expected one intent')
     expect(intent.action).toBe('add')
     expect(intent.quantity).toBeGreaterThan(0)
     // The id can only have come from the catalogue: the model never sees one.
