@@ -174,8 +174,27 @@ export interface ToolContext {
 const CATALOGUE_COLUMNS =
   'id, slug, name, description, price_cents, in_stock, kind, file_name, file_format, file_size_bytes'
 
+/**
+ * A row as `CATALOGUE_COLUMNS` selects it. Declared by hand for now: the
+ * Supabase client is still untyped, so nothing generates this. When the
+ * generated `Database` type lands this becomes a row type from it, and the
+ * column list and this interface stop being two things to keep in step.
+ */
+export interface CatalogueRow {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  price_cents: number
+  in_stock: boolean
+  kind: 'physical' | 'digital'
+  file_name: string | null
+  file_format: string | null
+  file_size_bytes: number | null
+}
+
 /** What the model is allowed to see about an item. No ids: it names items by slug. */
-function present(product: Record<string, any>, sale: SaleState) {
+function present(product: CatalogueRow, sale: SaleState) {
   const priceCents = salePriceCents(product.price_cents, sale)
   return {
     slug: product.slug,
@@ -248,11 +267,95 @@ async function findBySlug(slug: string) {
 }
 
 /**
+ * What a tool hands back. Declared, not derived.
+ *
+ * The first version of this took `Awaited<ReturnType<typeof runTool>>` and
+ * pulled each branch out with `Extract`, on the reasoning that a derived type
+ * cannot drift. It drifts in the worse direction: rename a field inside the
+ * switch and `Extract` matches nothing, so the branch type quietly becomes
+ * `never`, every test that reads it still compiles, and the check that was
+ * supposed to catch the rename is the thing that hid it. Verified by renaming
+ * `subtotal` to `total` and watching the typecheck stay green.
+ *
+ * Declared here and annotated on `runTool` instead, so the same rename fails at
+ * the return statement that made it.
+ */
+
+/** What the model is shown about one item. No ids: it names items by slug. */
+export interface PresentedItem {
+  slug: string
+  name: string
+  description: string | null
+  price: string
+  /** Only while a sale is active. */
+  originalPrice?: string
+  salePercent?: number
+  kind: 'physical' | 'digital'
+  available: boolean
+  /** Files only. */
+  file?: string | null
+  format?: string | null
+  delivery?: string
+}
+
+/** The branch every tool can return: a sentence for the model to read out. */
+export interface ToolError {
+  error: string
+}
+
+/** `search_catalogue`. */
+export interface SearchResult {
+  items: PresentedItem[]
+}
+
+/** `get_product` returns the item itself. */
+export type ProductResult = PresentedItem
+
+/** `get_cart`: the cart as the model is shown it, priced by the shop. */
+export interface CartResult {
+  lines: Array<{
+    name: string
+    slug: string
+    quantity: number
+    amount: string
+    available: boolean
+  }>
+  subtotal: string
+}
+
+/** `propose_cart_change`: what the browser is being asked to apply. */
+export interface CartChangeResult {
+  applied: 'add' | 'remove' | 'set'
+  item: string
+  quantity: number
+  /** Present only when the request was trimmed, so the model can say why. */
+  note?: string
+}
+
+/** `draft_order`: the acknowledgement. The draft itself goes on the context. */
+export interface DraftResult {
+  drafted: true
+  note: string
+}
+
+export type ToolResult =
+  | ToolError
+  | SearchResult
+  | ProductResult
+  | CartResult
+  | CartChangeResult
+  | DraftResult
+
+/**
  * Runs one tool call. Every result is a string handed back to the model, so a
  * failure here reads as "I could not do that" rather than throwing the
  * conversation away.
  */
-export async function runTool(name: string, rawArgs: string, context: ToolContext) {
+export async function runTool(
+  name: string,
+  rawArgs: string,
+  context: ToolContext
+): Promise<ToolResult> {
   let args: unknown
   try {
     args = JSON.parse(rawArgs || '{}')

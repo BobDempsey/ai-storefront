@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CATALOGUE, dragon, file, outOfStock, stubCatalogue } from './catalogue-stub'
-import { runTool, type ToolContext } from '~~/server/utils/assistant'
+import {
+  runTool,
+  type CartResult,
+  type ProductResult,
+  type SearchResult,
+  type ToolContext,
+  type ToolError,
+  type ToolResult
+} from '~~/server/utils/assistant'
 
 const context = (items: { productId: string; quantity: number }[] = []): ToolContext => ({
   items,
@@ -8,8 +16,38 @@ const context = (items: { productId: string; quantity: number }[] = []): ToolCon
   draft: null
 })
 
-const call = (name: string, args: unknown, ctx = context()) =>
+const call = (name: string, args: unknown, ctx = context()): Promise<ToolResult> =>
   runTool(name, typeof args === 'string' ? args : JSON.stringify(args), ctx)
+
+/*
+ * These narrow rather than cast. `as any` compiled whatever the tool actually
+ * returned, so a tool that started answering with an error would have failed
+ * here as "cannot read property of undefined" rather than saying so; each
+ * helper below fails with the result it got instead.
+ */
+async function asSearch(...args: Parameters<typeof call>): Promise<SearchResult> {
+  const result = await call(...args)
+  if (!('items' in result)) throw new Error(`expected items, got ${JSON.stringify(result)}`)
+  return result
+}
+
+async function asProduct(...args: Parameters<typeof call>): Promise<ProductResult> {
+  const result = await call(...args)
+  if (!('slug' in result)) throw new Error(`expected a product, got ${JSON.stringify(result)}`)
+  return result
+}
+
+async function asError(...args: Parameters<typeof call>): Promise<ToolError> {
+  const result = await call(...args)
+  if (!('error' in result)) throw new Error(`expected an error, got ${JSON.stringify(result)}`)
+  return result
+}
+
+async function asCart(...args: Parameters<typeof call>): Promise<CartResult> {
+  const result = await call(...args)
+  if (!('subtotal' in result)) throw new Error(`expected a cart, got ${JSON.stringify(result)}`)
+  return result
+}
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -19,14 +57,14 @@ afterEach(() => {
 describe('the stub itself', () => {
   it('prices at the catalogue price with no sale on', async () => {
     stubCatalogue()
-    const result = (await call('get_product', { slug: 'articulated-dragon' })) as any
+    const result = await asProduct('get_product', { slug: 'articulated-dragon' })
     expect(result.price).toBe('$19.20')
     expect(result.originalPrice).toBeUndefined()
   })
 
   it('prices at the sale price when the sale is on', async () => {
     stubCatalogue({ sale: { saleActive: true, salePercent: 20 } })
-    const result = (await call('get_product', { slug: 'articulated-dragon' })) as any
+    const result = await asProduct('get_product', { slug: 'articulated-dragon' })
     expect(result.price).toBe('$15.36')
     expect(result.originalPrice).toBe('$19.20')
     expect(result.salePercent).toBe(20)
@@ -36,15 +74,15 @@ describe('the stub itself', () => {
 describe('search_catalogue', () => {
   it('returns the whole catalogue with no term', async () => {
     stubCatalogue()
-    const result = (await call('search_catalogue', {})) as any
+    const result = await asSearch('search_catalogue', {})
     expect(result.items).toHaveLength(CATALOGUE.length)
   })
 
   it('returns only what matches a term, by name or description', async () => {
     stubCatalogue()
-    expect(((await call('search_catalogue', { query: 'dragon' })) as any).items.map((i: any) => i.slug))
+    expect((await asSearch('search_catalogue', { query: 'dragon' })).items.map((i) => i.slug))
       .toEqual(['articulated-dragon', 'dragon-stl'])
-    expect(((await call('search_catalogue', { query: 'sold out' })) as any).items.map((i: any) => i.slug))
+    expect((await asSearch('search_catalogue', { query: 'sold out' })).items.map((i) => i.slug))
       .toEqual(['desk-tidy'])
   })
 
@@ -52,22 +90,25 @@ describe('search_catalogue', () => {
   // does not.
   it('falls back to the whole catalogue when a term matches nothing', async () => {
     stubCatalogue()
-    const result = (await call('search_catalogue', { query: 'helicopter' })) as any
+    const result = await asSearch('search_catalogue', { query: 'helicopter' })
+    // `asSearch` already refuses an error branch, so reaching here is the
+    // assertion that used to be `expect(result.error).toBeUndefined()`.
     expect(result.items).toHaveLength(CATALOGUE.length)
-    expect(result.error).toBeUndefined()
   })
 
   it('filters by kind', async () => {
     stubCatalogue()
-    const result = (await call('search_catalogue', { kind: 'digital' })) as any
-    expect(result.items.map((i: any) => i.slug)).toEqual(['dragon-stl'])
+    const result = await asSearch('search_catalogue', { kind: 'digital' })
+    expect(result.items.map((i) => i.slug)).toEqual(['dragon-stl'])
   })
 
   it('never exposes a product id to the model', async () => {
     stubCatalogue()
-    const result = (await call('search_catalogue', {})) as any
+    const result = await asSearch('search_catalogue', {})
     for (const item of result.items) {
-      expect(item.id).toBeUndefined()
+      // `PresentedItem` has no id, so the leak is now a type error as well as
+      // this one; the serialized check catches an id smuggled into any field.
+      expect(Object.keys(item)).not.toContain('id')
       expect(JSON.stringify(item)).not.toContain(dragon.id)
     }
   })
@@ -75,7 +116,7 @@ describe('search_catalogue', () => {
   it('reports a read failure as an error rather than throwing', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     stubCatalogue({ error: { message: 'boom' } })
-    expect((await call('search_catalogue', {})) as any).toEqual({
+    expect(await asError('search_catalogue', {})).toEqual({
       error: 'The catalogue could not be read.'
     })
   })
@@ -84,7 +125,7 @@ describe('search_catalogue', () => {
 describe('get_product', () => {
   it('describes a real slug', async () => {
     stubCatalogue()
-    const result = (await call('get_product', { slug: 'articulated-dragon' })) as any
+    const result = await asProduct('get_product', { slug: 'articulated-dragon' })
     expect(result.name).toBe('Articulated Dragon')
     expect(result.available).toBe(true)
   })
@@ -92,14 +133,14 @@ describe('get_product', () => {
   // The guarantee that matters: the model cannot conjure an item.
   it('refuses a slug the catalogue does not have', async () => {
     stubCatalogue()
-    expect((await call('get_product', { slug: 'invented-item' })) as any).toEqual({
+    expect(await asError('get_product', { slug: 'invented-item' })).toEqual({
       error: 'The shop does not have that item.'
     })
   })
 
   it('reports a file as always available, with its delivery terms', async () => {
     stubCatalogue()
-    const result = (await call('get_product', { slug: 'dragon-stl' })) as any
+    const result = await asProduct('get_product', { slug: 'dragon-stl' })
     expect(result.available).toBe(true)
     expect(result.file).toBe('dragon.stl')
     expect(result.delivery).toContain('once per order')
@@ -107,7 +148,7 @@ describe('get_product', () => {
 
   it('reports an out-of-stock product as unavailable rather than hiding it', async () => {
     stubCatalogue()
-    const result = (await call('get_product', { slug: 'desk-tidy' })) as any
+    const result = await asProduct('get_product', { slug: 'desk-tidy' })
     expect(result.available).toBe(false)
     expect(result.name).toBe(outOfStock.name)
   })
@@ -116,21 +157,21 @@ describe('get_product', () => {
 describe('get_cart', () => {
   it('reports an empty cart as empty, not as an error', async () => {
     stubCatalogue()
-    const result = (await call('get_cart', {}, context())) as any
+    const result = await asCart('get_cart', {}, context())
     expect(result.lines).toEqual([])
     expect(result.subtotal).toBe('$0.00')
   })
 
   it('prices the lines and totals them', async () => {
     stubCatalogue()
-    const result = (await call(
+    const result = await asCart(
       'get_cart',
       {},
       context([
         { productId: dragon.id, quantity: 2 },
         { productId: file.id, quantity: 1 }
       ])
-    )) as any
+    )
 
     expect(result.lines).toHaveLength(2)
     expect(result.lines[0]).toMatchObject({ name: 'Articulated Dragon', quantity: 2, amount: '$38.40' })
@@ -139,23 +180,23 @@ describe('get_cart', () => {
 
   it('always reports a file as available', async () => {
     stubCatalogue()
-    const result = (await call('get_cart', {}, context([{ productId: file.id, quantity: 1 }]))) as any
-    expect(result.lines[0].available).toBe(true)
+    const result = await asCart('get_cart', {}, context([{ productId: file.id, quantity: 1 }]))
+    expect(result.lines[0]!.available).toBe(true)
   })
 
   it('leaves an out-of-stock line out of the subtotal but still shows it', async () => {
     stubCatalogue()
-    const result = (await call(
+    const result = await asCart(
       'get_cart',
       {},
       context([
         { productId: dragon.id, quantity: 1 },
         { productId: outOfStock.id, quantity: 1 }
       ])
-    )) as any
+    )
 
     expect(result.lines).toHaveLength(2)
-    expect(result.lines.find((l: any) => l.slug === 'desk-tidy').available).toBe(false)
+    expect(result.lines.find(l => l.slug === 'desk-tidy')!.available).toBe(false)
     expect(result.subtotal).toBe('$19.20')
   })
 })

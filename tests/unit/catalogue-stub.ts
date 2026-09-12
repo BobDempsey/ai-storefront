@@ -69,9 +69,14 @@ export const CATALOGUE: StubProduct[] = [
   }
 ]
 
-export const dragon = CATALOGUE[0]
-export const outOfStock = CATALOGUE[1]
-export const file = CATALOGUE[2]
+/*
+ * Indexed once, here, with the assertion that the row is there. Every test file
+ * reads these, and an index into an array is optional to TypeScript, so without
+ * this each of the thirty-odd uses would carry its own `!`.
+ */
+export const dragon = CATALOGUE[0]!
+export const outOfStock = CATALOGUE[1]!
+export const file = CATALOGUE[2]!
 
 type Filter = { column: string; value: unknown; kind: 'eq' | 'in' }
 

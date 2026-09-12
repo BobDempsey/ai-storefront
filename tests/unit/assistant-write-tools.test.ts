@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { dragon, file, outOfStock, stubCatalogue } from './catalogue-stub'
-import { runTool, type ToolContext } from '~~/server/utils/assistant'
+import {
+  runTool,
+  type CartChangeResult,
+  type DraftResult,
+  type ToolContext,
+  type ToolError,
+  type ToolResult
+} from '~~/server/utils/assistant'
 
 /**
  * The two tools that change something. Neither writes to the catalogue, the
@@ -16,8 +23,31 @@ const context = (items: { productId: string; quantity: number }[] = []): ToolCon
   draft: null
 })
 
-const call = (name: string, args: unknown, ctx: ToolContext) =>
+const call = (name: string, args: unknown, ctx: ToolContext): Promise<ToolResult> =>
   runTool(name, JSON.stringify(args), ctx)
+
+/*
+ * Narrowing, not casting: a tool that started refusing where it used to succeed
+ * would have slipped past `as any` and failed on a missing property instead of
+ * saying what it actually returned.
+ */
+async function asChange(...args: Parameters<typeof call>): Promise<CartChangeResult> {
+  const result = await call(...args)
+  if (!('applied' in result)) throw new Error(`expected a change, got ${JSON.stringify(result)}`)
+  return result
+}
+
+async function asDraft(...args: Parameters<typeof call>): Promise<DraftResult> {
+  const result = await call(...args)
+  if (!('drafted' in result)) throw new Error(`expected a draft, got ${JSON.stringify(result)}`)
+  return result
+}
+
+async function asError(...args: Parameters<typeof call>): Promise<ToolError> {
+  const result = await call(...args)
+  if (!('error' in result)) throw new Error(`expected an error, got ${JSON.stringify(result)}`)
+  return result
+}
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -28,11 +58,11 @@ describe('propose_cart_change', () => {
   it('pushes exactly one intent for a valid add', async () => {
     stubCatalogue()
     const ctx = context()
-    const result = (await call(
+    const result = await asChange(
       'propose_cart_change',
       { action: 'add', slug: 'articulated-dragon', quantity: 2 },
       ctx
-    )) as any
+    )
 
     expect(ctx.intents).toHaveLength(1)
     expect(result).toMatchObject({ applied: 'add', item: 'Articulated Dragon', quantity: 2 })
@@ -52,7 +82,7 @@ describe('propose_cart_change', () => {
       ctx
     )
 
-    expect(ctx.intents[0].productId).toBe(dragon.id)
+    expect(ctx.intents[0]!.productId).toBe(dragon.id)
   })
 
   it('refuses a slug the catalogue does not have, and pushes nothing', async () => {
@@ -76,11 +106,11 @@ describe('propose_cart_change', () => {
   it('caps a file at one and says why', async () => {
     stubCatalogue()
     const ctx = context()
-    const result = (await call(
+    const result = await asChange(
       'propose_cart_change',
       { action: 'add', slug: 'dragon-stl', quantity: 5 },
       ctx
-    )) as any
+    )
 
     expect(ctx.intents[0]).toMatchObject({ productId: file.id, quantity: 1, single: true })
     expect(result.note).toBe('A file can only be ordered once.')
@@ -89,11 +119,11 @@ describe('propose_cart_change', () => {
   it('does not add the note when only one file was asked for', async () => {
     stubCatalogue()
     const ctx = context()
-    const result = (await call(
+    const result = await asChange(
       'propose_cart_change',
       { action: 'add', slug: 'dragon-stl', quantity: 1 },
       ctx
-    )) as any
+    )
     expect(result.note).toBeUndefined()
   })
 
@@ -101,11 +131,11 @@ describe('propose_cart_change', () => {
     stubCatalogue()
     const high = context()
     await call('propose_cart_change', { action: 'set', slug: 'articulated-dragon', quantity: 99 }, high)
-    expect(high.intents[0].quantity).toBe(99)
+    expect(high.intents[0]!.quantity).toBe(99)
 
     const none = context()
     await call('propose_cart_change', { action: 'set', slug: 'articulated-dragon' }, none)
-    expect(none.intents[0].quantity).toBe(1)
+    expect(none.intents[0]!.quantity).toBe(1)
   })
 
   it('turns remove into quantity zero, with the fields the storefront needs', async () => {
@@ -141,7 +171,7 @@ describe('draft_order', () => {
       { productId: dragon.id, quantity: 1 },
       { productId: outOfStock.id, quantity: 1 }
     ])
-    const result = (await call('draft_order', customer, ctx)) as any
+    const result = await asError('draft_order', customer, ctx)
 
     expect(result.error).toContain(outOfStock.name)
     expect(result.error).toContain('must be removed first')
@@ -179,7 +209,7 @@ describe('draft_order', () => {
   it('returns no confirmation anywhere in its result', async () => {
     stubCatalogue()
     const ctx = context([{ productId: dragon.id, quantity: 1 }])
-    const result = (await call('draft_order', customer, ctx)) as any
+    const result = await asDraft('draft_order', customer, ctx)
 
     expect(result).toEqual({ drafted: true, note: expect.any(String) })
     expect(JSON.stringify(result).toLowerCase()).not.toContain('confirmation')
@@ -188,7 +218,7 @@ describe('draft_order', () => {
   it('tells the model not to claim the order was placed', async () => {
     stubCatalogue()
     const ctx = context([{ productId: dragon.id, quantity: 1 }])
-    const result = (await call('draft_order', customer, ctx)) as any
+    const result = await asDraft('draft_order', customer, ctx)
     expect(result.note).toContain('do not say the order is placed')
   })
 })
