@@ -281,13 +281,15 @@ still compiles, and the check meant to catch the rename hides it. Verified by
 renaming `subtotal` to `total` and watching the typecheck stay green. Declared
 interfaces with `runTool` annotated now fail at the return statement instead.
 
-**A CI workflow is written but has never run.** `.github/workflows/check.yml`
-runs `npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
-every pull request, and deliberately runs nothing else: `test:db` and `test:llm`
-write to the live project and spend provider calls, and `test:e2e` and
-`test:smoke` need a server or a deployment, so none of them belongs on a pull
-request from a fork. GitHub has not seen the file yet, because `main` has not
-been pushed since it was written, so its first run is still ahead.
+**There is a CI now, and it is green.** `.github/workflows/check.yml` runs
+`npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
+every pull request, and deliberately runs nothing else: `test:db` and
+`test:llm` write to the live project and spend provider calls, and `test:e2e`
+and `test:smoke` need a server or a deployment, so none of them belongs on a
+pull request from a fork. First run 2026-09-12, passing in 58 seconds. **One
+annotation to clear when someone next touches the file**: `actions/checkout@v4`
+and `actions/setup-node@v4` target a deprecated Node 20 and are being forced
+onto 24, which `@v5` on both would settle.
 
 **ESLint is in, with type-aware rules, and it is not in `npm test`.** The full
 run reached 36 seconds against 20 without it, past the threshold the design set,
@@ -2010,10 +2012,15 @@ Known gaps, roughly in the order they were prioritized with the user:
   12 commits behind local `main`, the last push still being `8289dd0`, so
   catalogue search, pagination, the six new products, the typecheck, the route
   types and ESLint are all committed and none of them is live. The live shop
-  still serves nine products with no search box. **The gap is 20 commits by the
-  end of that day**, the product photographs, the generated database types and
-  the `kind` enum having landed on top. Pushing is deploy work and the user asks
-  to be asked, so do not push without one.
+  still serves nine products with no search box. **The gap reached 23 commits
+  and was closed the same day.** `main` was pushed at `6afbb56` with the user's
+  go-ahead, Vercel built and promoted it, and the new CI passed on its first
+  run. Verified live at the domain rather than by the smoke test, which proves
+  nothing about currency: `/api/products?page=2` answers with a second page,
+  `?q=dragon` returns 2 of the 15 rows, and `test:smoke` is 5/5. So search,
+  pagination, the twelve products, the typed database client and the `kind`
+  enum are all in front of customers now. Pushing is still deploy work and the
+  user still asks to be asked.
 - ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
   `deepen-typescript` went with them. `type-product-kind` arrived afterwards and
   is complete but not yet archived. See section 2.

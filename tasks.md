@@ -7,18 +7,7 @@
 - [ ] Decide whether two approximate product photos can stay: cable-clip-set
       shows a cable with an obsolete 30-pin connector and no clips, and
       monitor-riser-shelf shows a laptop on a riser rather than a monitor
-- [ ] Push the unpushed commits and redeploy (ask first)
-
-## Getting more out of TypeScript
-
-- [ ] Watch the CI's first run. .github/workflows/check.yml is written and
-      committed and npm ci resolves, but GitHub has never seen it: it only runs
-      once main is pushed
-- [x] Make products.kind a real Postgres enum. Done, 2026-09-12. The generated
-      row now says 'physical' | 'digital' and productKind()/withProductKind()
-      are gone. server/utils/rows.ts stays: withProductFiles() still narrows the
-      three file columns, because no Postgres type expresses "non-null exactly
-      when kind is 'digital'" and the generator keeps saying string | null
+- [ ] Archive the type-product-kind change
 
 ## Next: fif.bobdempsey83.com from the same repo
 
