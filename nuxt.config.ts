@@ -13,8 +13,24 @@ export default defineNuxtConfig({
   modules: [
     '@primevue/nuxt-module',
     '@pinia/nuxt',
-    'pinia-plugin-persistedstate/nuxt'
+    'pinia-plugin-persistedstate/nuxt',
+    '@nuxt/image'
   ],
+
+  // Product photographs are 800x800 files committed to public/images/, and the
+  // catalogue renders them at three sizes: 36px in the search panel, 64px in
+  // the cart and a full card on the shop page. Serving the 800px original for
+  // a 36px thumbnail is most of a megabyte of the catalogue page wasted.
+  //
+  // The IPX provider resizes on the server at request time and caches the
+  // result, so no build step and no external image host is involved, which
+  // keeps the promise in section 1 of handoff.md that the catalogue has
+  // neither. `screens` matches the Tailwind breakpoints the grid already uses.
+  image: {
+    quality: 80,
+    format: ['webp', 'jpeg'],
+    screens: { sm: 640, md: 768, lg: 1024, xl: 1280 }
+  },
 
   css: ['~/assets/css/main.css', 'primeicons/primeicons.css'],
 

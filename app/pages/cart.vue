@@ -66,13 +66,15 @@ useSeoMeta({ title: 'Your cart', robots: 'noindex' })
             ? 'border-surface-200 dark:border-surface-800'
             : 'border-red-300 dark:border-red-800'"
         >
-          <img
+          <NuxtImg
             v-if="line.image_url"
             :src="line.image_url"
             :alt="line.name"
+            :width="64"
+            :height="64"
             class="size-16 shrink-0 rounded object-cover"
             :class="{ 'opacity-50': !line.in_stock }"
-          >
+          />
           <div
             v-else-if="line.kind === 'digital'"
             class="flex size-16 shrink-0 items-center justify-center rounded bg-surface-100 dark:bg-surface-800"

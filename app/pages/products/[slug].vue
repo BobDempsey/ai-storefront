@@ -76,12 +76,19 @@ function addToCart() {
 
 <template>
   <article v-if="product" class="grid gap-10 md:grid-cols-2">
-    <img
+    <!--
+      The only photo on the page and the thing the visitor came to look at, so
+      it is not lazy: it is the largest contentful paint here.
+    -->
+    <NuxtImg
       v-if="product.image_url"
       :src="product.image_url"
       :alt="product.name"
+      :width="800"
+      :height="800"
+      sizes="100vw md:50vw"
       class="aspect-square w-full rounded-lg object-cover"
-    >
+    />
     <!-- A file has no photograph, so its format stands in for one. -->
     <div
       v-else-if="product.kind === 'digital'"

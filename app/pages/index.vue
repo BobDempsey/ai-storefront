@@ -339,13 +339,23 @@ useSeoMeta({
               class="flex flex-col overflow-hidden rounded-lg border border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900"
             >
               <NuxtLink :to="`/products/${product.slug}`">
-                <img
+                <!--
+                  width/height are the intrinsic size the file is stored at, so
+                  IPX has an aspect ratio to reserve and the card does not jump
+                  when the photo lands. sizes names how wide the card actually
+                  is at each breakpoint, which is what lets a phone fetch a
+                  400px file instead of the 800px original.
+                -->
+                <NuxtImg
                   v-if="product.image_url"
                   :src="product.image_url"
                   :alt="product.name"
+                  :width="800"
+                  :height="800"
+                  sizes="100vw sm:50vw lg:33vw"
                   class="aspect-square w-full object-cover"
                   loading="lazy"
-                >
+                />
               </NuxtLink>
 
               <div class="flex flex-1 flex-col gap-2 p-4">

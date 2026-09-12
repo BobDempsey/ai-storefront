@@ -89,7 +89,10 @@ function open(product: Product) {
 }
 
 function seeAll() {
-  const q = term.value
+  // `typed`, not `term`: the debounce below holds `term` back by 200ms, so a
+  // visitor who types and clicks straight through would be sent to an
+  // unsearched catalogue. What they can see in the field is what they get.
+  const q = typed.value.trim()
   close()
   void router.push(q ? { path: '/', query: { q } } : '/')
 }
@@ -97,7 +100,7 @@ function seeAll() {
 function choose() {
   const product = results.value[highlighted.value]
   if (product) open(product)
-  else if (term.value) seeAll()
+  else if (typed.value.trim()) seeAll()
 }
 </script>
 
@@ -164,13 +167,15 @@ function choose() {
         @mouseenter="highlighted = index"
         @click="open(product)"
       >
-        <img
+        <NuxtImg
           v-if="product.image_url"
           :src="product.image_url"
           alt=""
+          :width="36"
+          :height="36"
           class="size-9 rounded object-cover"
           loading="lazy"
-        >
+        />
         <i v-else class="pi pi-file size-9 content-center text-center text-surface-500" />
 
         <span class="min-w-0 flex-1 truncate">{{ product.name }}</span>

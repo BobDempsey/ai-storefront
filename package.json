@@ -23,6 +23,7 @@
     "test:llm": "vitest run --config vitest.llm.config.ts"
   },
   "dependencies": {
+    "@nuxt/image": "^2.1.0",
     "@pinia/nuxt": "^1.0.2",
     "@primeuix/themes": "^1.2.5",
     "@primevue/nuxt-module": "^4.5.5",
