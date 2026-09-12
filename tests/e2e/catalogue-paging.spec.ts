@@ -10,6 +10,7 @@ import { expect, test, type Page } from '@playwright/test'
  */
 
 const SEARCH = '#catalogue-search'
+const PALETTE = '#palette-search'
 const PRODUCTS = '[data-testid="products-paginator"]'
 const FILES = '[data-testid="files-paginator"]'
 
@@ -98,7 +99,11 @@ test('searching from a later page starts again at the first', async ({ page }) =
   await page.goto('/?page=2')
   await hydrated(page)
 
-  await page.locator(SEARCH).fill('cable')
+  // The field beside the heading opens the panel rather than filtering in
+  // place, so the term is typed there and "see all" is what writes the address.
+  await page.locator(SEARCH).click()
+  await page.locator(PALETTE).fill('cable')
+  await page.getByTestId('palette-see-all').click()
 
   await expect(page).toHaveURL(/\?q=cable$/)
   await expect(page.getByRole('tab', { name: /Products/ })).toContainText('3')

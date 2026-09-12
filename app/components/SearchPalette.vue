@@ -17,8 +17,13 @@ import { formatMoney } from '~/utils/money'
 const search = useSearchPaletteStore()
 const router = useRouter()
 
-const typed = ref('')
-const term = ref('')
+// Seeded at creation rather than watched into place. The layout renders this
+// component with `v-if="palette.open"`, so it does not exist until the panel is
+// already open and a watcher on that flag would never see it turn true. Both
+// refs are set, not just `typed`, because letting the debounce below catch up
+// would list the whole catalogue for 200ms before narrowing.
+const typed = ref(search.seed)
+const term = ref(search.seed.trim())
 const highlighted = ref(0)
 
 // The URL the field writes to is a request, not history: this panel is

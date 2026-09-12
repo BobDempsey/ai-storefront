@@ -29,6 +29,20 @@ function countChatPosts(page: Page) {
 }
 
 const cards = (page: Page) => page.locator('article')
+
+/**
+ * Searching the way a visitor does from the shop page: the field beside the
+ * heading is a launcher, so it opens the panel, the term is typed there, and
+ * the "see all" row is what puts it in the address. Typing into the field
+ * directly is what this replaced, and it is readonly now so an attempt hangs
+ * rather than fails clearly.
+ */
+async function searchFromCatalogue(page: Page, termText: string) {
+  await page.locator(SEARCH).click()
+  await expect(page.locator(PALETTE)).toBeFocused()
+  await page.locator(PALETTE).fill(termText)
+  await page.getByTestId('palette-see-all').click()
+}
 /** The item rows, without the row that carries the term to the shop page. */
 const paletteRows = (page: Page) =>
   page.locator('[data-testid="palette-results"] [role="option"]:not([data-testid="palette-see-all"])')
@@ -40,7 +54,7 @@ test('typing narrows the catalogue and puts the term in the URL', async ({ page 
   await hydrated(page)
   await expect(cards(page)).toHaveCount(9)
 
-  await page.locator(SEARCH).fill('dragon')
+  await searchFromCatalogue(page, 'dragon')
   await expect(page).toHaveURL(/\?q=dragon$/)
   await expect(cards(page)).toHaveCount(2)
   // The card carries two links to the same product, the image and the name.
@@ -78,7 +92,7 @@ test('each tab counts its own matches', async ({ page }) => {
   await expect(page.getByRole('tab', { name: /Products/ })).toContainText('1')
   await expect(page.getByRole('tab', { name: /Files/ })).toContainText('1')
 
-  await page.locator(SEARCH).fill('planter')
+  await searchFromCatalogue(page, 'planter')
   await expect(page.getByRole('tab', { name: /Products/ })).toContainText('1')
   await expect(page.getByRole('tab', { name: /Files/ })).toContainText('0')
 
@@ -91,7 +105,7 @@ test('a term that matches nothing says so and offers to clear', async ({ page })
   await page.goto('/')
   await hydrated(page)
 
-  await page.locator(SEARCH).fill('zzzznothing')
+  await searchFromCatalogue(page, 'zzzznothing')
 
   await expect(page.getByText('Nothing in the catalogue matches "zzzznothing"')).toBeVisible()
   await page.getByRole('button', { name: 'Clear the search' }).click()
@@ -171,10 +185,18 @@ test('one Back leaves the page rather than replaying the typing', async ({ page 
   await page.getByRole('link', { name: 'AI Storefront' }).click()
   await expect(page.locator(SEARCH)).toBeVisible()
 
-  // Typed a letter at a time: a push per keystroke is exactly what this catches.
-  await page.locator(SEARCH).pressSequentially('bins')
+  // One history entry for the whole search, not one per keystroke, which is
+  // what this actually catches. Typed a letter at a time on purpose.
+  await page.locator(SEARCH).click()
+  await page.locator(PALETTE).pressSequentially('bins')
+  await page.getByTestId('palette-see-all').click()
   await expect(page).toHaveURL(/\?q=bins$/)
 
+  // Taking a term to the shop page is a deliberate step, the way paging is, so
+  // it pushes and one Back undoes exactly it: the unsearched shop page. A
+  // second Back then leaves for the product page. Four letters, two entries.
+  await page.goBack()
+  await expect(page).toHaveURL(/\/$/)
   await page.goBack()
   await expect(page).toHaveURL(/\/products\/hex-dice-tower$/)
 })
@@ -187,7 +209,7 @@ test('searching leaves the cart alone', async ({ page }) => {
   const badge = page.getByLabel('Cart').locator('.p-badge')
   await expect(badge).toHaveText('1')
 
-  await page.locator(SEARCH).fill('dragon')
+  await searchFromCatalogue(page, 'dragon')
   await expect(cards(page)).toHaveCount(2)
   await expect(badge).toHaveText('1')
 

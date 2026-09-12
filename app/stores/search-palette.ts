@@ -12,16 +12,28 @@ import { defineStore } from 'pinia'
  * would be a panel the visitor did not ask for.
  */
 export const useSearchPaletteStore = defineStore('search-palette', {
-  state: () => ({ open: false }),
+  state: () => ({
+    open: false,
+    /**
+     * The term the panel should start from. Set by whoever opens it, read once
+     * by the panel, and cleared on close. It exists because the catalogue
+     * page's field opens the panel: a visitor who has already typed something
+     * should carry it in rather than type it twice.
+     */
+    seed: ''
+  }),
   actions: {
-    openPalette() {
+    openPalette(seed = '') {
+      this.seed = seed
       this.open = true
     },
     close() {
       this.open = false
+      this.seed = ''
     },
     toggle() {
-      this.open = !this.open
+      if (this.open) this.close()
+      else this.openPalette()
     }
   }
 })

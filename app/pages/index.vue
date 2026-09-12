@@ -70,15 +70,27 @@ function goToPage(kind: 'page' | 'filePage', event: { page: number }) {
   void router.push(addressFor({ [kind]: event.page + 1 }))
 }
 
+const palette = useSearchPaletteStore()
+
 const searchInput = useTemplateRef<{ $el: HTMLElement } | HTMLInputElement>('searchInput')
-function focusSearch() {
+function inputEl() {
   const el = searchInput.value
-  const input = el instanceof HTMLInputElement ? el : (el?.$el as HTMLInputElement | undefined)
-  input?.focus()
+  return el instanceof HTMLInputElement ? el : (el?.$el as HTMLInputElement | undefined)
 }
+
+/**
+ * The field's whole job. Focus is handed straight back off it, because leaving
+ * it focused behind an open dialog means Escape closes the panel onto a field
+ * that looks ready to type into and is not.
+ */
+function openPanel() {
+  if (palette.open) return
+  palette.openPalette(typed.value)
+  inputEl()?.blur()
+}
+
 function clearSearch() {
   typed.value = ''
-  focusSearch()
 }
 
 // One request per tab, each keyed on the term and on that tab's own page, so
@@ -232,15 +244,26 @@ useSeoMeta({
 
       <IconField class="w-full sm:w-72">
         <InputIcon class="pi pi-search" />
+        <!--
+          A launcher rather than a second search box. Clicking or tabbing to it
+          opens the quick search panel, carrying whatever term the page is
+          already filtered by, so the visitor continues instead of starting
+          again. readonly is what stops a keystroke landing here while the panel
+          is open, which would split one term across two boxes; the field still
+          shows the active term so a shared link can be read back.
+        -->
         <InputText
           id="catalogue-search"
           ref="searchInput"
-          v-model="typed"
-          class="w-full placeholder:text-sm"
+          :model-value="typed"
+          class="w-full cursor-pointer placeholder:text-sm"
           type="search"
+          readonly
           placeholder="Search the shop (Ctrl+K)"
           aria-label="Search the shop"
           autocomplete="off"
+          @focus="openPanel"
+          @click="openPanel"
         />
         <!--
           A clear control rather than only the term: selecting the text first to
