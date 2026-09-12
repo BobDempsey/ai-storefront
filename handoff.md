@@ -760,7 +760,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Twenty-five changes have been through the full cycle, all in
+Twenty-six changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -790,13 +790,13 @@ Twenty-five changes have been through the full cycle, all in
 | `2026-09-12-add-catalogue-pagination` | `specs/catalog/catalogue-pagination/` |
 | `2026-09-12-enforce-typescript` | none — it typechecks the repo, and changed no behaviour to spec |
 | `2026-09-12-deepen-typescript` | none — same, and archived with 3 optional tasks open |
+| `2026-09-12-type-product-kind` | none — `skip_specs`: the two kinds and every rule about them are unchanged, only where the rule is enforced |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
 All four were archived later on 2026-09-12, and `openspec/changes/` holds
-nothing but `archive/` and, since later that day, `type-product-kind`, which is
-complete and awaiting archiving. The two catalogue changes brought new capabilities,
+nothing but `archive/`. The two catalogue changes brought new capabilities,
 `catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
 to fifteen. The two typing changes brought none: they added no behaviour a spec
 describes. `deepen-typescript` was archived at 21 of 24, with the
@@ -2023,7 +2023,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   user still asks to be asked.
 - ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
   `deepen-typescript` went with them. `type-product-kind` arrived afterwards and
-  is complete but not yet archived. See section 2.
+  was archived the same day, so `openspec/changes/` holds nothing but `archive/`
+  and there is no change in flight. See section 2.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to

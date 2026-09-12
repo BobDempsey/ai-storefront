@@ -7,7 +7,6 @@
 - [ ] Decide whether two approximate product photos can stay: cable-clip-set
       shows a cable with an obsolete 30-pin connector and no clips, and
       monitor-riser-shelf shows a laptop on a riser rather than a monitor
-- [ ] Archive the type-product-kind change
 
 ## Next: fif.bobdempsey83.com from the same repo
 
