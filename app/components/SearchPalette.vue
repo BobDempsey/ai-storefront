@@ -113,7 +113,7 @@ function choose() {
     :show-header="false"
     class="w-[min(34rem,92vw)]"
     :pt="{ content: { class: '!p-0' } }"
-    aria-label="Search the catalogue"
+    aria-label="Search the shop"
     @hide="close"
   >
     <div class="border-b border-surface-200 dark:border-surface-800">
@@ -123,8 +123,8 @@ function choose() {
           id="palette-search"
           v-model="typed"
           class="w-full !border-0 !bg-transparent !shadow-none"
-          placeholder="Search the catalogue"
-          aria-label="Search the catalogue"
+          placeholder="Search the shop"
+          aria-label="Search the shop"
           autocomplete="off"
           autofocus
           @keydown.down.prevent="move(1)"

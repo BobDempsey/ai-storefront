@@ -243,10 +243,10 @@ useSeoMeta({
           id="catalogue-search"
           ref="searchInput"
           v-model="typed"
-          class="w-full"
+          class="w-full placeholder:text-sm"
           type="search"
-          placeholder="Search the catalogue"
-          aria-label="Search the catalogue"
+          placeholder="Search the shop (Ctrl+K)"
+          aria-label="Search the shop"
           autocomplete="off"
         />
         <!--

@@ -103,7 +103,7 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
           <button
             type="button"
             class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
-            aria-label="Search the catalogue"
+            aria-label="Search the shop"
             title="Search (Ctrl+K)"
             data-testid="nav-search"
             @click="palette.openPalette()"
