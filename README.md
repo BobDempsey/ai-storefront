@@ -61,12 +61,49 @@ and arrange payment off-app.
 
    `npm test` typechecks the app, the server routes, the components and the
    tests before it runs a single assertion, so a type error fails the run the
-   way a failing test does. It costs about 13 seconds against the unit tests'
+   way a failing test does. It costs about 20 seconds against the unit tests'
    3, which is why `test:unit` exists for the loop you run on every save.
 
    The conventions behind that split are in [AGENTS.md](AGENTS.md).
    `test:smoke` defaults to this template's own demo at
    `ai-storefront.bobdempsey83.com`; set `SMOKE_BASE_URL` to check yours.
+
+6. Lint:
+
+   ```bash
+   npm run lint          # ESLint, type-aware rules, about 17 seconds
+   npm run check         # typecheck, lint and unit tests in one pass
+   ```
+
+   The lint sits outside `npm test` because together they ran 36 seconds, past
+   the budget the change that added them set. Run `npm run check` before you
+   push; run `npm test` while you work.
+
+## Database types
+
+`server/types/database.ts` is generated from the live Supabase project and
+committed, so every `.from(...)` and `.rpc(...)` call in `server/` is checked
+against real columns. Regenerate it whenever you change `supabase/schema.sql`
+and apply that change:
+
+```bash
+npm run db:types
+```
+
+The script needs `SUPABASE_ACCESS_TOKEN` in `.env`, a personal access token
+from the Supabase dashboard, scoped to the project and read-only. It is read
+only by this script: neither the build nor the running app touches it, so a
+deployment does not need it.
+
+A schema change without a regeneration shows up as types that disagree with the
+SQL in the same diff. Nothing enforces the regeneration, so the typecheck is
+only as current as the last run.
+
+Two columns the generated types cannot describe: `products.kind` and the three
+file columns are constrained by SQL check constraints, not enums, so the
+generator writes `kind: string` and `file_name: string | null`.
+`server/utils/rows.ts` reads those values back into the narrower shapes the rest
+of the code uses. Delete it if the column ever becomes a real enum.
 
 ## Before you take it live
 

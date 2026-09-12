@@ -39,9 +39,10 @@ unarchived, `add-store-wide-sale` and `add-promo-codes` (section 2), syncing
 their delta specs into a new `catalog/storefront-sale` capability, a new
 `promotions/promo-code` capability, and additions to `assistant/shopping-assistant`,
 `contact/contact-message` and `newsletter/email-optin`. `openspec validate
---specs --strict` passed all 10 capabilities at the time; there are 12 now,
-`ordering/test-order` having arrived with the test suite and
-`ordering/customer-confirmation` with the buyer confirmation. That archive move
+--specs --strict` passed all 10 capabilities at the time; there are 13 now,
+`ordering/test-order` having arrived with the test suite,
+`ordering/customer-confirmation` with the buyer confirmation and
+`storefront/deployment-banner` with the deployment work. That archive move
 was committed as `d1f36b2`. A sync the same day found and fixed the checkout bug recorded in
 section 9: a rejected promo code stayed in the field and got resent on
 Submit. `applyPromoCode` in `app/pages/checkout.vue` now clears the field (and
@@ -287,18 +288,42 @@ and `npm run check` runs everything. It earned itself immediately: 10 floating
 promises in the app, all navigations and refreshes nobody awaited. Two rules are
 off with reasons - `require-await` in the test stubs, which must be async to
 stub an async API, and `vue/no-multiple-template-root`, which is the Vue 2 shape
-of the world. **23 warnings remain and they are all one problem**: `useSupabase()`
-returns a bare `SupabaseClient`, so every row is `any` and every assignment from
-one is unsafe. They are `warn` rather than silenced per file, and they go back to
-`error` when the generated `Database` type lands.
+of the world. ~~23 warnings remain and they are all one problem.~~ **Closed
+2026-09-12**: they were all the bare `SupabaseClient`, and generating `Database`
+silenced every one of them. The `no-unsafe-*` rules are back to `error` for
+`server/**` and `app/stores/**`, and `npm run lint` is 0 errors and 0 warnings.
 
-**That generation is blocked and needs a decision.** `supabase gen types` reads
-a live database or a local Docker one (`--local`, `--linked`, `--project-id`,
-`--db-url`) and cannot read a schema file at all. The project ref is known; a
-personal access token and the database password are not on this machine. So the
-choice is a token, or hand-writing `Database` from `supabase/schema.sql`. Until
-it is made, `openspec/changes/deepen-typescript/` stays open at task 6.2, with
-its findings in that folder's `notes.md`.
+**The database types are generated, 2026-09-12.** A read-only Supabase personal
+access token scoped to the one project settled the decision this document had
+recorded as blocking. `npm run db:types` writes `server/types/database.ts`, 401
+lines over seven tables plus `create_order`, and two runs produce the same file.
+It goes through `scripts/db-types.mjs` rather than a bare CLI line in
+`package.json`, and the reason is worth knowing: **npm does not load `.env`**, so
+the Supabase CLI would never have seen the token. The script reads it out of
+`.env` itself. `supabase` is a devDependency now so the script does not run
+whatever `npx` happens to fetch. Verified the app still starts with the token
+removed, which it must, since nothing at build or run time reads it.
+
+**Typing the client found one real bug and three gaps, and the gaps are the
+schema's.** `server/api/products/[slug].get.ts` was passing
+`getRouterParam(event, 'slug')`, a `string | undefined`, straight into
+`.eq('slug', slug)`; it 404s on a missing slug now. The three gaps are all
+`products.kind` being `text` with a check constraint rather than a Postgres
+enum, so every generated row says `kind: string` and the file columns are
+nullable for both kinds. `server/utils/rows.ts` is new and narrows those values
+back at the one point a row leaves a query, by checking rather than casting.
+Making `kind` a real enum would close it at the source, and that is a schema
+change nobody has agreed to. One more to know before editing the orders route:
+**`supabase gen types` writes a defaulted function argument as optional, never
+nullable**, so `create_order`'s `p_promo_code text default null` rejected the
+explicit `p_promo_code: null` the route used to pass. The call omits the key.
+
+`openspec/changes/deepen-typescript/` is at **21 of 24 tasks**. What is left is
+4.1 and 4.2 (`noUncheckedIndexedAccess`, a measurement nobody has taken), 5.1
+(one `npm run test:llm` run, which spends provider calls) and 8.1, which wants
+`test:db` and `test:e2e` run against a dev server. `typed-client-errors.md` in
+that folder holds the five errors the typed client raised, recorded before any
+of them was fixed.
 
 **The repo typechecks now**, through the OpenSpec change `enforce-typescript`:
 `npm test` runs `vue-tsc` before a single assertion, so a type error fails the
@@ -332,14 +357,37 @@ which also holds what this change deliberately left out: typed route responses,
 the tests' own `as any` casts, ESLint, `noUncheckedIndexedAccess` and a CI to
 run the check in.
 
-**The biggest gap left is the database.** `useSupabase()` in
-`server/utils/supabase.ts` returns a bare `SupabaseClient` with no `Database`
-generic, and no generated types exist: `supabase/` holds `schema.sql` and
+~~**The biggest gap left is the database.**~~ **Closed 2026-09-12**, see above.
+What it said, kept because it is why the work was done: `useSupabase()` in
+`server/utils/supabase.ts` returned a bare `SupabaseClient` with no `Database`
+generic, and no generated types existed: `supabase/` held `schema.sql` and
 `seed.sql` and nothing else. So every `.from('products').select(...)` in the
-repo is checked against nothing, and a renamed column is a runtime bug that
-reaches a visitor rather than a type error that stops a build. Closing it means
+repo was checked against nothing, and a renamed column was a runtime bug that
+reaches a visitor rather than a type error that stops a build. Closing it meant
 generating types from the schema and passing them to `createClient<Database>`,
 which is the first real item on that list after the `test:llm` run.
+
+Reviewed against the code again on 2026-09-12, working tree clean at `21ad6a9`.
+Two finds matter. **`origin/main` is 12 commits behind local `main`**, so
+everything from the catalogue search onward — search, pagination, the six new
+products, the typecheck, the route types and ESLint — is committed and none of
+it is live; the last push was `8289dd0` (section 10). And **three changes sit
+complete and unarchived**, every task ticked: `add-catalogue-search` at 21/21,
+`add-catalogue-pagination` at 18/18 and `enforce-typescript` at 16/16. Six
+smaller claims were corrected in place: the capability count in the paragraph
+above, the catalogue row count in section 1, the seed and image counts in
+section 4's tree, and the `npm test` and `test:db` counts in section 10.
+Verified still true the same day: 21 archived changes, 13 capabilities,
+`npm test` green at 236 across 18 files, `npx eslint .` at 23 warnings and 0
+errors, and `deepen-typescript` the only genuinely in-flight change. The lint
+warnings went to zero later the same day, with the database types.
+
+Two agents then ran in parallel on 2026-09-12, one on the database types above
+and one on the product photographs below, and both landed. `npm run check` —
+the typecheck, the linter and 236 tests — passes end to end. **`test:db`,
+`test:e2e` and `test:llm` were not run**, so nothing here is verified against
+the live database or a browser; that is what `deepen-typescript`'s task 8.1 is
+still waiting for.
 
 Three things were settled on 2026-09-11 and should not be reopened without
 asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps
@@ -352,14 +400,30 @@ And **the shop field names its shortcut**, reading "Search the shop (Ctrl+K)" at
 a smaller placeholder size, where the quick search panel's own field says only
 "Search the shop" because naming the shortcut that opened it would be noise.
 
-**The six new products still carry placeholder images**, and finding real ones
-is the one piece of this work left outstanding. Openverse, the keyless free-image
-API, was tried and is not usable for these: it answered a headphone stand with a
-1940s radio operator, a phone dock with the Nuremberg trials and a seed tray with
-bread loaves, and the two genuinely relevant results were CC-BY rather than
-attribution-free. The six existing photographs came from Pexels, whose API needs
-a free key this machine does not have, so **the next attempt needs that key**
-rather than another search. It sits in `tasks.md`.
+~~The six new products still carry placeholder images.~~ **Five of the six are
+real photographs as of 2026-09-12**, once a free Pexels key arrived
+(`PEXELS_API_KEY` in `.env`, section 6). `headphone-stand`,
+`monitor-riser-shelf`, `pen-and-tool-cup`, `phone-dock-charging` and
+`seed-starter-tray` are Pexels images now, all 800x800 to match the original
+six, 37KB to 182KB. The Pexels licence asks for no attribution, and none was
+added, since the original six carry none either.
+
+**`cable-clip-set` still has its placeholder, and that is a real dead end.**
+Thirteen queries returned office binder clips or tangled cables on utility
+poles; Pexels appears to hold no photograph of a cable clip set. The one near
+miss, photo 20213730, is too dark to read once cropped square. Do not spend
+another session searching Pexels for it: it needs a different source, or a
+rendered image, or that product's picture staying generated. **One judgement
+call to check before the shop goes in front of anyone**:
+`monitor-riser-shelf` is a laptop on a riser rather than a monitor on one,
+which is the right job but the wrong object, and it can be reverted.
+
+For context on why the key mattered: Openverse, the keyless free-image API, was
+tried first and is not usable for these. It answered a headphone stand with a
+1940s radio operator, a phone dock with the Nuremberg trials and a seed tray
+with bread loaves, and the two genuinely relevant results were CC-BY rather than
+attribution-free. The lesson that carried over is to **look at the image rather
+than trust the API's alt text**, which is how the duds get filtered out.
 
 Pagination followed the same day, through the OpenSpec change
 `add-catalogue-pagination`: six items a page, each tab paging on its own.
@@ -383,9 +447,10 @@ no sideways scroll.
 **The catalogue is twelve printed goods now, not six.** Six more were seeded so
 pagination is visible rather than theoretical, written to both `supabase/seed.sql`
 and the live `products` rows, the same two places the description rewrite needed.
-They carry **generated placeholder images** rather than photographs, made
+They carried **generated placeholder images** rather than photographs, made
 headlessly through the repo's own Playwright the way `og-image.png` was; replacing
-`public/images/<slug>.jpg` needs no code change. Unit coverage went 219 to 225,
+`public/images/<slug>.jpg` needs no code change, which is how five of them became
+Pexels photographs on 2026-09-12 with no redeploy of anything but the files. Unit coverage went 219 to 225,
 `test:db` 40 to 46 and the e2e suite 20 to 28. Verified against a running dev
 server: page two holds six different items, Back returns to page one, a reload of
 `?page=2` reproduces it, paging the products leaves the files tab where it was,
@@ -469,9 +534,9 @@ Project root: `C:\Users\bobde\Desktop\ai-storefront`
 
 Status: **the storefront is live against a real database.** A Supabase project
 (`forged in filament`, ref `wfhhkdmgouyxnrxnbaeo`) exists, the schema and seed
-have been run, and `/api/products` returns all 9 catalogue rows (6 physical,
-3 digital) with no `kind` filter — the storefront splits them into tabs
-client-side. `create_order` has been executed against the real database and
+have been run, and `/api/products` returns all 15 catalogue rows (12 physical,
+3 digital) with no `kind` filter — the storefront splits them into tabs by
+`kind` and pages each tab six at a time. `create_order` has been executed against the real database and
 passes a 7-case regression suite.
 
 The demo catalog is **finished 3D-printed goods** — articulated dragon, cable
@@ -680,6 +745,12 @@ Twenty-one changes have been through the full cycle, all in
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
+Four more sit in `openspec/changes/` as of 2026-09-12. Three are complete and
+waiting to be archived — `add-catalogue-search`, `add-catalogue-pagination` and
+`enforce-typescript`, every task ticked. The fourth, `deepen-typescript`, is
+the only one still in flight, at 11 of 24 tasks and blocked on the database-types
+decision at the top of this document.
+
 `add-store-wide-sale` (code complete and verified end to end, section 1,
 section 10, committed as `de3f67d`) and `add-promo-codes` (39 of 39 tasks,
 verified end to end, committed as `fcb1216` then `e4ca300`) sat archivable but
@@ -812,10 +883,15 @@ nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtime
 supabase/
   schema.sql              tables (incl. email_subscribers, store_settings),
                           RLS policies, create_order() function
-  seed.sql                6 physical products and 3 downloadable files
+  seed.sql                12 physical products and 3 downloadable files
 
 server/
-  utils/supabase.ts       memoized service-role client (bypasses RLS)
+  utils/supabase.ts       memoized service-role client (bypasses RLS), typed
+                          SupabaseClient<Database> since 2026-09-12
+  types/database.ts       generated, do not hand-edit. `npm run db:types`
+  utils/rows.ts           narrows a generated products row back to the shapes
+                          the schema's check constraints guarantee but the
+                          generated types cannot express
   utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
   utils/email.ts          Resend sends: order notification, contact message,
@@ -873,7 +949,11 @@ app/
                                  toggle() is what the navbar calls and only
                                  reaches light and dark; set() still takes
                                  all three
-  types/index.ts                 Product, CartLine, CartPreview, StoreSettings
+  types/index.ts                 re-exports shared/types/api.ts, so no app
+                                 import had to change when the shapes moved
+  utils/errors.ts                messageFor(), the one place an unknown caught
+                                 error becomes a sentence. Reads statusMessage
+                                 and data.statusMessage, which are two places
   utils/deploy-env.ts            deployEnvLabel(), the one place that decides
                                  whether a deployment calls itself something
                                  other than the live shop
@@ -882,7 +962,10 @@ app/
   assets/css/main.css            layer order + Tailwind import
 
 public/
-  images/                   6 product photos, <slug>.jpg, free-licensed Pexels
+  images/                   12 images, <slug>.jpg. The first 6 are free-licensed
+                            Pexels photographs; the 6 added with pagination are
+                            generated placeholders (section 10)
+  og-image.png              the share image, "AI Storefront" rendered into it
 
 openspec/                 specs and changes -- see section 2
 .agents/, .claude/        openspec skills; .claude also holds slash commands
@@ -897,7 +980,14 @@ tests/
                             money, as does the one excluded e2e browser test
   smoke/                    against the deployed site
 
+shared/
+  types/api.ts              one declared response shape per API route. Nuxt 4
+                            exposes shared/ to app/ and server/ alike, which is
+                            why this is the one place both sides can agree
+
 Also present, not listed above: README.md, package.json, tsconfig.json,
+tsconfig.tests.json (the suites and the root config files, which Nuxt's own
+generated projects do not cover), eslint.config.mjs,
 playwright.config.ts, and one vitest config per suite (vitest.config.ts plus
 vitest.db, vitest.llm and vitest.smoke). Section 10 has what each one runs.
 ```
@@ -989,6 +1079,14 @@ NUXT_TRUSTED_IP_HEADER      x-vercel-forwarded-for — the only header the rate
                             `nuxt.config.ts`, and `.env.example` carries it.
                             Set it to your host's header if you leave Vercel;
                             empty means the connection address alone
+SUPABASE_ACCESS_TOKEN       SET locally — an sbp_... personal access token,
+                            read-only and scoped to this one project. No NUXT_
+                            prefix on purpose: nothing at build or run time
+                            reads it. Only `npm run db:types` does. NOT on
+                            Vercel and it must not be
+PEXELS_API_KEY              SET locally — free key from pexels.com/api. Same
+                            shape: no NUXT_ prefix, used only to fetch product
+                            photographs into public/images/, not on Vercel
 NUXT_TEST_ORDER_TOKEN       SET locally — a random hex string. SERVER ONLY. Lets a
                             request mark an order as a test, which skips the staff
                             email. Deliberately NOT set on Vercel: unset means no
@@ -1241,6 +1339,22 @@ a different staff address will silently fail until a domain is verified.
   so the check that the live site is current is `git status -sb` — if it says
   `ahead N`, production is N commits old however green the suite is. This is
   how the 31-commit gap in section 10 went unnoticed.
+- **`npm` does not load `.env`.** A script in `package.json` that shells out to
+  a CLI expecting an environment variable will not see anything `.env` holds.
+  This is why `npm run db:types` goes through `scripts/db-types.mjs`, which
+  reads `SUPABASE_ACCESS_TOKEN` out of the file itself, rather than being a
+  one-line `supabase gen types` in `package.json`.
+- **`pinia-plugin-persistedstate` ships a broken type declaration.**
+  `dist/nuxt/runtime/storages.d.ts` imports `../types.js` while the package only
+  publishes `types.d.mts`, so `StorageLike` resolves to nothing and
+  `piniaPluginPersistedstate.localStorage()` has no usable type. Found
+  2026-09-12 when the `no-unsafe-*` rules went to `error` and
+  `app/stores/color-mode.ts` failed on it. The store makes the two
+  `window.localStorage` calls itself now, which is the whole body of that
+  helper. Worth knowing before reaching for anything else in that package.
+- **The generated `server/types/database.ts` trips
+  `no-redundant-type-constituents`** twice, so it is in the ESLint ignore list.
+  Nobody edits it by hand and the typecheck still covers it.
 
 ---
 
@@ -1385,7 +1499,8 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — 198 unit tests across 15 files, over `pricing`, `promo`,
+  - `npm test` — the typecheck, then 236 unit tests across 18 files, over
+    `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
     tools, its promo boundary, its product prefill, `confirmations`, the orders
     route, the customer email, the colour-mode toggle, the navbar attention dot
@@ -1393,8 +1508,10 @@ Known gaps, roughly in the order they were prioritized with the user:
     this suite landed; the assistant, client-address, buyer-confirmation,
     assistant-promo, navbar and dot changes brought the rest, and removing the
     auto-open and the dot's storage flag took 21 back off. The prefill,
-    reasoning-effort and two deployment changes took it 173 to 198. No network, no
-    database, under a second. Run these on every save. The two newest files test
+    reasoning-effort and two deployment changes took it 173 to 198, then search,
+    pagination and the two typing changes took it to 236. The tests themselves
+    run in about a second and the typecheck ahead of them costs about 13, so
+    `npm run test:unit` is still the fast loop. No network, no database. The two newest files test
     Pinia stores rather than server
     utilities, which is why
     `vitest.config.ts` now carries a `~` alias and `setup.ts` stubs
@@ -1402,7 +1519,7 @@ Known gaps, roughly in the order they were prioritized with the user:
     evaluated, so it has to exist before a test file imports one. `tests/unit/setup.ts` supplies the Nuxt
     auto-imports (`createError`, `useSupabase`) that server code expects and
     Vitest does not provide.
-  - `npm run test:db` — 28 tests across 5 files that call the real
+  - `npm run test:db` — 44 tests across 6 files that call the real
     `create_order` and `POST /api/orders` against the **live** Supabase
     project, including the drawer's promo path. Needs `npm run dev` already
     running.
@@ -1415,6 +1532,10 @@ Known gaps, roughly in the order they were prioritized with the user:
     `playwright.llm.config.ts`: a promo code applied on the assistant's draft
     card, in a browser, through to a placed order. One provider call, because
     the cart is filled by clicking and a single message asks for the draft.
+  - `npm run lint` — ESLint with type-aware rules, deliberately outside
+    `npm test` because it took the run from 20 seconds to 36. `npm run check`
+    is the typecheck, the linter and the tests together, which is what to run
+    before a push. 0 errors and 0 warnings as of 2026-09-12.
   - `npm run test:smoke` — 5 checks against the deployed site, the last of
     them that the live shop renders no deployment banner. Fails when the
     network or the deploy is down, which is why it is not in `npm test`.
@@ -1812,6 +1933,18 @@ Known gaps, roughly in the order they were prioritized with the user:
   which is the live shop's own case for `NUXT_PUBLIC_DEPLOY_ENV` being unset.
   `npm run test:smoke` is 5/5 against the domain, the fifth test being the
   banner assertion that arrived with `mark-non-production-deployments`.
+  **It has opened a third time and is open now, 2026-09-12.** `origin/main` is
+  12 commits behind local `main`, the last push still being `8289dd0`, so
+  catalogue search, pagination, the six new products, the typecheck, the route
+  types and ESLint are all committed and none of them is live. The live shop
+  still serves nine products with no search box. Pushing is deploy work and the
+  user asks to be asked, so do not push without one.
+- **Three changes are complete and unarchived, 2026-09-12.**
+  `add-catalogue-search` (21/21), `add-catalogue-pagination` (18/18) and
+  `enforce-typescript` (16/16) all have every task ticked and are still sitting
+  in `openspec/changes/`. Archiving them syncs their delta specs into the main
+  tree, the same move `8289dd0` made for the previous four. `deepen-typescript`
+  is the only change genuinely still in flight.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
