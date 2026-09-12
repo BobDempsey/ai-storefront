@@ -4,8 +4,9 @@
 
 - [ ] use/using nuxt img module?
 - [ ] fix any console warnings and errors
-- [ ] Find a cable-clip-set photo somewhere other than Pexels, which has none
-- [ ] Decide whether monitor-riser-shelf can stay a laptop on a riser
+- [ ] Decide whether two approximate product photos can stay: cable-clip-set
+      shows a cable with an obsolete 30-pin connector and no clips, and
+      monitor-riser-shelf shows a laptop on a riser rather than a monitor
 - [ ] Archive add-catalogue-search, add-catalogue-pagination and enforce-typescript
 - [ ] Push the unpushed commits and redeploy (ask first)
 

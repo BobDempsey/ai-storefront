@@ -400,23 +400,31 @@ And **the shop field names its shortcut**, reading "Search the shop (Ctrl+K)" at
 a smaller placeholder size, where the quick search panel's own field says only
 "Search the shop" because naming the shortcut that opened it would be noise.
 
-~~The six new products still carry placeholder images.~~ **Five of the six are
-real photographs as of 2026-09-12**, once a free Pexels key arrived
+~~The six new products still carry placeholder images.~~ **All six are real
+photographs as of 2026-09-12**, once a free Pexels key arrived
 (`PEXELS_API_KEY` in `.env`, section 6). `headphone-stand`,
-`monitor-riser-shelf`, `pen-and-tool-cup`, `phone-dock-charging` and
-`seed-starter-tray` are Pexels images now, all 800x800 to match the original
-six, 37KB to 182KB. The Pexels licence asks for no attribution, and none was
+`monitor-riser-shelf`, `pen-and-tool-cup`, `phone-dock-charging`,
+`seed-starter-tray` and `cable-clip-set` are Pexels images now, all 800x800 to
+match the original six, 21KB to 182KB. The Pexels licence asks for no attribution, and none was
 added, since the original six carry none either.
 
-**`cable-clip-set` still has its placeholder, and that is a real dead end.**
-Thirteen queries returned office binder clips or tangled cables on utility
-poles; Pexels appears to hold no photograph of a cable clip set. The one near
-miss, photo 20213730, is too dark to read once cropped square. Do not spend
-another session searching Pexels for it: it needs a different source, or a
-rendered image, or that product's picture staying generated. **One judgement
-call to check before the shop goes in front of anyone**:
-`monitor-riser-shelf` is a laptop on a riser rather than a monitor on one,
-which is the right job but the wrong object, and it can be reverted.
+**`cable-clip-set` carries a deliberately approximate image**, settled with the
+user on 2026-09-12 after a first pass left the placeholder rather than ship a
+bad match. Pexels holds no photograph of a cable clip set: thirteen queries
+returned office binder clips or tangled cables on utility poles, and the one
+near miss, photo 20213730, is too dark to read once cropped square. The user
+then asked for an approximate image instead, so the file now shows a white
+cable coiled on white, which illustrates the tidy outcome rather than the
+clips. It matches `desk-cable-organizer`'s treatment, so the two sit together
+on a grid.
+
+**Two judgement calls to check before the shop goes in front of a customer**,
+both honest but both wrong in a small way. `cable-clip-set`'s cable ends in an
+obsolete 30-pin Apple dock connector, which dates the photograph to anyone who
+looks closely. And `monitor-riser-shelf` is a laptop on a riser rather than a
+monitor on one, the right job but the wrong object. Either can be reverted.
+Neither has a better Pexels option; fixing them properly means a different
+source or a commissioned shot.
 
 For context on why the key mattered: Openverse, the keyless free-image API, was
 tried first and is not usable for these. It answered a headphone stand with a
