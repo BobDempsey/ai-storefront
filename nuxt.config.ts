@@ -4,6 +4,10 @@ import Aura from '@primeuix/themes/aura'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+
+  typescript: {
+    tsConfig: { compilerOptions: { noUncheckedIndexedAccess: true } }
+  },
   devtools: { enabled: true },
 
   modules: [

@@ -324,12 +324,24 @@ a clean `npm run build` and lint at zero. The `orders` table holds no `is_test`
 row afterwards, so the suites cleaned up after themselves. Nothing a visitor
 sees changed.
 
-`openspec/changes/deepen-typescript/` is at **21 of 24 tasks**, and none of the
-three left blocks anything: 4.1 and 4.2 are the `noUncheckedIndexedAccess`
-measurement nobody has taken, and 5.1 is one `npm run test:llm` run, which
-spends provider calls. `typed-client-errors.md` in that folder holds the five
-errors the typed client raised, recorded before any of them was fixed. **The
-change is ready to archive**, alongside the three already waiting.
+`deepen-typescript` is **24 of 24**, archived, and its last three tasks were
+finished after the archive rather than reopened; both measurements are written
+up at the end of that folder's `notes.md`. `typed-client-errors.md` beside it
+holds the five errors the typed client raised, recorded before any were fixed.
+
+**`noUncheckedIndexedAccess` is on, and it cost nothing.** It sits in
+`nuxt.config.ts` under `typescript.tsConfig`, which is what reaches all four
+generated projects, and again in `tsconfig.tests.json`, which Nuxt does not
+generate. The full typecheck reported **zero errors** with it on. Zero is a
+suspicious number for that flag, so it was proved rather than trusted: a
+throwaway file reading `xs[0].length` off a `string[]` raised `TS18048` in all
+three projects. The flag bites. This code just does not index into arrays or
+records without checking first.
+
+**The provider suite passes against the typed chat loop**: `npm run test:llm`
+is 8/8 in 49 seconds, 8 calls, 9 with `test:e2e:llm`, against the ceiling of
+ten. That is the one thing neither the typecheck nor the build could tell us,
+since a typed tool loop that never gets called still compiles.
 
 **The repo typechecks now**, through the OpenSpec change `enforce-typescript`:
 `npm test` runs `vue-tsc` before a single assertion, so a type error fails the
@@ -390,10 +402,9 @@ numbers moved by the end of that day: 25 archived changes, 15 capabilities and
 lint at zero.
 
 Two agents then ran in parallel on 2026-09-12, one on the database types above
-and one on the product photographs below, and both landed. Everything but the
-provider suite is green: `npm run check` (the typecheck, the linter and 236
-tests), `npm run build`, `test:db` at 46/46 and `test:e2e` at 28/28. **Only
-`npm run test:llm` was not run**, since it spends provider calls.
+and one on the product photographs below, and both landed. Every suite in the repo is
+green: `npm run check` (the typecheck, the linter and 236 tests), `npm run
+build`, `test:db` 46/46, `test:e2e` 28/28 and `test:llm` 8/8.
 
 Three things were settled on 2026-09-11 and should not be reopened without
 asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps

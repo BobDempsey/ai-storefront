@@ -26,12 +26,12 @@
 
 ## 4. Measure noUncheckedIndexedAccess
 
-- [ ] 4.1 Turn the flag on and count the errors; verify the count is recorded in the change folder with a sample of what they are
-- [ ] 4.2 Decide from that count whether it stays on, and write the decision and the number into the change notes; verify the chosen setting is what the repo actually ships with
+- [x] 4.1 Turn the flag on and count the errors; verify the count is recorded in the change folder with a sample of what they are (zero errors; proved the flag bites with a throwaway probe, see notes.md)
+- [x] 4.2 Decide from that count whether it stays on, and write the decision and the number into the change notes; verify the chosen setting is what the repo actually ships with (it stays on, in nuxt.config.ts and tsconfig.tests.json)
 
 ## 5. The provider run
 
-- [ ] 5.1 Run `npm run test:llm` once, which spends provider calls, and confirm the typed chat loop still completes a real tool round; verify the suite passes and note the calls it cost against the ceiling of ten
+- [x] 5.1 Run `npm run test:llm` once, which spends provider calls, and confirm the typed chat loop still completes a real tool round; verify the suite passes and note the calls it cost against the ceiling of ten (8/8 in 49s, 8 calls, 9 with test:e2e:llm)
 
 ## 6. Settle how the database types are generated
 

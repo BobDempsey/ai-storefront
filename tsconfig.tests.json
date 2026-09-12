@@ -11,6 +11,7 @@
   "extends": "./.nuxt/tsconfig.app.json",
   "compilerOptions": {
     "noEmit": true,
+    "noUncheckedIndexedAccess": true,
     "types": ["vitest/globals", "node"]
   },
   "include": [

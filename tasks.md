@@ -11,8 +11,6 @@
 
 ## Getting more out of TypeScript
 
-- [ ] Run `npm run test:llm` once, to confirm the typed chat loop still works
-- [ ] Try `noUncheckedIndexedAccess` and see how much it costs to satisfy
 - [ ] Run the typecheck in CI, once there is a CI to run it in
 - [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)
 - [ ] Consider making products.kind a real enum, which would delete

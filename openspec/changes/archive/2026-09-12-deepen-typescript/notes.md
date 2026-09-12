@@ -113,3 +113,31 @@ only has `types.d.mts`. `StorageLike` therefore resolves to nothing and
 `piniaPluginPersistedstate.localStorage()` has no usable type. The store now
 makes those two `window.localStorage` calls itself, which is the whole of what
 that helper does.
+
+## Group 4 and group 5, measured 2026-09-12 after archiving
+
+Both were left open as optional follow-ups and both are now done. Recorded here
+rather than reopening the change.
+
+### 4.1 and 4.2, `noUncheckedIndexedAccess`
+
+**It costs nothing, so it is on.** Turned on in `nuxt.config.ts` under
+`typescript.tsConfig`, which is what puts it into all four generated projects,
+and in `tsconfig.tests.json`, which Nuxt does not generate. The full typecheck
+then reported **zero errors** across app, server, shared and the test suites.
+
+Zero is a suspicious number for this flag, so it was proved rather than
+trusted. A throwaway `server/utils/_nuci-probe.ts` reading `xs[0].length` off a
+`string[]` produced `TS18048: 'first' is possibly 'undefined'` in all three
+projects, and was deleted. The flag bites; this code simply does not index into
+arrays or records without checking first.
+
+`npm run check` (typecheck, lint, 236 tests) and `npm run build` both pass with
+it on.
+
+### 5.1, the provider run
+
+`npm run test:llm` is 8/8 against a real `gpt-5-mini` through a running dev
+server, 49 seconds. That is 8 provider calls, 9 with `test:e2e:llm`, against
+the ceiling of ten the user set. The typed chat loop still completes real tool
+rounds, which is the one thing the typecheck and the build could not tell us.
