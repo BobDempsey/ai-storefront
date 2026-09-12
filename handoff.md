@@ -1647,6 +1647,13 @@ The cost, accepted deliberately: the demo's existing rows stay behind in the
 real shop's database, because no column records which shop took an order and
 matching them after the fact would be guesswork.
 
+**Vercel's Hobby plan is fine, decided 2026-09-12.** The question was raised
+because Hobby is for non-commercial use and Forged in Filament reads like a real
+shop; the user settled it: it is not a commercial item. So both shops stay on
+Hobby, two projects from the one repo, and nobody needs to pay for Pro. Revisit
+only if the shop starts taking money, which it cannot today, since payment is
+deliberately out of scope and no payment runs through the site.
+
 **The plan is written up as the OpenSpec change `split-into-two-shops`**,
 proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel
 agents: four streams over disjoint files and accounts, then a verification gate.
