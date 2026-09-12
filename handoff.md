@@ -385,8 +385,9 @@ above, the catalogue row count in section 1, the seed and image counts in
 section 4's tree, and the `npm test` and `test:db` counts in section 10.
 Verified still true the same day: 21 archived changes, 13 capabilities,
 `npm test` green at 236 across 18 files, `npx eslint .` at 23 warnings and 0
-errors, and `deepen-typescript` the only genuinely in-flight change. The lint
-warnings went to zero later the same day, with the database types.
+errors, and `deepen-typescript` the only genuinely in-flight change. All three
+numbers moved by the end of that day: 25 archived changes, 15 capabilities and
+lint at zero.
 
 Two agents then ran in parallel on 2026-09-12, one on the database types above
 and one on the product photographs below, and both landed. Everything but the
@@ -728,7 +729,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Twenty-one changes have been through the full cycle, all in
+Twenty-five changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -754,15 +755,22 @@ Twenty-one changes have been through the full cycle, all in
 | `2026-09-11-cap-assistant-reasoning-effort` | additions folded into `specs/assistant/shopping-assistant/` |
 | `2026-09-11-mark-non-production-deployments` | `specs/storefront/deployment-banner/` |
 | `2026-09-11-mark-non-production-orders-as-tests` | additions folded into `specs/ordering/test-order/` |
+| `2026-09-12-add-catalogue-search` | `specs/catalog/catalogue-search/` |
+| `2026-09-12-add-catalogue-pagination` | `specs/catalog/catalogue-pagination/` |
+| `2026-09-12-enforce-typescript` | none — it typechecks the repo, and changed no behaviour to spec |
+| `2026-09-12-deepen-typescript` | none — same, and archived with 3 optional tasks open |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
-Four more sit in `openspec/changes/` as of 2026-09-12. Three are complete and
-waiting to be archived — `add-catalogue-search`, `add-catalogue-pagination` and
-`enforce-typescript`, every task ticked. The fourth, `deepen-typescript`, is
-the only one still in flight, at 11 of 24 tasks and blocked on the database-types
-decision at the top of this document.
+All four were archived later on 2026-09-12, and `openspec/changes/` holds
+nothing but `archive/` now. The two catalogue changes brought new capabilities,
+`catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
+to fifteen. The two typing changes brought none: they added no behaviour a spec
+describes. `deepen-typescript` was archived at 21 of 24, with the
+`noUncheckedIndexedAccess` measurement and one `test:llm` run left as optional
+follow-ups rather than unfinished work. `openspec validate --specs --strict`
+passes 15 of 15.
 
 `add-store-wide-sale` (code complete and verified end to end, section 1,
 section 10, committed as `de3f67d`) and `add-promo-codes` (39 of 39 tasks,
@@ -779,8 +787,8 @@ archived in one session on 2026-09-03 (section 1); its spec is now
 
 Specs cover theming, contact, five ordering capabilities, the catalogue's
 file products and store-wide sale, the shopping assistant, the newsletter,
-promo codes and the deployment banner: thirteen capabilities as of
-2026-09-11. Everything else in this document predates OpenSpec and is not
+promo codes, the deployment banner and the catalogue's search and pagination:
+fifteen capabilities as of 2026-09-12. Everything else in this document predates OpenSpec and is not
 backed by a spec, including the storefront tabs added on 2026-09-01. New work
 should be.
 
@@ -1952,12 +1960,9 @@ Known gaps, roughly in the order they were prioritized with the user:
   types and ESLint are all committed and none of them is live. The live shop
   still serves nine products with no search box. Pushing is deploy work and the
   user asks to be asked, so do not push without one.
-- **Three changes are complete and unarchived, 2026-09-12.**
-  `add-catalogue-search` (21/21), `add-catalogue-pagination` (18/18) and
-  `enforce-typescript` (16/16) all have every task ticked and are still sitting
-  in `openspec/changes/`. Archiving them syncs their delta specs into the main
-  tree, the same move `8289dd0` made for the previous four. `deepen-typescript`
-  is the only change genuinely still in flight.
+- ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
+  `deepen-typescript` went with them, so `openspec/changes/` holds nothing but
+  `archive/`. See section 2.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
