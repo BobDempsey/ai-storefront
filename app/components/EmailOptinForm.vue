@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { messageFor } from '~/utils/errors'
 const email = ref('')
 const submitting = ref(false)
 const subscribed = ref(false)
@@ -15,8 +16,8 @@ async function submit() {
     // The server gives the same response for a new and a duplicate address,
     // so this confirmation is shown either way.
     subscribed.value = true
-  } catch (error: any) {
-    errorMessage.value = error?.data?.statusMessage ?? 'Something went wrong. Please try again.'
+  } catch (error: unknown) {
+    errorMessage.value = messageFor(error, 'Something went wrong. Please try again.')
   } finally {
     submitting.value = false
   }

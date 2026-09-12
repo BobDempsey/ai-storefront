@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { messageFor } from '~/utils/errors'
 const form = reactive({ name: '', email: '', message: '', subscribe: false })
 
 // Names the discount on the opt-in label, so it tracks the active code.
@@ -16,8 +17,8 @@ async function submitMessage() {
     // Nothing is stored, so the confirmation is shown only for a send the
     // server actually acknowledged.
     sent.value = true
-  } catch (error: any) {
-    errorMessage.value = error?.data?.statusMessage ?? 'Something went wrong. Please try again.'
+  } catch (error: unknown) {
+    errorMessage.value = messageFor(error, 'Something went wrong. Please try again.')
   } finally {
     submitting.value = false
   }

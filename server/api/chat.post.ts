@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { chatRequestSchema } from '~~/server/utils/schemas'
 import { SYSTEM_PROMPT, TOOLS, runTool, type ToolContext } from '~~/server/utils/assistant'
 import { mintConfirmation } from '~~/server/utils/confirmations'
@@ -53,7 +54,10 @@ export default defineEventHandler(async event => {
 
   const context: ToolContext = { items: parsed.data.items ?? [], intents: [], draft: null }
 
-  const messages: any[] = [
+  // The SDK's own union, not `any[]`: the loop below pushes the model's reply
+  // and a tool result back into this array, and a malformed round should be a
+  // type error here rather than a 400 from the provider.
+  const messages: ChatCompletionMessageParam[] = [
     { role: 'system', content: SYSTEM_PROMPT },
     ...parsed.data.messages
   ]

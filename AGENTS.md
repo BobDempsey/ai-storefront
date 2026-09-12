@@ -95,12 +95,20 @@ is the point: a run that needs the network must never be the one you expect to
 pass on a plane.
 
 ```
-npm test            tests/unit    nothing external, under a second
+npm test            typecheck + tests/unit, nothing external, about 15 seconds
+npm run typecheck   types only, through vue-tsc
+npm run test:unit   tests/unit    nothing external, under a second
 npm run test:db     tests/db      the live Supabase project and a dev server
 npm run test:e2e    tests/e2e     a browser, via Playwright
 npm run test:smoke  tests/smoke   the deployed site
 npm run test:llm    tests/llm     real provider calls, and the only cost
 ```
+
+**Run `npm test` before calling work finished.** It typechecks first: the repo
+is TypeScript throughout and `nuxt build` does not check types, so the checker
+is the only thing that would catch a wrong shape before a visitor does. Keep
+`app/` and `server/` free of `any` - `app/utils/errors.ts` is there so a caught
+value can be narrowed rather than cast.
 
 Each Vitest run has its own config file today. Vitest's `projects` option is
 the current way to express that as a single config, and folding the four into

@@ -98,8 +98,16 @@ export const useColorModeStore = defineStore('color-mode', {
      */
     storage: piniaPluginPersistedstate.localStorage(),
     pick: ['mode'],
+    /*
+     * The plugin types a serializer as taking the whole StateTree, not the
+     * picked slice, so narrowing the parameter to `{ mode }` made the options
+     * object stop matching and took the entire store's types down with it:
+     * `defineStore` fell through to its setup-store overload and every getter
+     * and action below vanished from the type. The parameter therefore takes
+     * what the plugin says it is given, and the narrowing happens inside.
+     */
     serializer: {
-      serialize: (state: { mode: ColorMode }) => state.mode,
+      serialize: state => (isColorMode(state.mode) ? state.mode : 'system'),
       deserialize: (value: string) => (isColorMode(value) ? { mode: value } : {})
     }
   }

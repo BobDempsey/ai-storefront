@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorData, errorStatus, messageFor } from '~/utils/errors'
 import type { CartPreview, OrderConflictData, OrderPromoErrorData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
@@ -121,25 +122,25 @@ async function submitOrder() {
     // for itself whether a file is owed. Carry it across.
     const files = preview.value?.lines.some(line => line.kind === 'digital') ? '1' : undefined
     await navigateTo({ path: '/order-received', query: { id: orderId, files } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     // The cart and the form are deliberately left untouched: a rejected order
     // must leave the customer somewhere they can act, not start again.
-    const conflict = error?.data?.data as OrderConflictData | undefined
-    if (error?.statusCode === 409) {
+    const conflict = errorData<OrderConflictData>(error)
+    if (errorStatus(error) === 409) {
       conflictIds.value = conflict?.unavailableProductIds ?? []
       await refresh()
     }
 
     // A code refused at submit time: re-price so the summary drops the
     // discount the buyer was shown, and let the field's own message name it.
-    if ((error?.data?.data as OrderPromoErrorData | undefined)?.promoStatus) {
+    if (errorData<OrderPromoErrorData>(error)?.promoStatus) {
       await applyPromoCode()
       return
     }
 
     errorMessage.value = unavailableLines.value.length
       ? `${unavailableNames.value} is no longer available. Remove it from your cart to continue.`
-      : error?.data?.statusMessage ?? 'Something went wrong. Please try again.'
+      : messageFor(error, 'Something went wrong. Please try again.')
   } finally {
     submitting.value = false
   }

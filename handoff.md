@@ -252,6 +252,38 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+**The repo typechecks now**, through the OpenSpec change `enforce-typescript`:
+`npm test` runs `vue-tsc` before a single assertion, so a type error fails the
+run the way a failing test does, and `npm run test:unit` stays for the fast
+loop. It costs about 13 seconds against the unit tests' 3. What the first run
+found is the part worth reading, because none of it was the six `any` escapes
+the change was written around, and the notes are in the archived change as
+`first-run-errors.txt`. **TypeScript 7 is not usable here yet**: `npm i -D
+typescript` installs 7.0.2, whose exports no longer carry `./lib/tsc`, and
+`vue-tsc@3` resolves exactly that path, so the dependency is pinned to `^5.9.0`.
+**`app/stores/color-mode.ts` had never been typed at all**: its `persist`
+serializer narrowed a parameter the plugin types as the whole state tree, so
+`defineStore` fell through to its setup-store overload and every getter and
+action vanished from the type, taking nine of the twelve errors with it,
+including five in `default.vue`. The store worked; nothing had ever checked it.
+And `@types/node` had never been a dependency, so `node:crypto` had no types.
+
+The six `any`s themselves are gone: five `catch (error: any)` handlers now catch
+`unknown` and go through `app/utils/errors.ts`, which narrows once rather than
+casting five times, and the assistant's message array takes the OpenAI SDK's own
+union. **`messageFor` reads both `statusMessage` and `data.statusMessage`**,
+which are not the same place: the first is what a thrown `createError` carries,
+the second is where the same text lands after `$fetch` parses it, and a handler
+reading only one shows "Something went wrong" for half the failures it could
+have explained. Unit coverage went 225 to 236. `npm test`, `npm run build`,
+`npm run test:e2e` and `npm run test:db` all pass; **`npm run test:llm` was not
+run**, since it spends provider calls, so the typed chat loop is verified by the
+checker and the build rather than against the real provider. That run is the
+first item under the new "Getting more out of TypeScript" heading in `tasks.md`,
+which also holds what this change deliberately left out: generated Supabase
+types, typed route responses, the tests' own `as any` casts, ESLint,
+`noUncheckedIndexedAccess` and a CI to run the check in.
+
 Three things were settled on 2026-09-11 and should not be reopened without
 asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps
 "AI Shop Assistant", since the last rename had only just finished across the

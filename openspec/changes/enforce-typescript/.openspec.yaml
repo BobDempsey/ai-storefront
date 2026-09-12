@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-09-11
+# No requirement changes: type checking is a development-time guarantee about
+# the codebase, not behaviour the storefront exposes.
+skip_specs: true

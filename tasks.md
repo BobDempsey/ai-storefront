@@ -2,14 +2,26 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
+- fix any console warnings and errors
 - [x] Add search: a quick search panel in the navbar and a field beside Shop
 - [x] Seed enough products to need pagination - develop pagination (discuss options)
 - [x] Decide on the name - no rename, the project and the assistant keep theirs
-- [ ] Check everything is typed and tested
+- [x] Check everything is typed and tested - vue-tsc runs inside npm test, no any left
 - [x] Explore a faster provider, or streaming - dropped, six seconds is accepted
 - [ ] Replace the six placeholder product images (needs a Pexels API key)
 - [x] Archive the four completed OpenSpec changes
 - [x] Push main and redeploy (ask first)
+
+## Getting more out of TypeScript
+
+- [ ] Run `npm run test:llm` once, to confirm the typed chat loop still works
+- [ ] Generate Supabase types from the schema, so a column rename is a type error
+- [ ] Type the API routes' responses so the browser and the server share one shape
+- [ ] Replace the `as any` casts in the assistant tests with the tools' real types
+- [ ] Add ESLint with the TypeScript rules, since the checker catches no smells
+- [ ] Try `noUncheckedIndexedAccess` and see how much it costs to satisfy
+- [ ] Run the typecheck in CI, once there is a CI to run it in
+- [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)
 
 ## Next: fif.bobdempsey83.com from the same repo
 

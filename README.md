@@ -50,12 +50,19 @@ and arrange payment off-app.
 5. Run the tests:
 
    ```bash
-   npm test              # unit tests, no network
+   npm test              # typecheck, then the unit tests, no network
+   npm run typecheck     # types only
+   npm run test:unit     # unit tests only, for the fast inner loop
    npm run test:e2e      # browser, needs a dev server (starts one if needed)
    npm run test:db       # writes to the live Supabase project
    npm run test:smoke    # checks the deployed site
    npm run test:llm      # real provider calls, the only script that costs money
    ```
+
+   `npm test` typechecks the app, the server routes, the components and the
+   tests before it runs a single assertion, so a type error fails the run the
+   way a failing test does. It costs about 13 seconds against the unit tests'
+   3, which is why `test:unit` exists for the loop you run on every save.
 
    The conventions behind that split are in [AGENTS.md](AGENTS.md).
    `test:smoke` defaults to this template's own demo at

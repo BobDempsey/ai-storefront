@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorData, messageFor } from '~/utils/errors'
 import type { CartIntent, CartPreview, OrderPromoErrorData, OrderResponse } from '~/types'
 import { formatMoney } from '~/utils/money'
 
@@ -246,12 +247,12 @@ async function confirmDraft() {
     assistant.dismissDraft()
     cart.clear()
     clearPromo()
-  } catch (error: any) {
-    draftError.value = error?.statusMessage ?? 'The order could not be submitted. Please try again.'
+  } catch (error: unknown) {
+    draftError.value = messageFor(error, 'The order could not be submitted. Please try again.')
     // A code create_order refused at submit is dropped, not left on the draft:
     // Confirm again would resend it and fail the same way. The visitor can
     // place the order without it, or type a different one.
-    if ((error?.data?.data as OrderPromoErrorData | undefined)?.promoStatus) clearPromo()
+    if (errorData<OrderPromoErrorData>(error)?.promoStatus) clearPromo()
   } finally {
     submitting.value = false
   }

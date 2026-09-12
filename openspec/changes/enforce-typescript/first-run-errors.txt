@@ -1,0 +1,39 @@
+# The first typecheck, before any fix
+
+Run on 2026-09-11, `npx nuxt typecheck`, 12 errors. None of them are the six
+`any` escapes this change was written around: an `any` is legal TypeScript and
+silences the checker, which is exactly why it hides things. What the checker
+found instead was two clusters nobody had seen.
+
+**One: TypeScript 7 is not usable here yet.** `npm install -D typescript`
+installs 7.0.2, whose package exports no longer carry `./lib/tsc`, and
+`vue-tsc@3` resolves that path. The dependency is pinned to `^5.9.0` as a
+result. Worth revisiting when vue-tsc supports 7.
+
+**Two: `app/stores/color-mode.ts` is not typed at all.** Its `persist`
+serializer does not match the plugin's `Persist<State>` type, so `defineStore`
+falls through to the setup-store overload and every getter and action on the
+store disappears from the type. That is where nine of the twelve errors come
+from, including the five in `default.vue` that read `isDark`, `scheme`, `label`
+and `toggle`. The store works at runtime; it has simply never been checked.
+
+**Three: `node:crypto` has no types.** `@types/node` was never a dependency,
+because nothing ever asked for it.
+
+Both are prerequisites rather than scope creep: the typecheck cannot be added to
+`npm test` while it fails, and neither is a behaviour change.
+
+```
+app/layouts/default.vue(30,11): error TS2339: Property 'init' does not exist on type 'Store<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}>'.
+app/layouts/default.vue(68,45): error TS2339: Property 'isDark' does not exist on type 'Store<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}>'.
+app/layouts/default.vue(153,65): error TS2339: Property 'scheme' does not exist on type 'Store<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}>'.
+app/layouts/default.vue(154,33): error TS2339: Property 'label' does not exist on type 'Store<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}>'.
+app/layouts/default.vue(155,33): error TS2339: Property 'toggle' does not exist on type 'Store<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}>'.
+app/stores/color-mode.ts(23,34): error TS2769: No overload matches this call.
+app/stores/color-mode.ts(43,19): error TS2339: Property 'isDark' does not exist on type '{ mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; } & _StoreWithGetters_Readonly<{}> & _StoreWithGetters_Writable<{}> & PiniaCustomProperties<...>'.
+app/stores/color-mode.ts(48,19): error TS2339: Property 'isDark' does not exist on type '{ mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; } & _StoreWithGetters_Readonly<{}> & _StoreWithGetters_Writable<{}> & PiniaCustomProperties<...>'.
+app/stores/color-mode.ts(64,20): error TS2339: Property 'isDark' does not exist on type '{ mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; } & _StoreWithState<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}> & _StoreWithGetters_Readonly<...> & _StoreWithGetters_Writable<...> & PiniaCustomProperties<...>'.
+app/stores/color-mode.ts(87,24): error TS2339: Property 'isDark' does not exist on type '{ mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; } & _StoreWithState<"color-mode", { mode: ColorMode; systemPrefersDark: boolean; initialised: boolean; }, {}, {}> & _StoreWithGetters_Readonly<...> & _StoreWithGetters_Writable<...> & PiniaCustomProperties<...>'.
+server/utils/confirmations.ts(1,28): error TS2307: Cannot find module 'node:crypto' or its corresponding type declarations.
+server/utils/confirmations.ts(1,28): error TS2307: Cannot find module 'node:crypto' or its corresponding type declarations.
+```

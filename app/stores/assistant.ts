@@ -1,3 +1,4 @@
+import { errorStatus, messageFor } from '~/utils/errors'
 import { defineStore } from 'pinia'
 import type { CartIntent, ChatMessage, ChatResponse, OrderDraft } from '~/types'
 
@@ -113,11 +114,12 @@ export const useAssistantStore = defineStore('assistant', {
         this.messages.push({ role: 'assistant', content: response.reply })
         if (response.draft) this.draft = response.draft
         return response.intents
-      } catch (error: any) {
+      } catch (error: unknown) {
         // The route already writes visitor-facing text into statusMessage, and
         // logs anything internal on the server.
-        this.error = error?.statusMessage ?? 'The assistant is unavailable right now.'
-        if (error?.statusCode === 400 || error?.statusCode === 429) this.ended = true
+        this.error = messageFor(error, 'The assistant is unavailable right now.')
+        const status = errorStatus(error)
+        if (status === 400 || status === 429) this.ended = true
         this.messages.pop()
       } finally {
         this.pending = false
