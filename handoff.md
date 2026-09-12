@@ -252,6 +252,47 @@ all nine share tags render with absolute URLs, `/og-image.png` answers 200, and
 `test:smoke` is 4/4. That push also found **Preview holds no environment
 variables at all**, which section 10 now records.
 
+Catalogue search followed on 2026-09-11, through the OpenSpec change
+`add-catalogue-search`: a magnifier in the navbar and a field beside the `Shop`
+heading, filtering both tabs as the visitor types. Three decisions are worth
+reading before touching it. **The filtering happens in the database**, through a
+`q` on `/api/products` and a PostgREST `or=(name.ilike,description.ilike)`,
+rather than over the array the page already holds: a client filter can only
+search the rows on the page, which is wrong the moment pagination lands, and
+pagination is the next task. **The URL is the state** — the field, the fetch, a
+reload and a shared link all read `route.query.q` — and it is written with
+`router.replace` on a 250ms debounce, so ten keystrokes are not ten history
+entries and one Back leaves the page instead of walking back through the
+letters. **The matching rule moved into `server/utils/search.ts`** and the
+assistant's `search_catalogue` now calls it, so the shop page and the assistant
+cannot answer differently for the same words; the rule itself is unchanged, a
+case-insensitive substring of the name or the description, and `%` and `_` are
+escaped so a search for "50%" is not a wildcard. The navbar control is a link to
+`/?focus=search` rather than a second input, because two boxes for one term
+disagree the moment one goes stale; the parameter is stripped once focus lands.
+The navbar's magnifier opens a **quick search panel** rather than sending the
+visitor to the shop page, decided with the user after the first version shipped:
+it opens over whatever page they are on, lists the catalogue before a key is
+pressed, narrows as they type, and offers a row that carries the term to the
+shop page for the full results. Listing up front is the point, since a panel
+that opens empty asks a visitor to guess what the shop stocks. It is keyboard
+operable throughout, arrows and Enter and Escape, with Ctrl+K as the shortcut,
+and the field keeps focus while the highlight moves so typing never stops. The
+panel is `app/components/SearchPalette.vue` with its open state in
+`app/stores/search-palette.ts`; it reads the same `/api/products?q=` the shop
+page does, so the two cannot disagree. One thing worth knowing before editing
+the shop page's own field: the browser draws its own clear control inside a
+`type="search"` box, which showed two crosses side by side until a scoped style
+suppressed it. Unit coverage went 198 to 219, the e2e suite 9 tests to 20 and
+`test:db` 33 to 40, all still free of a provider call. Verified against a running dev server
+through the `playwright` MCP server: the navbar control focuses the field from a
+product page, typing narrows to two dragons with per-tab counts of 1 and 1,
+clearing restores all nine and leaves a plain address, a reloaded `?q=planter`
+reproduces itself, one Back from a four-letter search lands on the product page,
+and the cart is untouched across all of it. Read correctly at 1280px and 390px
+in both schemes. `npm test`, `npm run build`, `npm run test:e2e` and
+`npm run test:db` all pass.
+
 Reviewed against the code again on 2026-09-11, working tree clean at `be36082`.
 The four changes that had shipped since the last review were sitting complete
 and unarchived, all their tasks ticked: `ask-assistant-about-a-product`,

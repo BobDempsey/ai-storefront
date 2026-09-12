@@ -85,6 +85,13 @@ export const searchCatalogueArgs = z.object({
   kind: z.enum(['physical', 'digital']).optional()
 })
 
+/** The `q` on a catalogue request: what the visitor typed into the search
+ *  field. Capped rather than unbounded, since it reaches an ilike pattern, and
+ *  optional because an unfiltered catalogue is the ordinary case. */
+export const catalogueQuerySchema = z.object({
+  q: z.string().trim().max(200).optional()
+})
+
 export const getProductArgs = z.object({
   slug: z.string().trim().min(1).max(120)
 })

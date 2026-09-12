@@ -2,7 +2,7 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Add search, with an icon in the navbar and an input beside Shop
+- [x] Add search: a quick search panel in the navbar and a field beside Shop
 - [ ] Seed enough products to need pagination - develop pagination (discuss options)
 - [ ] Decide whether to rename the assistant to AI Shopping Assistant
 - [ ] Check everything is typed and tested

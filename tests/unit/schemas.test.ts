@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  catalogueQuerySchema,
   contactSchema,
   emailOptinSchema,
   mergeItems,
@@ -145,5 +146,20 @@ describe('emailOptinSchema', () => {
 
   it('rejects a missing address', () => {
     expect(emailOptinSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('catalogueQuerySchema', () => {
+  it('accepts an ordinary term and trims it', () => {
+    const parsed = catalogueQuerySchema.safeParse({ q: '  dragon ' })
+    expect(parsed.success && parsed.data.q).toBe('dragon')
+  })
+
+  it('accepts no term at all, which is the unfiltered catalogue', () => {
+    expect(catalogueQuerySchema.safeParse({}).success).toBe(true)
+  })
+
+  it('rejects a term longer than the cap', () => {
+    expect(catalogueQuerySchema.safeParse({ q: 'x'.repeat(201) }).success).toBe(false)
   })
 })

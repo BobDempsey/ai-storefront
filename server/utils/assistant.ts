@@ -7,6 +7,7 @@ import {
 } from '~~/server/utils/schemas'
 import type { z } from 'zod'
 import type { SaleState } from '~~/server/utils/pricing'
+import { matchesSearch, normalizeSearchTerm } from '~~/server/utils/search'
 
 /**
  * The assistant's tool list is its whole permission model. Nothing here writes
@@ -276,12 +277,10 @@ export async function runTool(name: string, rawArgs: string, context: ToolContex
         return { error: 'The catalogue could not be read.' }
       }
 
-      const term = parsed.data.query?.toLowerCase()
-      const matched = term
-        ? data.filter(p =>
-            `${p.name} ${p.description ?? ''}`.toLowerCase().includes(term)
-          )
-        : data
+      // The same rule the storefront's own search field uses, so the assistant
+      // and the shop page cannot answer differently for the same words.
+      const term = normalizeSearchTerm(parsed.data.query)
+      const matched = term ? data.filter(p => matchesSearch(p, term)) : data
 
       // A term that matches nothing still gets the catalogue, so the assistant
       // can say what the shop does have instead of only what it does not.

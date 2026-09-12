@@ -2,6 +2,19 @@
 const cart = useCartStore()
 const colorMode = useColorModeStore()
 const assistant = useAssistantStore()
+const palette = useSearchPaletteStore()
+
+// The shortcut a palette is expected to answer to. Bound here rather than in
+// the panel, because the panel is only rendered while it is open.
+onMounted(() => {
+  const onKey = (event: KeyboardEvent) => {
+    if (!(event.key === 'k' && (event.ctrlKey || event.metaKey))) return
+    event.preventDefault()
+    palette.toggle()
+  }
+  window.addEventListener('keydown', onKey)
+  onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+})
 const { storeName, siteUrl, deployEnv } = useRuntimeConfig().public
 
 // Empty on the live shop, and everything below keys off that. See
@@ -80,6 +93,24 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
         <NuxtLink to="/" class="text-lg font-semibold tracking-tight">{{ storeName }}</NuxtLink>
 
         <div class="flex items-center gap-4">
+          <!--
+            Opens the quick search panel over whatever page the visitor is on,
+            rather than sending them to the shop page first. The panel lists the
+            catalogue before a key is pressed, so a visitor who does not know
+            what the shop stocks gets an answer rather than an empty box, and
+            the shop page's own field stays the place a full search lives.
+          -->
+          <button
+            type="button"
+            class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
+            aria-label="Search the catalogue"
+            title="Search (Ctrl+K)"
+            data-testid="nav-search"
+            @click="palette.openPalette()"
+          >
+            <i class="pi pi-search" />
+          </button>
+
           <ClientOnly>
             <button
               type="button"
@@ -158,6 +189,9 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
 
     <ClientOnly>
       <AssistantDrawer />
+      <!-- Rendered only while open: it fetches on open, so an unopened panel
+           costs nothing. -->
+      <SearchPalette v-if="palette.open" />
     </ClientOnly>
 
     <footer class="border-t border-surface-200 px-4 py-6 text-center text-xs text-surface-500 dark:border-surface-800 dark:text-surface-400">

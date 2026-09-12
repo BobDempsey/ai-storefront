@@ -2,10 +2,63 @@
 import type { DigitalProduct, Product } from '~/types'
 import { formatBytes } from '~/utils/bytes'
 
-const { data: products, error } = await useFetch<Product[]>('/api/products')
+const route = useRoute()
+const router = useRouter()
 const cart = useCartStore()
 const assistant = useAssistantStore()
 const { storeName } = useRuntimeConfig().public
+
+// The URL is the search, and everything else reads from it: the field, the
+// fetch, a reload and a shared link all end up at the same place, with no
+// second copy of the term to keep in step.
+const term = computed(() => {
+  const q = route.query.q
+  return (Array.isArray(q) ? q[0] : q)?.trim() ?? ''
+})
+
+// What the visitor has typed, which runs ahead of the URL by the debounce
+// below so the field never waits on a request.
+const typed = ref(term.value)
+watch(term, value => {
+  if (value !== typed.value.trim()) typed.value = value
+})
+
+// `replace`, not `push`: ten keystrokes must not become ten history entries,
+// or Back walks the visitor through their own typing one letter at a time.
+let pending: ReturnType<typeof setTimeout> | undefined
+watch(typed, value => {
+  clearTimeout(pending)
+  pending = setTimeout(() => {
+    const next = value.trim()
+    if (next === term.value) return
+    const query = { ...route.query }
+    if (next) query.q = next
+    else delete query.q
+    router.replace({ query })
+  }, 250)
+})
+onBeforeUnmount(() => clearTimeout(pending))
+
+const searchInput = useTemplateRef<{ $el: HTMLElement } | HTMLInputElement>('searchInput')
+function focusSearch() {
+  const el = searchInput.value
+  const input = el instanceof HTMLInputElement ? el : (el?.$el as HTMLInputElement | undefined)
+  input?.focus()
+}
+function clearSearch() {
+  typed.value = ''
+  focusSearch()
+}
+
+// Keyed on the term, so the catalogue is refetched when it changes rather than
+// filtered in the browser. A client-side filter can only search the rows the
+// page happens to hold, which is wrong the moment the catalogue is paginated.
+const { data: products, error } = await useFetch<Product[]>('/api/products', {
+  query: { q: term },
+  // The list keeps what it has while the next answer is in flight, so typing
+  // does not flash an empty catalogue between keystrokes.
+  keepalive: true
+})
 
 // What the assistant can actually do, in the visitor's terms. Each line maps to
 // a tool in server/utils/assistant.ts: get_product, then search_catalogue,
@@ -23,6 +76,13 @@ const CAN_DO = [
 const physical = computed(() => products.value?.filter(p => p.kind !== 'digital') ?? [])
 const files = computed(
   () => products.value?.filter((p): p is DigitalProduct => p.kind === 'digital') ?? []
+)
+
+const searching = computed(() => term.value.length > 0)
+// Both counts come off the one filtered response, so the numbers and the lists
+// under them cannot disagree.
+const nothingMatched = computed(
+  () => searching.value && !physical.value.length && !files.value.length
 )
 
 // Icon classes are presentation, so the format maps to one here rather than
@@ -121,18 +181,71 @@ useSeoMeta({
     16px page gutter stays, because that one is the margin of the page itself.
   -->
   <section class="rounded-xl border border-surface-200 bg-surface-0 p-4 sm:p-6 dark:border-surface-800 dark:bg-surface-900">
-    <!-- Demoted from h1: the introduction above owns the page's heading now. -->
-    <h2 class="mb-8 text-2xl font-semibold tracking-tight">Shop</h2>
+    <!--
+      Demoted from h1: the introduction above owns the page's heading now. The
+      search field sits beside it and wraps under it on a narrow screen, where
+      a heading and a field cannot share a line legibly.
+    -->
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <h2 class="text-2xl font-semibold tracking-tight">Shop</h2>
+
+      <IconField class="w-full sm:w-72">
+        <InputIcon class="pi pi-search" />
+        <InputText
+          id="catalogue-search"
+          ref="searchInput"
+          v-model="typed"
+          class="w-full"
+          type="search"
+          placeholder="Search the catalogue"
+          aria-label="Search the catalogue"
+          autocomplete="off"
+        />
+        <!--
+          A clear control rather than only the term: selecting the text first to
+          delete it is the thing a visitor should not have to do. Hidden when
+          the box is empty, where it would clear nothing.
+        -->
+        <InputIcon
+          v-if="typed"
+          class="pi pi-times cursor-pointer"
+          role="button"
+          tabindex="0"
+          aria-label="Clear the search"
+          @click="clearSearch"
+          @keydown.enter="clearSearch"
+          @keydown.space.prevent="clearSearch"
+        />
+      </IconField>
+    </div>
+
+    <!--
+      One message for a search that found nothing anywhere, naming what was
+      searched for: a visitor who mistyped needs to see the term back, and the
+      two per-tab notes below would otherwise be the only answer and would read
+      as the shop being empty.
+    -->
+    <Message v-if="nothingMatched && !error" severity="secondary" class="mb-6">
+      Nothing in the catalogue matches "{{ term }}".
+      <button type="button" class="underline" @click="clearSearch">Clear the search</button>
+      to see everything.
+    </Message>
 
     <Tabs value="products">
       <TabList>
         <Tab value="products" class="flex items-center gap-2">
           <i class="pi pi-box" />
           Products
+          <!--
+            Each tab says how many of its own items matched, so a visitor
+            reading one tab can see the other holds results without opening it.
+          -->
+          <Badge v-if="searching" :value="physical.length" severity="secondary" />
         </Tab>
         <Tab value="files" class="flex items-center gap-2">
           <i class="pi pi-file" />
           Files
+          <Badge v-if="searching" :value="files.length" severity="secondary" />
         </Tab>
       </TabList>
 
@@ -141,6 +254,10 @@ useSeoMeta({
           <Message v-if="error" severity="error">
             Could not load products. Check the Supabase configuration in <code>.env</code>.
           </Message>
+
+          <p v-else-if="searching && !physical.length" class="text-sm text-surface-500">
+            No products match "{{ term }}".
+          </p>
 
           <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <article
@@ -186,6 +303,10 @@ useSeoMeta({
           <Message v-if="error" severity="error">
             Could not load files. Check the Supabase configuration in <code>.env</code>.
           </Message>
+
+          <p v-else-if="searching && !files.length" class="text-sm text-surface-500">
+            No files match "{{ term }}".
+          </p>
 
           <p v-else-if="!files.length" class="text-sm text-surface-500">
             No files are listed yet.
@@ -235,3 +356,16 @@ useSeoMeta({
     </Tabs>
   </section>
 </template>
+
+<style scoped>
+/*
+  The browser draws its own clear control inside a `type="search"` box, so the
+  field showed two crosses side by side. The one that stays is ours: it is the
+  one the tests drive, it carries a label, and it is reachable by keyboard.
+  `type="search"` itself is kept for the semantics and for Escape-to-clear.
+*/
+:deep(input[type='search'])::-webkit-search-cancel-button,
+:deep(input[type='search'])::-webkit-search-decoration {
+  appearance: none;
+}
+</style>
