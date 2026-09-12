@@ -8,7 +8,7 @@
 - [ ] Check everything is typed and tested
 - [ ] Explore a faster provider, or streaming, since replies still take six seconds
 - [x] Archive the four completed OpenSpec changes
-- [ ] Push main and redeploy (ask first)
+- [x] Push main and redeploy (ask first)
 
 ## Next: fif.bobdempsey83.com from the same repo
 

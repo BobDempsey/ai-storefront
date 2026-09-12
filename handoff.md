@@ -261,14 +261,17 @@ specs synced into the main tree, which gained a thirteenth capability,
 `storefront/deployment-banner`, and folded the rest into
 `specs/assistant/shopping-assistant/` and `specs/ordering/test-order/`.
 `openspec validate --specs --strict` passes 13 of 13 and `npm test` is green at
-198. Five stale claims were corrected in place: the change count and table in
+198. That archive move is committed as `8289dd0`, and `main` was pushed the
+same session, which Vercel built and promoted; the seven commits are live
+(section 10). Five stale claims were corrected in place: the change count and table in
 section 2 and that section's `.mcp.json` and spec-coverage lines,
 `app/utils/deploy-env.ts` missing from section 4's tree,
 `NUXT_TRUSTED_IP_HEADER` listed in section 6 as a `.env` entry when it is the
 default in `nuxt.config.ts`, and the unit-test count in section 10. The find
-that matters is in section 10: **`origin/main` is six commits behind local
-`main` again**, so the prefill, the latency work and both deployment changes are
-committed and none of them is live.
+that matters, found and then closed in the same session: `origin/main` had
+fallen six commits behind local `main`, so the prefill, the latency work and
+both deployment changes were committed and none of them was live. They are
+live now.
 
 ---
 
@@ -1229,8 +1232,9 @@ Known gaps, roughly in the order they were prioritized with the user:
     `playwright.llm.config.ts`: a promo code applied on the assistant's draft
     card, in a browser, through to a placed order. One provider call, because
     the cart is filled by clicking and a single message asks for the draft.
-  - `npm run test:smoke` — checks the deployed site. Fails when the network or
-    the deploy is down, which is why it is not in `npm test`.
+  - `npm run test:smoke` — 5 checks against the deployed site, the last of
+    them that the live shop renders no deployment banner. Fails when the
+    network or the deploy is down, which is why it is not in `npm test`.
   - `npm run test:llm` — two real `gpt-5-mini` calls through a running dev
     server, added 2026-09-10. The only script that spends money. **The dollar
     cost of a run was not measured**: the route logs no token usage, so read it
@@ -1615,11 +1619,16 @@ Known gaps, roughly in the order they were prioritized with the user:
   believes only `NUXT_TRUSTED_IP_HEADER`, which is set to Vercel's own header.
   A second push the same day (`f023612`) took the phone-width catalogue fix
   live; verified at 390px against the production alias, a card measures 324px.
-  **The gap is open again as of 2026-09-11**: `origin/main` sits at `8366129`
-  and local `main` at `be36082`, six commits ahead, so the product-page prefill,
-  the assistant latency work, the deployment banner and the non-production test
-  orders are all committed and none of them is live. Pushing is deploy work and
-  needs an ask, which is why it sits in `tasks.md` rather than being done.
+  **The gap opened again later on 2026-09-11 and was closed the same day.**
+  `origin/main` had fallen six commits behind local `main`, so the product-page
+  prefill, the assistant latency work, the deployment banner and the
+  non-production test orders were all committed and none of them was live.
+  `main` was pushed at `8289dd0` and Vercel's GitHub integration built and
+  promoted it. Verified beyond the smoke check: the live product page carries
+  the "Ask about this" button, and the homepage renders no deployment banner,
+  which is the live shop's own case for `NUXT_PUBLIC_DEPLOY_ENV` being unset.
+  `npm run test:smoke` is 5/5 against the domain, the fifth test being the
+  banner assertion that arrived with `mark-non-production-deployments`.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to
