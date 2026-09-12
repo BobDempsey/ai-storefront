@@ -1170,6 +1170,14 @@ has no verified domain on their first run.
 
 ```
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
+                            locally and for the real shop. The demo's Vercel
+                            project points at qtzwrwstixqgnuixfajp as of
+                            2026-09-12: one variable, two values, which is the
+                            whole mechanism separating the shops
+SUPABASE_PROJECT_REF        NOT SET, and optional — read by scripts/db-types.mjs
+                            only, to say which project to generate types from.
+                            Unset means the real shop. The token cannot reach
+                            the demo's project yet, so setting it fails today
 NUXT_SUPABASE_SERVICE_KEY   SET — an sb_secret_... key. SERVER ONLY, never expose
 NUXT_RESEND_API_KEY         SET — a real re_... key, verified sending
 NUXT_ORDER_FROM_EMAIL       orders@bobdempsey83.com as of 2026-09-11, locally
@@ -1457,6 +1465,16 @@ a different staff address will silently fail until a domain is verified.
   NUXT_PORT=3100` and the variable set on that command, rather than editing
   `.env`, which loses the real credential the moment the run is killed.
   `tests/db/chat-guards.test.ts` does exactly this and is the worked example.
+- **Never pipe a secret into `vercel env add` from PowerShell.**
+  `Get-Clipboard | vercel env add NAME production` prepends a UTF-8 BOM and
+  Vercel stores it. The build succeeds, `vercel env ls` looks perfect, and every
+  request then dies at runtime with `Cannot convert argument to a ByteString
+  because the character at index 0 has a value of 65279`, which surfaces as a
+  502 from `/api/products`. It cost the demo a few minutes of downtime on
+  2026-09-12. Write the value to a file with no BOM, check it with
+  `od -c value.txt | head -1`, and redirect:
+  `npx vercel env add NAME production < value.txt`. This is the empty-string
+  trap's cousin: both make a variable that is present, wrong, and invisible.
 - **A component rendered with `v-if` cannot watch the flag that renders it.**
   `SearchPalette.vue` is mounted by `v-if="palette.open"` in the layout, so by
   the time its setup runs the flag is already true and a `watch` on it never
@@ -1653,6 +1671,33 @@ shop; the user settled it: it is not a commercial item. So both shops stay on
 Hobby, two projects from the one repo, and nobody needs to pay for Pro. Revisit
 only if the shop starts taking money, which it cannot today, since payment is
 deliberately out of scope and no payment runs through the site.
+
+**The demo has its own database as of 2026-09-12**, which is the first stream of
+that plan done. The new project is `qtzwrwstixqgnuixfajp`, `ai-storefront-demo`,
+`us-east-2`, built from `schema.sql` and `seed.sql`; the demo's Vercel project
+reads it on Production and Preview. `wfhhkdmgouyxnrxnbaeo` was not repointed and
+nothing in it was deleted, so the demo's old rows are still there and are the
+real shop's to clear. Verified by placing a real order on the live demo and
+finding it in the new project and absent from the old one, then deleting it.
+
+**Two things in the repo still assume one project.** `scripts/db-types.mjs`
+hardcoded the old ref, which made task 2.5's "no diff" check worthless: it read
+the old project whatever the new one held. It takes `SUPABASE_PROJECT_REF` now,
+defaulting to the real shop. **The override does not work yet**, because
+`SUPABASE_ACCESS_TOKEN` is scoped to one project and
+`supabase gen types --project-id <new ref>` fails with
+`LegacyGenTypesUnexpectedStatusError`; widening it is task 2b.2. The schemas were
+compared directly instead, an md5 over every column's name, type and nullability
+across 48 columns, and they match. And **`.mcp.json` pins the Supabase MCP
+server to the real shop's `project_ref`**, so a session needing another project
+has to repoint it and restart to re-authorise.
+
+**The Supabase MCP server could not do that stream's work at all.** It is pinned
+to one project and to `features=database,docs`, so it has no `create_project`
+tool and every write would have landed on the real shop. The access token is
+scoped the same way: `POST /v1/projects` is 403 and `GET /v1/organizations`
+returns empty. Creating a project needs a human at the dashboard or a token with
+organisation scope, and that is worth knowing before planning the third shop.
 
 **The plan is written up as the OpenSpec change `split-into-two-shops`**,
 proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel

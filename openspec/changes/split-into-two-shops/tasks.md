@@ -22,11 +22,23 @@ Needs Supabase account access and the MCP server authorised. **This is the only
 stream that can take the demo offline.**
 
 - [x] 2.1 Create a new Supabase project for the demo and record its ref; verify the project reports itself healthy before anything is run against it
-- [x] 2.2 Run `supabase/schema.sql` against it **(this creates every table, every RLS policy and `create_order`: a schema and RLS change on a new project)**; verify every table exists, RLS is on for each, and `products` is the only publicly readable one
-- [x] 2.3 Run `supabase/seed.sql` against it; verify it holds 15 products, 12 physical and 3 digital, and that `store_settings` and `promo_codes` carry their default rows
+- [x] 2.2 Run `supabase/schema.sql` against it **(this creates every table, every RLS policy and `create_order`: a schema and RLS change on a new project)**; verify every table exists, RLS is on for each, and `products` and `store_settings` are the only tables carrying a policy, both select-only
+      *This task said `products` is the only publicly readable table. Wrong: `store_settings` is too, by design, and `schema.sql` says so in a comment. Seven tables, all with RLS on, two with one SELECT policy each to `{anon, authenticated}`, five with no policy at all.*
+- [x] 2.3 Run `supabase/seed.sql` against it; verify it holds 15 products, 12 physical and 3 digital
+      *This task credited `seed.sql` with the `store_settings` and `promo_codes` rows. It inserts neither: `schema.sql` does, both guarded against a re-run. `seed.sql` inserts products and nothing else.*
 - [x] 2.4 Call `create_order` directly against the new project for one physical and one digital line; verify both commit with the right totals, then delete the rows
-- [x] 2.5 Repoint the demo's Vercel project at the new `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_KEY` **(new env values)** and redeploy; verify the live demo serves its catalogue from the new project and that `npm run db:types` still produces no diff, since the schema is identical
+- [x] 2.5 Repoint the demo's Vercel project at the new `NUXT_SUPABASE_URL` and `NUXT_SUPABASE_SERVICE_KEY` **(new env values)** and redeploy; verify the live demo serves its catalogue from the new project and that the two schemas match by direct comparison
+      *`npm run db:types` was the stated check and it proves nothing here: the script read a hardcoded ref, so it would report no diff whatever the new project held. The check that does prove it is an md5 over every column's name, type and nullability, which matched across 48 columns.*
 - [x] 2.6 Place one real order on the live demo and confirm it appears in the new project and **not** in `wfhhkdmgouyxnrxnbaeo`; verify by querying both, then delete it
+
+## 2b. Stream B's follow-ups, found while doing it
+
+These came out of group 2 and belong to nobody else's stream. They are small and
+none of them blocks another group.
+
+- [ ] 2b.1 Repoint `.mcp.json` when a session needs to reach a shop other than the real one; it pins `project_ref` to `wfhhkdmgouyxnrxnbaeo`, so verify a session restarted against another ref re-authorises and reads that project
+- [ ] 2b.2 Widen `SUPABASE_ACCESS_TOKEN`'s scope, or add a second token, so `npm run db:types` can read either project; verify `SUPABASE_PROJECT_REF=<new ref> npm run db:types` succeeds, which today fails with `LegacyGenTypesUnexpectedStatusError` because the token reaches one project only **(new env var if a second token is the answer)**
+- [ ] 2b.3 Decide whether both shops move from the legacy `service_role` JWT to `sb_secret_` keys, which Supabase marks deprecated; verify each shop still serves its catalogue afterwards **(new env values, not new names)**
 
 ## 3. Stream C: per-shop assets and checks
 

@@ -9,7 +9,13 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const PROJECT_REF = 'wfhhkdmgouyxnrxnbaeo'
+// Which shop's database to read. Two deployments run this code against two
+// projects, so a hardcoded ref would silently regenerate from the wrong one:
+// the schemas are identical today, so the diff would be empty either way and
+// the mistake would not show. Set SUPABASE_PROJECT_REF in .env to point it
+// somewhere else; the default is the real shop.
+const PROJECT_REF =
+  process.env.SUPABASE_PROJECT_REF || fromEnvFile('SUPABASE_PROJECT_REF') || 'wfhhkdmgouyxnrxnbaeo'
 const OUT = resolve(root, 'server/types/database.ts')
 
 /** Reads one key out of .env without pulling in a dotenv dependency. */

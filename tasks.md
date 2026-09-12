@@ -12,7 +12,10 @@ can run in parallel and a verification gate after them. Run `/opsx:apply` to
 start; the change's own tasks.md is the working list.
 
 - [ ] Stream A: second Vercel project, its env vars and the Route 53 CNAME
-- [ ] Stream B: new Supabase project for the demo, and repoint it
+- [x] Stream B: new Supabase project for the demo, and repoint it. Done
+      2026-09-12, `qtzwrwstixqgnuixfajp`, verified with a real order
+- [ ] Stream B follow-ups: widen the Supabase token so db:types can read either
+      project, and decide on the deprecated service_role keys
 - [ ] Stream C: per-shop share image, and a smoke test that checks either shop
 - [ ] Stream D: custom-order requests from an empty search
 - [ ] Gate: drive both shops, place an order on each, confirm they share nothing
