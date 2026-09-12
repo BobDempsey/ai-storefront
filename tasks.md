@@ -13,8 +13,11 @@
 
 - [ ] Run the typecheck in CI, once there is a CI to run it in
 - [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)
-- [ ] Consider making products.kind a real enum, which would delete
-      server/utils/rows.ts. Schema change, so ask first
+- [x] Make products.kind a real Postgres enum. Done, 2026-09-12. The generated
+      row now says 'physical' | 'digital' and productKind()/withProductKind()
+      are gone. server/utils/rows.ts stays: withProductFiles() still narrows the
+      three file columns, because no Postgres type expresses "non-null exactly
+      when kind is 'digital'" and the generator keeps saying string | null
 
 ## Next: fif.bobdempsey83.com from the same repo
 

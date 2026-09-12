@@ -8,7 +8,7 @@ import {
 import type { z } from 'zod'
 import type { SaleState } from '~~/server/utils/pricing'
 import { matchesSearch, normalizeSearchTerm } from '~~/server/utils/search'
-import { withProductKind, type ProductKind, type ProductRow } from '~~/server/utils/rows'
+import type { ProductRow } from '~~/server/utils/rows'
 
 /**
  * The assistant's tool list is its whole permission model. Nothing here writes
@@ -177,26 +177,22 @@ const CATALOGUE_COLUMNS =
 
 /**
  * A row as `CATALOGUE_COLUMNS` selects it, built from the generated `products`
- * row so a renamed or dropped column fails here. `kind` is narrowed from the
- * generated `string`, which is all a check constraint can produce; see
- * `server/utils/rows.ts`.
+ * row so a renamed or dropped column fails here. `kind` arrives as the
+ * 'physical' | 'digital' union already, since the column is a Postgres enum.
  */
-export type CatalogueRow = Omit<
-  Pick<
-    ProductRow,
-    | 'id'
-    | 'slug'
-    | 'name'
-    | 'description'
-    | 'price_cents'
-    | 'in_stock'
-    | 'kind'
-    | 'file_name'
-    | 'file_format'
-    | 'file_size_bytes'
-  >,
-  'kind'
-> & { kind: ProductKind }
+export type CatalogueRow = Pick<
+  ProductRow,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'description'
+  | 'price_cents'
+  | 'in_stock'
+  | 'kind'
+  | 'file_name'
+  | 'file_format'
+  | 'file_size_bytes'
+>
 
 /** What the model is allowed to see about an item. No ids: it names items by slug. */
 function present(product: CatalogueRow, sale: SaleState) {
@@ -268,7 +264,7 @@ async function findBySlug(slug: string) {
     console.error('[chat] could not read the catalogue:', error)
     throw createError({ statusCode: 502, statusMessage: 'Could not read the catalogue right now.' })
   }
-  return data ? withProductKind(data) : null
+  return data
 }
 
 /**
@@ -392,7 +388,7 @@ export async function runTool(
 
       // A term that matches nothing still gets the catalogue, so the assistant
       // can say what the shop does have instead of only what it does not.
-      return { items: (matched.length ? matched : data).map(p => present(withProductKind(p), sale)) }
+      return { items: (matched.length ? matched : data).map(p => present(p, sale)) }
     }
 
     case 'get_product': {

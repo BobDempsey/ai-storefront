@@ -44,9 +44,31 @@ alter table public.products add column if not exists file_name       text;
 alter table public.products add column if not exists file_format     text;
 alter table public.products add column if not exists file_size_bytes bigint;
 
+-- The kind is an enum rather than a checked text column so that
+-- `supabase gen types` can see the two values and generate them as a union.
+-- A check constraint is invisible to the generator; a type is not.
+do $$ begin
+  create type public.product_kind as enum ('physical', 'digital');
+exception when duplicate_object then null;
+end $$;
+
+-- Every check constraint that mentions `kind` comes off before the conversion.
+-- Postgres stores them with the literal already cast, as `kind = 'digital'::text`,
+-- and rebuilding that against an enum column fails with "operator does not
+-- exist: product_kind = text". The two below are added back after the
+-- conversion, further down this section.
 alter table public.products drop constraint if exists products_kind_check;
-alter table public.products add  constraint products_kind_check
-  check (kind in ('physical', 'digital'));
+alter table public.products drop constraint if exists products_file_fields_check;
+alter table public.products drop constraint if exists products_digital_in_stock_check;
+
+-- A column default carries its own type, so `default 'physical'` is a text
+-- default and the conversion refuses to bring it across. Dropping it and
+-- restoring it in the same statement is the fix. The `using` cast is what
+-- makes an unexpected value abort the conversion rather than be coerced.
+alter table public.products
+  alter column kind drop default,
+  alter column kind type public.product_kind using kind::public.product_kind,
+  alter column kind set default 'physical'::public.product_kind;
 
 -- A file row carries all three file facts and a physical row carries none, so
 -- the storefront can show them without testing each one separately.

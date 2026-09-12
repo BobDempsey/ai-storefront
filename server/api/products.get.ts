@@ -1,12 +1,12 @@
 import { catalogueQuerySchema } from '~~/server/utils/schemas'
-import { withProductFiles } from '~~/server/utils/rows'
+import { withProductFiles, type ProductKind } from '~~/server/utils/rows'
 import { normalizeSearchTerm, searchFilter } from '~~/server/utils/search'
 
 /**
  * How many items the same filters match, with no rows fetched. Used only on the
  * past-the-end path, where the ranged query errors before it can report one.
  */
-async function countMatching({ kind, term }: { kind?: string; term: string | null }) {
+async function countMatching({ kind, term }: { kind?: ProductKind; term: string | null }) {
   let query = useSupabase().from('products').select('id', { count: 'exact', head: true })
   if (kind) query = query.eq('kind', kind)
   if (term) query = query.or(searchFilter(term))

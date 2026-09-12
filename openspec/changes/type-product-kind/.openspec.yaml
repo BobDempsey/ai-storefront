@@ -1,0 +1,6 @@
+schema: spec-driven
+created: 2026-09-12
+# No requirement changes: a catalogue row is still either a physical object or
+# a downloadable file, and every rule about the two is unchanged. This moves
+# where that rule is enforced, from a check constraint to a Postgres type.
+skip_specs: true

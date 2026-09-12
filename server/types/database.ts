@@ -137,7 +137,7 @@ export type Database = {
           id: string
           image_url: string | null
           in_stock: boolean
-          kind: string
+          kind: Database["public"]["Enums"]["product_kind"]
           name: string
           price_cents: number
           slug: string
@@ -151,7 +151,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           in_stock?: boolean
-          kind?: string
+          kind?: Database["public"]["Enums"]["product_kind"]
           name: string
           price_cents: number
           slug: string
@@ -165,7 +165,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           in_stock?: boolean
-          kind?: string
+          kind?: Database["public"]["Enums"]["product_kind"]
           name?: string
           price_cents?: number
           slug?: string
@@ -269,7 +269,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      product_kind: "physical" | "digital"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -396,6 +396,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      product_kind: ["physical", "digital"],
+    },
   },
 } as const

@@ -312,8 +312,18 @@ schema's.** `server/api/products/[slug].get.ts` was passing
 enum, so every generated row says `kind: string` and the file columns are
 nullable for both kinds. `server/utils/rows.ts` is new and narrows those values
 back at the one point a row leaves a query, by checking rather than casting.
-Making `kind` a real enum would close it at the source, and that is a schema
-change nobody has agreed to. One more to know before editing the orders route:
+
+**`kind` became a real enum on 2026-09-12** and closed the first of those gaps
+at the source. `public.product_kind` holds the two values, `products_kind_check`
+is gone, and the generated row reads `kind: 'physical' | 'digital'` on its own,
+so `productKind()` and `withProductKind()` were deleted. The conversion had one
+wrinkle the plan missed: `products_file_fields_check` and
+`products_digital_in_stock_check` also mention `kind`, and Postgres stores them
+with the literal cast to `text`, so rebuilding them against an enum column fails
+with "operator does not exist: product_kind = text". Both come off before the
+conversion and go back on after it. `withProductFiles()` survives, because no
+Postgres type expresses "these three columns are non-null exactly when `kind` is
+'digital'", so the generated types still say `string | null` for all three. One more to know before editing the orders route:
 **`supabase gen types` writes a defaulted function argument as optional, never
 nullable**, so `create_order`'s `p_promo_code text default null` rejected the
 explicit `p_promo_code: null` the route used to pass. The call omits the key.
@@ -921,9 +931,9 @@ server/
   utils/supabase.ts       memoized service-role client (bypasses RLS), typed
                           SupabaseClient<Database> since 2026-09-12
   types/database.ts       generated, do not hand-edit. `npm run db:types`
-  utils/rows.ts           narrows a generated products row back to the shapes
-                          the schema's check constraints guarantee but the
-                          generated types cannot express
+  utils/rows.ts           withProductFiles(), which ties the three file columns
+                          to the kind. The schema's check constraint guarantees
+                          that and the generated types cannot express it
   utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
   utils/email.ts          Resend sends: order notification, contact message,
