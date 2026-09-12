@@ -2213,3 +2213,23 @@ Known gaps, roughly in the order they were prioritized with the user:
   confirmed receipt with a screenshot of their inbox (done for the email-optin
   welcome message, 2026-09-03) rather than the agent trying to read it another
   way.
+- **Do not rewrite the root `tasks.md` wholesale.** On 2026-09-12 an agent
+  regenerated it as a flat list, as `/handoff:update`'s own step 5 instructs,
+  and the user reverted it: "There were other items on there that we needed."
+  Its three headings and their grouping are theirs. Edit it surgically, add and
+  remove single lines, and where that command and this note disagree, this note
+  wins. They also edit the file themselves mid-session, so re-read it before
+  changing it rather than writing from what you last saw.
+- **Pushing is always a separate, explicit instruction.** They ask for commits
+  and pushes as two steps, several times a session, and "create commits, do not
+  push" is the normal shape of the request. Never fold a push into a commit
+  because the work looks finished.
+- **They will open a second interactive session for anything this one cannot
+  do.** When the Supabase MCP server needed a browser OAuth flow, they asked for
+  a brief on their clipboard covering both what that agent should do and what it
+  should report back. Write the report-back list as numbered, specific
+  questions: the answers come back verbatim and are what this session resumes
+  from.
+- They ask a lot of closed questions, "Yes or no?", "explain in one sentence",
+  and mean them literally. Answer at that length first. Anything longer is read
+  as not having answered.
