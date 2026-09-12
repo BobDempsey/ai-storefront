@@ -281,6 +281,32 @@ still compiles, and the check meant to catch the rename hides it. Verified by
 renaming `subtotal` to `total` and watching the typecheck stay green. Declared
 interfaces with `runTool` annotated now fail at the return statement instead.
 
+**A hydration mismatch was live for as long as the tab strip was, and no test
+could see it.** Every page load logged "Hydration completed but contains
+mismatches". The cause was PrimeVue's `TabList`: it starts with
+`isNextButtonEnabled` true and only corrects it in `updateButtonState()`, which
+measures the rendered list and so cannot run on the server. SSR shipped a
+scroll arrow the client removed on mount. `:show-navigators="false"` on the
+`Tabs` is the fix, and two short labels never overflowed anything, so the arrows
+had nothing to do here in the first place.
+
+**The general lesson is worth more than the fix**: a component that measures the
+DOM to decide what to render will disagree with the server every time, and the
+page looks perfectly right while it does. The only symptom is in a console, so
+`tests/e2e/console-clean.spec.ts` now fails the run on any console error or
+warning across four pages, and separately pins the tab strip's node count on
+both sides of hydration. Never add a hydration message to that file's ignore
+list.
+
+**Product photographs are resized on the fly**, through `@nuxt/image` and the
+IPX provider, added 2026-09-12. The catalogue draws its 800x800 files at three
+sizes and used to send the original for all of them, so the search panel pulled
+about 800KB to paint eight 36px thumbnails. A card photo is 70KB now and a
+thumbnail 1KB. IPX resizes on the server at request time and caches, so there
+is still no build step and no external image host, which is the promise section
+1 makes about the catalogue. Every `NuxtImg` states its intrinsic width and
+height so a card cannot jump while the photo lands.
+
 **There is a CI now, and it is green.** `.github/workflows/check.yml` runs
 `npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
 every pull request, and deliberately runs nothing else: `test:db` and
@@ -522,6 +548,28 @@ case-insensitive substring of the name or the description, and `%` and `_` are
 escaped so a search for "50%" is not a wildcard. The navbar control is a link to
 `/?focus=search` rather than a second input, because two boxes for one term
 disagree the moment one goes stale; the parameter is stripped once focus lands.
+**The catalogue page's own field is a launcher now, not a second search box**,
+changed 2026-09-12 through the OpenSpec change
+`open-panel-from-catalogue-field`, which modifies an accepted requirement rather
+than adding one. Clicking or tabbing to it opens the same panel the navbar
+opens, carrying whatever term the page is filtered by so the visitor continues
+instead of starting again. It is `readonly`, which is what stops a keystroke
+landing behind the open dialog and splitting one term across two boxes, and it
+still shows the active term so a shared link reads back.
+
+Three things to know before editing it. **The panel is seeded at creation, not
+by a watcher**: the layout renders it with `v-if="palette.open"`, so it does not
+exist until the flag is already true and a watcher on that flag never fires. The
+first attempt used one and opened the panel empty every time. **Back changed
+meaning**: taking a term to the shop page pushes, the way paging does, so one
+Back returns to the unsearched catalogue and a second leaves it. That is still
+one history entry for a whole search rather than one per keystroke, which is
+what the rule was always about. And **"see all" reads the field, not the
+debounced term**, because a visitor who types and clicks straight through was
+being sent to an unsearched catalogue; the symptom was an end-to-end failure
+that moved between tests on each run, which is what a race looks like from the
+outside.
+
 The navbar's magnifier opens a **quick search panel** rather than sending the
 visitor to the shop page, decided with the user after the first version shipped:
 it opens over whatever page they are on, lists the catalogue before a key is
@@ -796,7 +844,8 @@ Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
 All four were archived later on 2026-09-12, and `openspec/changes/` holds
-nothing but `archive/`. The two catalogue changes brought new capabilities,
+nothing but `archive/` and `open-panel-from-catalogue-field`, which is complete
+and awaiting archiving. The two catalogue changes brought new capabilities,
 `catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
 to fifteen. The two typing changes brought none: they added no behaviour a spec
 describes. `deepen-typescript` was archived at 21 of 24, with the
@@ -990,6 +1039,8 @@ app/
   pages/contact.vue              contact form; replaced the navbar mailto link
   components/AssistantDrawer.vue chat drawer: messages, cart strip, order draft
   components/EmailOptinForm.vue  email field + submit, in the footer
+  components/SearchPalette.vue   the quick search panel. Mounted by a v-if, so
+                                 it reads the store's seed at creation
   components/SalePrice.vue       struck-through original + discounted price +
                                  "N% off" tag; used on the home, product and
                                  cart pages, no-ops when no sale is active.
@@ -1385,6 +1436,19 @@ a different staff address will silently fail until a domain is verified.
   NUXT_PORT=3100` and the variable set on that command, rather than editing
   `.env`, which loses the real credential the moment the run is killed.
   `tests/db/chat-guards.test.ts` does exactly this and is the worked example.
+- **A component rendered with `v-if` cannot watch the flag that renders it.**
+  `SearchPalette.vue` is mounted by `v-if="palette.open"` in the layout, so by
+  the time its setup runs the flag is already true and a `watch` on it never
+  sees a transition. Anything the panel needs from the store at open time has to
+  be read at creation instead. Cost an hour on 2026-09-12: the panel opened
+  empty and every obvious suspect, the store, the event, the focus handler, was
+  innocent.
+- **A debounced ref is the wrong thing for a button to read.** The search panel
+  holds `typed` and a `term` 200ms behind it. "See all" read `term`, so a
+  visitor who typed and clicked without pausing was sent to an unsearched
+  catalogue. It surfaced as an end-to-end failure that landed on a different
+  test each run, which is worth recognising: a failure that moves is a race, not
+  a flaky assertion, and re-running it until it passes hides a real bug.
 - **A migration that converts a column's type has to drop every check
   constraint mentioning that column, not just the obvious one.** Found
   2026-09-12 converting `products.kind` to an enum: the first `apply_migration`
@@ -2023,8 +2087,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   user still asks to be asked.
 - ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
   `deepen-typescript` went with them. `type-product-kind` arrived afterwards and
-  was archived the same day, so `openspec/changes/` holds nothing but `archive/`
-  and there is no change in flight. See section 2.
+  was archived the same day. `open-panel-from-catalogue-field` followed on
+  2026-09-12 and is complete but not yet archived. See section 2.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to

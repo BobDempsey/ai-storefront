@@ -2,16 +2,8 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] Fix the hydration mismatch. The live site logs "Hydration completed but
-      contains mismatches" on the homepage and the dev server does not, so it
-      only reproduces against a production build
-- [ ] Clear the three duplicate auto-imports the build warns about: OrderDraft,
-      CartIntent and PromoStatus are each declared in shared/types/api.ts and
-      again in server/utils/, and the server copy wins
-- [ ] use/using nuxt img module? Nothing is installed today and the app has
-      four plain img tags, so this would be adopting @nuxt/image for the twelve
-      catalogue photos
-- [ ] open search dialog when user clicks into the search input
+- [ ] Archive the open-panel-from-catalogue-field change
+- [ ] Push the six unpushed commits and redeploy (ask first)
 
 ## Next: fif.bobdempsey83.com from the same repo
 
