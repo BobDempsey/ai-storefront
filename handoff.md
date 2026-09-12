@@ -281,6 +281,14 @@ still compiles, and the check meant to catch the rename hides it. Verified by
 renaming `subtotal` to `total` and watching the typecheck stay green. Declared
 interfaces with `runTool` annotated now fail at the return statement instead.
 
+**A CI workflow is written but has never run.** `.github/workflows/check.yml`
+runs `npm ci --legacy-peer-deps` then `npm run check` on a push to `main` and on
+every pull request, and deliberately runs nothing else: `test:db` and `test:llm`
+write to the live project and spend provider calls, and `test:e2e` and
+`test:smoke` need a server or a deployment, so none of them belongs on a pull
+request from a fork. GitHub has not seen the file yet, because `main` has not
+been pushed since it was written, so its first run is still ahead.
+
 **ESLint is in, with type-aware rules, and it is not in `npm test`.** The full
 run reached 36 seconds against 20 without it, past the threshold the design set,
 so `npm test` keeps the typecheck and the tests, `npm run lint` runs the linter,
@@ -785,7 +793,8 @@ Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
 All four were archived later on 2026-09-12, and `openspec/changes/` holds
-nothing but `archive/` now. The two catalogue changes brought new capabilities,
+nothing but `archive/` and, since later that day, `type-product-kind`, which is
+complete and awaiting archiving. The two catalogue changes brought new capabilities,
 `catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
 to fifteen. The two typing changes brought none: they added no behaviour a spec
 describes. `deepen-typescript` was archived at 21 of 24, with the
@@ -1374,6 +1383,17 @@ a different staff address will silently fail until a domain is verified.
   NUXT_PORT=3100` and the variable set on that command, rather than editing
   `.env`, which loses the real credential the moment the run is killed.
   `tests/db/chat-guards.test.ts` does exactly this and is the worked example.
+- **A migration that converts a column's type has to drop every check
+  constraint mentioning that column, not just the obvious one.** Found
+  2026-09-12 converting `products.kind` to an enum: the first `apply_migration`
+  aborted with `operator does not exist: product_kind = text` and changed
+  nothing. Postgres stores a check constraint with its literal already cast, as
+  `kind = 'digital'::text`, so rebuilding one against an enum column has no
+  operator to use. `products_file_fields_check` and
+  `products_digital_in_stock_check` both mention `kind` and both had to come off
+  before the conversion and go back on after. The corrected SQL, and a rollback
+  needing the same treatment in reverse, are in
+  `openspec/changes/type-product-kind/design.md`.
 - **A green `npm run test:smoke` does not mean your code is deployed.** It
   asks the production alias four questions the store has answered correctly
   since 2026-09-10, so it passes just as well against a build from before
@@ -1979,11 +1999,13 @@ Known gaps, roughly in the order they were prioritized with the user:
   12 commits behind local `main`, the last push still being `8289dd0`, so
   catalogue search, pagination, the six new products, the typecheck, the route
   types and ESLint are all committed and none of them is live. The live shop
-  still serves nine products with no search box. Pushing is deploy work and the
-  user asks to be asked, so do not push without one.
+  still serves nine products with no search box. **The gap is 20 commits by the
+  end of that day**, the product photographs, the generated database types and
+  the `kind` enum having landed on top. Pushing is deploy work and the user asks
+  to be asked, so do not push without one.
 - ~~Three changes are complete and unarchived.~~ **Done 2026-09-12**, and
-  `deepen-typescript` went with them, so `openspec/changes/` holds nothing but
-  `archive/`. See section 2.
+  `deepen-typescript` went with them. `type-product-kind` arrived afterwards and
+  is complete but not yet archived. See section 2.
 - ~~Not a git repo.~~ ~~No remote is configured yet.~~ **Done, 2026-09-10.**
   `main` has history back to the initial commit; `.env` is correctly untracked
   while `.env.example` is committed. Pushed to

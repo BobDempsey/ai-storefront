@@ -11,7 +11,9 @@
 
 ## Getting more out of TypeScript
 
-- [ ] Run the typecheck in CI, once there is a CI to run it in
+- [ ] Commit .github/workflows/check.yml and watch its first run. The workflow
+      is written and npm ci resolves, but nothing has run it: GitHub only sees
+      it once main is pushed
 - [ ] Revisit TypeScript 7 when vue-tsc supports it (pinned to 5.x today)
 - [x] Make products.kind a real Postgres enum. Done, 2026-09-12. The generated
       row now says 'physical' | 'digital' and productKind()/withProductKind()
