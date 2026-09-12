@@ -96,11 +96,17 @@ put the regenerated file in the same commit as the SQL. The script reads
 `SUPABASE_ACCESS_TOKEN` from `.env`; nothing at build or run time reads it, so
 a deployment does not need the token.
 
-Do not edit the generated file. Two things it cannot say, because they are
-check constraints rather than enums: `products.kind` comes back as `string`,
-and the three file columns come back nullable for both kinds.
-`server/utils/rows.ts` reads those values back into the narrower shapes, at the
-one point a row leaves a query. It goes away if the column becomes a real enum.
+Do not edit the generated file. `products.kind` became a real Postgres enum on
+2026-09-12, so it now comes back as `'physical' | 'digital'`. One thing the
+types still cannot say: the three file columns come back nullable for both
+kinds, because a check constraint ties them to the kind and no Postgres type
+expresses conditional nullability across columns. `server/utils/rows.ts` narrows
+them at the one point a row leaves a query, and it does not go away.
+
+Converting another column to an enum: drop **every** check constraint that
+mentions it first, not just the obvious one. Postgres stores a check with its
+literal already cast, as `kind = 'digital'::text`, so any constraint left in
+place fails the migration with `operator does not exist`.
 
 ## Testing
 

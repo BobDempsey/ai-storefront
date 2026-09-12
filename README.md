@@ -14,6 +14,7 @@ and arrange payment off-app.
 | Data | Supabase (Postgres + RLS) |
 | Email | Resend |
 | Validation | Zod |
+| Images | `@nuxt/image`, resized on demand (IPX locally, Vercel's optimizer on deploy) |
 | Theming | Light/dark toggle in the navbar, applied before first paint |
 
 ## Setup
@@ -79,6 +80,15 @@ and arrange payment off-app.
    the budget the change that added them set. Run `npm run check` before you
    push; run `npm test` while you work.
 
+7. Continuous integration:
+
+   `.github/workflows/check.yml` runs `npm run check` on a push to `main` and on
+   every pull request. It runs nothing else on purpose. `test:db` and `test:llm`
+   write to your live Supabase project and spend provider calls, and `test:e2e`
+   and `test:smoke` need a running server or a deployment, so none of them
+   belongs on a pull request from a fork. Fork this template and the workflow
+   comes with it, needing no secrets.
+
 ## Database types
 
 `server/types/database.ts` is generated from the live Supabase project and
@@ -99,11 +109,18 @@ A schema change without a regeneration shows up as types that disagree with the
 SQL in the same diff. Nothing enforces the regeneration, so the typecheck is
 only as current as the last run.
 
-Two columns the generated types cannot describe: `products.kind` and the three
-file columns are constrained by SQL check constraints, not enums, so the
-generator writes `kind: string` and `file_name: string | null`.
-`server/utils/rows.ts` reads those values back into the narrower shapes the rest
-of the code uses. Delete it if the column ever becomes a real enum.
+`products.kind` is a Postgres enum, so the generated row says
+`'physical' | 'digital'` rather than `string`. The three file columns are not:
+they are tied to the kind by a check constraint, and no Postgres type says
+"non-null exactly when `kind` is `'digital'`", so the generator writes
+`file_name: string | null` for both kinds. `server/utils/rows.ts` narrows them
+back at the one point a row leaves a query.
+
+If you convert another column to an enum, note what bit here: Postgres stores a
+check constraint with its literal already cast, as `kind = 'digital'::text`, so
+**every** constraint mentioning the column has to be dropped before the
+conversion and added back after it. Missing one fails the migration with
+`operator does not exist`.
 
 ## Before you take it live
 
