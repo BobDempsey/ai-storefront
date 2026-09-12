@@ -318,12 +318,18 @@ change nobody has agreed to. One more to know before editing the orders route:
 nullable**, so `create_order`'s `p_promo_code text default null` rejected the
 explicit `p_promo_code: null` the route used to pass. The call omits the key.
 
-`openspec/changes/deepen-typescript/` is at **21 of 24 tasks**. What is left is
-4.1 and 4.2 (`noUncheckedIndexedAccess`, a measurement nobody has taken), 5.1
-(one `npm run test:llm` run, which spends provider calls) and 8.1, which wants
-`test:db` and `test:e2e` run against a dev server. `typed-client-errors.md` in
-that folder holds the five errors the typed client raised, recorded before any
-of them was fixed.
+**The typed client is verified against the live project and a browser**, later
+the same day: `test:db` 46/46 and `test:e2e` 28/28, alongside `npm test` at 236,
+a clean `npm run build` and lint at zero. The `orders` table holds no `is_test`
+row afterwards, so the suites cleaned up after themselves. Nothing a visitor
+sees changed.
+
+`openspec/changes/deepen-typescript/` is at **21 of 24 tasks**, and none of the
+three left blocks anything: 4.1 and 4.2 are the `noUncheckedIndexedAccess`
+measurement nobody has taken, and 5.1 is one `npm run test:llm` run, which
+spends provider calls. `typed-client-errors.md` in that folder holds the five
+errors the typed client raised, recorded before any of them was fixed. **The
+change is ready to archive**, alongside the three already waiting.
 
 **The repo typechecks now**, through the OpenSpec change `enforce-typescript`:
 `npm test` runs `vue-tsc` before a single assertion, so a type error fails the
@@ -383,11 +389,10 @@ errors, and `deepen-typescript` the only genuinely in-flight change. The lint
 warnings went to zero later the same day, with the database types.
 
 Two agents then ran in parallel on 2026-09-12, one on the database types above
-and one on the product photographs below, and both landed. `npm run check` —
-the typecheck, the linter and 236 tests — passes end to end. **`test:db`,
-`test:e2e` and `test:llm` were not run**, so nothing here is verified against
-the live database or a browser; that is what `deepen-typescript`'s task 8.1 is
-still waiting for.
+and one on the product photographs below, and both landed. Everything but the
+provider suite is green: `npm run check` (the typecheck, the linter and 236
+tests), `npm run build`, `test:db` at 46/46 and `test:e2e` at 28/28. **Only
+`npm run test:llm` was not run**, since it spends provider calls.
 
 Three things were settled on 2026-09-11 and should not be reopened without
 asking. **No rename**: the project keeps `ai-storefront` and the assistant keeps

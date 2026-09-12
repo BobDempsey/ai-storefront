@@ -7,13 +7,12 @@
 - [ ] Decide whether two approximate product photos can stay: cable-clip-set
       shows a cable with an obsolete 30-pin connector and no clips, and
       monitor-riser-shelf shows a laptop on a riser rather than a monitor
-- [ ] Archive add-catalogue-search, add-catalogue-pagination and enforce-typescript
+- [ ] Archive add-catalogue-search, add-catalogue-pagination, enforce-typescript
+      and deepen-typescript
 - [ ] Push the unpushed commits and redeploy (ask first)
 
 ## Getting more out of TypeScript
 
-- [ ] Run `npm run test:db` and `npm run test:e2e` against the typed client,
-      which is all that is left of deepen-typescript task 8.1
 - [ ] Run `npm run test:llm` once, to confirm the typed chat loop still works
 - [ ] Try `noUncheckedIndexedAccess` and see how much it costs to satisfy
 - [ ] Run the typecheck in CI, once there is a CI to run it in

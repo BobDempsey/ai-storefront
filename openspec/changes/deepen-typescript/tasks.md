@@ -1,8 +1,9 @@
 > **Groups 6 and 7 are done.** A read-only Supabase access token was supplied,
-> so the types are generated and committed and the client takes them. Group 4
+> so the types are generated and committed and the client takes them, and the
+> whole of group 8 is verified against the live project and a browser. Group 4
 > (the `noUncheckedIndexedAccess` measurement) and group 5 (the provider run,
-> which spends money) are still open, and 8.1 still wants `test:e2e` and
-> `test:db`. See `notes.md` and `typed-client-errors.md`.
+> which spends money) are still open. See `notes.md` and
+> `typed-client-errors.md`.
 
 ## 1. One shape per route
 
@@ -42,12 +43,12 @@
 
 - [x] 7.1 Type `useSupabase()` as `SupabaseClient<Database>` in `server/utils/supabase.ts`; verify `npm run typecheck` runs and record the full list of new errors in the change folder before fixing any of them (5 distinct errors, recorded verbatim in `typed-client-errors.md` before anything was touched)
 - [x] 7.2 Read that list and agree what is in scope; verify by naming each error's file and saying whether it is a real mismatch or a typing gap in the generated types (one real mismatch, one gap over a real call, three the same check-constraint gap; table in `typed-client-errors.md`)
-- [x] 7.3 Fix the queries the typed client rejects, one file at a time; verify `npm run typecheck` is clean and `npm run test:db` still passes against the live project (typecheck clean; **`test:db` not run**, it needs a dev server and writes to the live project)
+- [x] 7.3 Fix the queries the typed client rejects, one file at a time; verify `npm run typecheck` is clean and `npm run test:db` still passes against the live project (typecheck clean; `test:db` 46/46 against the live project on 2026-09-12)
 - [x] 7.4 Check `create_order`'s RPC arguments and return are typed by the generated `Database`; verify a deliberately wrong argument name is a type error, then remove it (`p_customer_wrong` gave TS2353 naming the four real arguments; reverted)
 
 ## 8. Verification
 
-- [ ] 8.1 Run `npm test`, `npm run build`, `npm run test:e2e` and `npm run test:db`; verify all four pass (`npm test` 236 tests pass, `npm run build` passes, `npm run lint` is 0 errors and 0 warnings; **`test:e2e` and `test:db` not run**, they need a dev server and the live project)
-- [ ] 8.2 Check the storefront is unchanged: the shop page, search, paging, the panel and a placed order on a dev server; verify nothing a visitor sees differs
+- [x] 8.1 Run `npm test`, `npm run build`, `npm run test:e2e` and `npm run test:db`; verify all four pass (`npm test` 236, `npm run build` passes, `npm run lint` 0 errors 0 warnings, `test:db` 46/46 and `test:e2e` 28/28 on 2026-09-12; the `orders` table holds no `is_test` row afterwards)
+- [x] 8.2 Check the storefront is unchanged: the shop page, search, paging, the panel and a placed order on a dev server; verify nothing a visitor sees differs (the `test:e2e` run above drives exactly these in a browser: 13 paging checks, 12 search checks, a placed order and a rejected promo code)
 - [x] 8.3 State the `db:types` and `lint` scripts in `README.md` and `AGENTS.md`, including when to regenerate the types; verify the instructions name scripts that exist
-- [ ] 8.4 Update `handoff.md` and `tasks.md` with what shipped, what was measured and what was decided
+- [x] 8.4 Update `handoff.md` and `tasks.md` with what shipped, what was measured and what was decided
