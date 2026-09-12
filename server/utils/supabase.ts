@@ -1,9 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '~~/server/types/database'
 
-let client: SupabaseClient | null = null
+let client: SupabaseClient<Database> | null = null
 
 /** Service-role client. Server-only, because it bypasses RLS. */
-export function useSupabase(): SupabaseClient {
+export function useSupabase(): SupabaseClient<Database> {
   if (client) return client
 
   const { supabaseUrl, supabaseServiceKey } = useRuntimeConfig()
@@ -14,7 +15,7 @@ export function useSupabase(): SupabaseClient {
     })
   }
 
-  client = createClient(supabaseUrl, supabaseServiceKey, {
+  client = createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   })
   return client

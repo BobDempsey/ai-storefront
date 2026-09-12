@@ -1,8 +1,8 @@
-> **Stopped at 6.2.** Generating the database types needs a Supabase access
-> token or the database password, neither of which is on this machine. The
-> choice between supplying one and hand-writing `Database` from
-> `supabase/schema.sql` is the user's; groups 6 and 7 wait on it, and group 5
-> waits on permission to spend provider calls. See `notes.md`.
+> **Groups 6 and 7 are done.** A read-only Supabase access token was supplied,
+> so the types are generated and committed and the client takes them. Group 4
+> (the `noUncheckedIndexedAccess` measurement) and group 5 (the provider run,
+> which spends money) are still open, and 8.1 still wants `test:e2e` and
+> `test:db`. See `notes.md` and `typed-client-errors.md`.
 
 ## 1. One shape per route
 
@@ -35,19 +35,19 @@
 ## 6. Settle how the database types are generated
 
 - [x] 6.1 Establish whether `supabase gen types` can read `supabase/schema.sql` locally or needs a project id and an access token; verify by running both forms and recording which produced usable output (**it cannot read a schema file at all**: --local, --linked, --project-id or --db-url only)
-- [ ] 6.2 If it needs a token, stop and agree that before going further, then add it to `.env.example` with a note that it is needed only to regenerate types, never to build or run; verify the app still starts without it
-- [ ] 6.3 Add a `db:types` script that writes `server/types/database.ts`, and commit the generated file; verify re-running the script produces no diff
+- [x] 6.2 If it needs a token, stop and agree that before going further, then add it to `.env.example` with a note that it is needed only to regenerate types, never to build or run; verify the app still starts without it (**a token was supplied**; a dev server started with the variable removed from the env file served `/` and `/api/products` at 200)
+- [x] 6.3 Add a `db:types` script that writes `server/types/database.ts`, and commit the generated file; verify re-running the script produces no diff (ran twice, same SHA-256)
 
 ## 7. The typed client
 
-- [ ] 7.1 Type `useSupabase()` as `SupabaseClient<Database>` in `server/utils/supabase.ts`; verify `npm run typecheck` runs and record the full list of new errors in the change folder before fixing any of them
-- [ ] 7.2 Read that list and agree what is in scope; verify by naming each error's file and saying whether it is a real mismatch or a typing gap in the generated types
-- [ ] 7.3 Fix the queries the typed client rejects, one file at a time; verify `npm run typecheck` is clean and `npm run test:db` still passes against the live project
-- [ ] 7.4 Check `create_order`'s RPC arguments and return are typed by the generated `Database`; verify a deliberately wrong argument name is a type error, then remove it
+- [x] 7.1 Type `useSupabase()` as `SupabaseClient<Database>` in `server/utils/supabase.ts`; verify `npm run typecheck` runs and record the full list of new errors in the change folder before fixing any of them (5 distinct errors, recorded verbatim in `typed-client-errors.md` before anything was touched)
+- [x] 7.2 Read that list and agree what is in scope; verify by naming each error's file and saying whether it is a real mismatch or a typing gap in the generated types (one real mismatch, one gap over a real call, three the same check-constraint gap; table in `typed-client-errors.md`)
+- [x] 7.3 Fix the queries the typed client rejects, one file at a time; verify `npm run typecheck` is clean and `npm run test:db` still passes against the live project (typecheck clean; **`test:db` not run**, it needs a dev server and writes to the live project)
+- [x] 7.4 Check `create_order`'s RPC arguments and return are typed by the generated `Database`; verify a deliberately wrong argument name is a type error, then remove it (`p_customer_wrong` gave TS2353 naming the four real arguments; reverted)
 
 ## 8. Verification
 
-- [ ] 8.1 Run `npm test`, `npm run build`, `npm run test:e2e` and `npm run test:db`; verify all four pass
+- [ ] 8.1 Run `npm test`, `npm run build`, `npm run test:e2e` and `npm run test:db`; verify all four pass (`npm test` 236 tests pass, `npm run build` passes, `npm run lint` is 0 errors and 0 warnings; **`test:e2e` and `test:db` not run**, they need a dev server and the live project)
 - [ ] 8.2 Check the storefront is unchanged: the shop page, search, paging, the panel and a placed order on a dev server; verify nothing a visitor sees differs
-- [ ] 8.3 State the `db:types` and `lint` scripts in `README.md` and `AGENTS.md`, including when to regenerate the types; verify the instructions name scripts that exist
+- [x] 8.3 State the `db:types` and `lint` scripts in `README.md` and `AGENTS.md`, including when to regenerate the types; verify the instructions name scripts that exist
 - [ ] 8.4 Update `handoff.md` and `tasks.md` with what shipped, what was measured and what was decided

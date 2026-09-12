@@ -99,7 +99,19 @@ export const useColorModeStore = defineStore('color-mode', {
      * and leave the pre-paint script (which reads localStorage) unable to see
      * it.
      */
-    storage: piniaPluginPersistedstate.localStorage(),
+    /*
+     * The same two calls `piniaPluginPersistedstate.localStorage()` makes,
+     * written out. That helper's published declaration imports `StorageLike`
+     * from a file the package does not ship (`dist/nuxt/runtime/storages.d.ts`
+     * asks for `../types.js`, and only `types.d.mts` exists), so its return is
+     * an error type and every lint rule that looks at a type refuses it.
+     */
+    storage: {
+      getItem: key => (import.meta.client ? window.localStorage.getItem(key) : null),
+      setItem: (key, value) => {
+        if (import.meta.client) window.localStorage.setItem(key, value)
+      }
+    },
     pick: ['mode'],
     /*
      * The plugin types a serializer as taking the whole StateTree, not the

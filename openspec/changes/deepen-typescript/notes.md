@@ -62,7 +62,7 @@ is `any`, so every assignment from one is "unsafe". They are set to `warn`
 rather than silenced per file, and they should go quiet on their own when the
 generated `Database` type lands, at which point they go back to `error`.
 
-## Blocked: generating the database types
+## Blocked, then unblocked: generating the database types
 
 `supabase gen types` reads from a live database or a local Docker one:
 `--local`, `--linked`, `--project-id` or `--db-url`. There is no schema-file
@@ -70,3 +70,46 @@ input. The project ref is known but a personal access token is not in `.env`,
 and neither is the database password, so the generation cannot run here. The
 choice - a token, or hand-writing the `Database` type from `supabase/schema.sql`
 - is the user's, and groups 6 and 7 are stopped until it is made.
+
+A read-only token scoped to the project was supplied and went into `.env` and
+`.env.example`. `npm run db:types` runs `scripts/db-types.mjs`, which reads the
+token out of `.env` (npm does not load it) and writes
+`server/types/database.ts`. Two runs produce the same SHA-256. A dev server
+started with the variable removed from the env file served `/` and
+`/api/products` at 200, so nothing at run time wants it.
+
+## The typed client cost five errors, and three were one cause
+
+The token arrived, `npm run db:types` generated 399 lines covering seven tables
+and `create_order`, and `useSupabase()` became `SupabaseClient<Database>`. The
+first typecheck after that found five errors, listed in full in
+`typed-client-errors.md`. One was a real bug: `/api/products/[slug]` passed
+`getRouterParam(event, 'slug')`, a `string | undefined`, straight into
+`.eq('slug', slug)`. Three were the same gap, `products.kind` arriving as
+`string` because the column is text with a check constraint rather than an
+enum. The fifth was the promo argument to `create_order`, where the generated
+`Args` writes a defaulted argument as optional and never as nullable, so an
+explicit `null` no longer type-checks; the call now omits the key.
+
+`server/utils/rows.ts` is the new piece. It reads `kind` and the three file
+columns back into the shapes the rest of the code uses, by checking the values
+rather than casting them, at the one point a row leaves a query. If the column
+ever becomes a Postgres enum the generated types carry the union themselves and
+that file goes away.
+
+## The 23 warnings went quiet, and two strangers turned up
+
+The `no-unsafe-*` rules are back to `error` and `npm run lint` is 0 and 0. All
+23 findings disappeared on their own when the client took the generic, which is
+what the last note predicted.
+
+Two errors surfaced that had nothing to do with Supabase. The generated
+`server/types/database.ts` trips `no-redundant-type-constituents` twice, so it
+is in the lint's ignore list: the typecheck is the check that matters for a file
+nobody edits by hand. And `app/stores/color-mode.ts` was assigning an
+error-typed value, because `pinia-plugin-persistedstate` ships
+`dist/nuxt/runtime/storages.d.ts` importing `../types.js` from a package that
+only has `types.d.mts`. `StorageLike` therefore resolves to nothing and
+`piniaPluginPersistedstate.localStorage()` has no usable type. The store now
+makes those two `window.localStorage` calls itself, which is the whole of what
+that helper does.

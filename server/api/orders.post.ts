@@ -97,10 +97,13 @@ export default defineEventHandler(async event => {
   // The raw code the buyer typed goes straight to create_order, which resolves
   // it, decides between it and the store-wide sale, prices the lines and writes
   // the redemption, all in the order's own transaction.
+  // `p_promo_code` is omitted rather than sent as null when there is no code:
+  // the generated Args type writes a defaulted argument as optional and never
+  // as nullable, and the function's own `default null` does the same job.
   const { data: orderId, error } = await supabase.rpc('create_order', {
     p_customer: customer,
     p_items: merged,
-    p_promo_code: promoCode || null,
+    ...(promoCode ? { p_promo_code: promoCode } : {}),
     p_is_test: isTest
   })
 

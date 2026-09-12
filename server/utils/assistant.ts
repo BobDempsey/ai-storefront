@@ -8,6 +8,7 @@ import {
 import type { z } from 'zod'
 import type { SaleState } from '~~/server/utils/pricing'
 import { matchesSearch, normalizeSearchTerm } from '~~/server/utils/search'
+import { withProductKind, type ProductKind, type ProductRow } from '~~/server/utils/rows'
 
 /**
  * The assistant's tool list is its whole permission model. Nothing here writes
@@ -175,23 +176,27 @@ const CATALOGUE_COLUMNS =
   'id, slug, name, description, price_cents, in_stock, kind, file_name, file_format, file_size_bytes'
 
 /**
- * A row as `CATALOGUE_COLUMNS` selects it. Declared by hand for now: the
- * Supabase client is still untyped, so nothing generates this. When the
- * generated `Database` type lands this becomes a row type from it, and the
- * column list and this interface stop being two things to keep in step.
+ * A row as `CATALOGUE_COLUMNS` selects it, built from the generated `products`
+ * row so a renamed or dropped column fails here. `kind` is narrowed from the
+ * generated `string`, which is all a check constraint can produce; see
+ * `server/utils/rows.ts`.
  */
-export interface CatalogueRow {
-  id: string
-  slug: string
-  name: string
-  description: string | null
-  price_cents: number
-  in_stock: boolean
-  kind: 'physical' | 'digital'
-  file_name: string | null
-  file_format: string | null
-  file_size_bytes: number | null
-}
+export type CatalogueRow = Omit<
+  Pick<
+    ProductRow,
+    | 'id'
+    | 'slug'
+    | 'name'
+    | 'description'
+    | 'price_cents'
+    | 'in_stock'
+    | 'kind'
+    | 'file_name'
+    | 'file_format'
+    | 'file_size_bytes'
+  >,
+  'kind'
+> & { kind: ProductKind }
 
 /** What the model is allowed to see about an item. No ids: it names items by slug. */
 function present(product: CatalogueRow, sale: SaleState) {
@@ -263,7 +268,7 @@ async function findBySlug(slug: string) {
     console.error('[chat] could not read the catalogue:', error)
     throw createError({ statusCode: 502, statusMessage: 'Could not read the catalogue right now.' })
   }
-  return data
+  return data ? withProductKind(data) : null
 }
 
 /**
@@ -387,7 +392,7 @@ export async function runTool(
 
       // A term that matches nothing still gets the catalogue, so the assistant
       // can say what the shop does have instead of only what it does not.
-      return { items: (matched.length ? matched : data).map(p => present(p, sale)) }
+      return { items: (matched.length ? matched : data).map(p => present(withProductKind(p), sale)) }
     }
 
     case 'get_product': {

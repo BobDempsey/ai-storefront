@@ -1,5 +1,10 @@
-export default defineEventHandler(async event => {
+import { withProductFiles } from '~~/server/utils/rows'
+
+export default defineEventHandler(async (event): Promise<Product> => {
   const slug = getRouterParam(event, 'slug')
+  // The route only matches with a segment present, so this is the type saying
+  // what the router already guarantees rather than a case anyone has hit.
+  if (!slug) throw createError({ statusCode: 404, statusMessage: 'Product not found' })
 
   const [{ data, error }, sale] = await Promise.all([
     useSupabase()
@@ -18,5 +23,5 @@ export default defineEventHandler(async event => {
     })
   }
   if (!data) throw createError({ statusCode: 404, statusMessage: 'Product not found' })
-  return withSalePricing(data, sale)
+  return withSalePricing(withProductFiles(data), sale)
 })

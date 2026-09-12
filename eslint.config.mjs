@@ -42,7 +42,7 @@ export default createConfigForNuxt({
             // Only this file needs it: everything else, tests and vitest
             // configs included, is reachable through tsconfig.json's
             // references now.
-            allowDefaultProject: ['eslint.config.mjs'],
+            allowDefaultProject: ['eslint.config.mjs', 'scripts/*.mjs'],
             defaultProject: 'tsconfig.tests.json'
           },
           tsconfigRootDir: import.meta.dirname
@@ -77,18 +77,17 @@ export default createConfigForNuxt({
     }
   })
   .append({
-    // Every one of these comes from the same place: `useSupabase()` returns a
-    // bare `SupabaseClient`, so every row it hands back is `any` and every
-    // assignment from one is "unsafe". They are warnings rather than errors
-    // until the generated `Database` type lands and the client takes it, at
-    // which point they should go quiet on their own and become errors again.
-    // Raising them now would only mean silencing them file by file.
+    // These were warnings while `useSupabase()` returned a bare
+    // `SupabaseClient`: every row it handed back was `any`, so every assignment
+    // from one read as "unsafe", and 23 findings all traced to that one cause.
+    // The client now takes the generated `Database` type, the findings went
+    // quiet on their own, and these are errors again.
     files: ['server/**/*.ts', 'app/stores/**/*.ts'],
     rules: {
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn'
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error'
     }
   })
   .append({
@@ -99,5 +98,8 @@ export default createConfigForNuxt({
     }
   })
   .append({
-    ignores: ['.nuxt/**', '.output/**', 'node_modules/**', 'dist/**', '.vercel/**']
+    // `server/types/database.ts` is written by `npm run db:types` and read by
+    // the typecheck, which is the check that matters for it. Linting generated
+    // output only produces findings nobody may fix by hand.
+    ignores: ['.nuxt/**', '.output/**', 'node_modules/**', 'dist/**', '.vercel/**', 'server/types/database.ts']
   })

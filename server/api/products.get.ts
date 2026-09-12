@@ -1,4 +1,5 @@
 import { catalogueQuerySchema } from '~~/server/utils/schemas'
+import { withProductFiles } from '~~/server/utils/rows'
 import { normalizeSearchTerm, searchFilter } from '~~/server/utils/search'
 
 /**
@@ -73,7 +74,7 @@ export default defineEventHandler(async (event): Promise<CataloguePage> => {
   }
 
   return {
-    items: data.map(product => withSalePricing(product, sale)),
+    items: data.map(product => withSalePricing(withProductFiles(product), sale)),
     total: count ?? data.length,
     page,
     perPage
