@@ -9,6 +9,10 @@ import type { z } from 'zod'
 import type { SaleState } from '~~/server/utils/pricing'
 import { matchesSearch, normalizeSearchTerm } from '~~/server/utils/search'
 import type { ProductRow } from '~~/server/utils/rows'
+// Declared in shared/ because the browser reads both of these off the chat
+// response. Stating them again here made each one a duplicate auto-import, and
+// the build warned that the server copy silently won.
+import type { CartIntent, DraftOrder } from '~~/shared/types/api'
 
 /**
  * The assistant's tool list is its whole permission model. Nothing here writes
@@ -151,25 +155,10 @@ export const TOOLS = [
 
 type CartItems = z.infer<typeof cartItemsSchema>
 
-export interface CartIntent {
-  action: 'add' | 'remove' | 'set'
-  productId: string
-  quantity: number
-  /** So the drawer can say what changed without another lookup. */
-  name: string
-  single: boolean
-}
-
-export interface OrderDraft {
-  customer: { name: string; email: string; phone?: string; notes?: string }
-  lines: Array<{ name: string; quantity: number; amountCents: number }>
-  totalCents: number
-}
-
 export interface ToolContext {
   items: CartItems
   intents: CartIntent[]
-  draft: OrderDraft | null
+  draft: DraftOrder | null
 }
 
 const CATALOGUE_COLUMNS =

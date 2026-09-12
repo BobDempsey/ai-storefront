@@ -138,10 +138,20 @@ export interface CartIntent {
   single: boolean
 }
 
-export interface OrderDraft {
+/**
+ * A draft as the assistant's tools build it, which is everything about the
+ * order except the one thing the model is never given. `chat.post.ts` mints the
+ * confirmation onto this on its way out, so this is the shape that exists
+ * inside the tool loop and nowhere else.
+ */
+export interface DraftOrder {
   customer: { name: string; email: string; phone?: string; notes?: string }
   lines: Array<{ name: string; quantity: number; amountCents: number }>
   totalCents: number
+}
+
+/** The same draft as the browser receives it. */
+export interface OrderDraft extends DraftOrder {
   /**
    * Issued by the server beside the draft and never shown to the model. It is
    * spent when the visitor confirms, and it is not part of the conversation.

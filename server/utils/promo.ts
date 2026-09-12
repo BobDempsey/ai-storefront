@@ -5,8 +5,11 @@
  * welcome email can quote a code the checkout will actually accept.
  */
 
-/** Why a code is or is not usable. Mirrors `create_order`'s three exceptions. */
-export type PromoStatus = 'applied' | 'unknown' | 'inactive' | 'used'
+// PromoStatus lives in shared/types/api.ts, because the checkout page reads it
+// off the preview response. It is imported rather than re-exported: a re-export
+// still registers this file as a second source for the name, which is what the
+// build was warning about.
+import type { PromoStatus } from '~~/shared/types/api'
 
 export interface PromoResult {
   status: PromoStatus
