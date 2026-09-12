@@ -2,11 +2,16 @@
 
 ## Now: ai-storefront.bobdempsey83.com
 
-- [ ] use/using nuxt img module?
-- [ ] fix any console warnings and errors
-- [ ] Decide whether two approximate product photos can stay: cable-clip-set
-      shows a cable with an obsolete 30-pin connector and no clips, and
-      monitor-riser-shelf shows a laptop on a riser rather than a monitor
+- [ ] Fix the hydration mismatch. The live site logs "Hydration completed but
+      contains mismatches" on the homepage and the dev server does not, so it
+      only reproduces against a production build
+- [ ] Clear the three duplicate auto-imports the build warns about: OrderDraft,
+      CartIntent and PromoStatus are each declared in shared/types/api.ts and
+      again in server/utils/, and the server copy wins
+- [ ] use/using nuxt img module? Nothing is installed today and the app has
+      four plain img tags, so this would be adopting @nuxt/image for the twelve
+      catalogue photos
+- [ ] open search dialog when user clicks into the search input
 
 ## Next: fif.bobdempsey83.com from the same repo
 

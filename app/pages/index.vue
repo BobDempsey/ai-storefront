@@ -272,7 +272,16 @@ useSeoMeta({
       to see everything.
     </Message>
 
-    <Tabs value="products">
+    <!--
+      show-navigators is off because leaving it on is a hydration mismatch, not
+      a style choice. PrimeVue's TabList starts with isNextButtonEnabled true
+      and only corrects it in updateButtonState(), which measures the rendered
+      list and so cannot run on the server. So SSR ships a scroll arrow the
+      client removes on mount, and the browser logs "Hydration completed but
+      contains mismatches" on every page load. Two short labels never overflow
+      anything, so the arrows had nothing to do here either way.
+    -->
+    <Tabs value="products" :show-navigators="false">
       <TabList>
         <Tab value="products" class="flex items-center gap-2">
           <i class="pi pi-box" />
