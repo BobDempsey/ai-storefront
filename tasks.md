@@ -13,6 +13,11 @@ other shop and has its own currency and its own task list.
 
 ## Template work, when there is any
 
+- [ ] Watch the next real order's staff email on either shop: it should carry
+      the shop's name in brackets now. That subject could not be verified before
+      shipping, because a dev order is a test order and a test order sends no
+      email at all
+
 - [ ] Widen the Supabase token so `npm run db:types` can read either project,
       and decide on the deprecated `service_role` keys
 - [ ] Consider an Ignored Build Step on the fif Vercel project, which builds a

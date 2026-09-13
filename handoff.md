@@ -1719,6 +1719,33 @@ branches refuse deletion and force-push, tested by trying; CI ran on both; and
 `SMOKE_SHOP=demo` and `SMOKE_SHOP=fif` are 6/6 each. The Vercel Framework Preset
 on the shop's project reads Nuxt now rather than Other.
 
+**Every email names the shop that sent it, 2026-09-12.** Two shops write to one
+staff inbox, and until this a notification read `New order from Ada Lovelace
+($23.20)` whichever shop took the order. Staff mail carries a bracketed prefix,
+`[Forged in Filament] New order from ...`, because an inbox is sorted on
+subjects; customer mail gets a phrase, `Your Forged in Filament order <id>`,
+because a bracket reads as machinery to a buyer. The name comes from
+`NUXT_PUBLIC_STORE_NAME`, the same value the header shows, so a shop cannot send
+under a name it does not display.
+
+**`Store` counts as unconfigured rather than as a name**, and that is an older
+decision respected rather than overruled: `sendCustomerEmail` carried a comment
+saying it omitted the name because "Your order from Store" reads as a bug. A
+shop still on the placeholder gets the older, plainer subject. Mail always
+sends, whatever the name: by the time these run the order is committed and the
+email is the only thing telling anyone about it.
+
+**One subject could not be verified before shipping.** A dev deployment marks
+every order a test and a test order sends no email at all, so the order
+notification's new subject has no way to be seen outside production. The contact
+path was sent for real and Resend delivered `[AI Storefront] Custom order
+request: Subject check`; the order subject goes through the same helper and is
+unit-tested. The first real production order is what confirms it.
+
+**This was the first template fix taken into `fif` by cherry-pick**, which is
+how that branch is meant to receive them. It applied clean, and `.mcp.json` was
+never in the commit, so nothing had to be held back.
+
 **The one guard that is instruction rather than mechanism**: nothing stops a
 legitimate push to the wrong branch. `AGENTS.md` and `CLAUDE.md` both open by
 telling an agent to run `git branch --show-current`, and that is the whole

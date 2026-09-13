@@ -11,5 +11,5 @@
 - [x] 2.1 Cover all five subjects with unit tests, including the unconfigured fallback; verify `npm run check` passes
 - [x] 2.2 Send one real order and one contact message on a dev server; verify both arrive naming the shop, and delete the order afterwards
       *The contact message was sent and Resend reports it delivered as `[AI Storefront] Custom order request: Subject check`. **The order half cannot be done on a dev server**: a dev deployment marks every order a test and a test order sends no email at all, so there was nothing to receive. The order subject goes through the same `forStaff()` helper and is covered by unit tests. It will be seen for real on the next production order.*
-- [ ] 2.3 Cherry-pick onto `fif` and confirm it names that shop rather than the template's; verify `npm run check` passes there too **(the branches have separate `.mcp.json`; do not carry that file across)**
-- [ ] 2.4 Update `handoff.md` and `tasks.md` on both branches
+- [x] 2.3 Cherry-pick onto `fif` and confirm it names that shop rather than the template's; verify `npm run check` passes there too **(the branches have separate `.mcp.json`; do not carry that file across)**
+- [x] 2.4 Update `handoff.md` and `tasks.md` on both branches
