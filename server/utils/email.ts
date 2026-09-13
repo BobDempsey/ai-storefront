@@ -239,12 +239,24 @@ export interface ContactEmailPayload {
   name: string
   email: string
   message: string
+  /**
+   * 'custom-order' when the sender is asking the shop to make something the
+   * catalogue does not carry. Absent on an ordinary message, and absent is a
+   * question.
+   */
+  kind?: 'question' | 'custom-order'
 }
 
 /**
  * Sends a contact message to staff. Unlike an order, nothing is stored before
  * this runs, so a failure is thrown rather than logged: the sender has to be
  * told, or the message is simply gone.
+ *
+ * A custom-order request goes out on this same path, changing the subject line
+ * and one paragraph of the body. Staff have to be able to tell a request for
+ * work from a question about an existing order at a glance in the inbox, which
+ * is what the subject is for, and the body says plainly that nothing has been
+ * ordered and no price has been quoted, because the shop has not answered yet.
  */
 export async function sendContactEmail(contact: ContactEmailPayload) {
   const { resendApiKey, orderFromEmail, orderAdminEmail } = useRuntimeConfig()
@@ -253,19 +265,23 @@ export async function sendContactEmail(contact: ContactEmailPayload) {
     throw new Error('email is not configured')
   }
 
+  const custom = contact.kind === 'custom-order'
+  const sender = contact.name.replace(/\s+/g, ' ').trim()
+
   const resend = new Resend(resendApiKey)
   const { error } = await resend.emails.send({
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: contact.email,
-    subject: `Contact form: ${contact.name.replace(/\s+/g, ' ').trim()}`,
+    subject: custom ? `Custom order request: ${sender}` : `Contact form: ${sender}`,
     html: `
-      <h2>Message from the contact form</h2>
+      <h2>${custom ? 'Custom order request' : 'Message from the contact form'}</h2>
       <p>
         <strong>${esc(contact.name)}</strong><br>
         ${esc(contact.email)}
       </p>
       <p style="white-space:normal">${escMultiline(contact.message)}</p>
+      ${custom ? '<p style="padding:8px 12px;background:#eff6ff;border-left:3px solid #2563eb">This is a request for something the catalogue does not carry. No order exists, no price has been quoted, and the shop has agreed to nothing. Reply to the sender to say whether it can be made and what it would cost.</p>' : ''}
       <p style="color:#666;font-size:12px">Reply to this email to reach the sender.</p>
     `
   })

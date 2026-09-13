@@ -1,6 +1,31 @@
 <script setup lang="ts">
 import { messageFor } from '~/utils/errors'
-const form = reactive({ name: '', email: '', message: '', subscribe: false })
+const form = reactive({
+  name: '',
+  email: '',
+  message: '',
+  subscribe: false,
+  kind: 'question' as 'question' | 'custom-order'
+})
+
+/**
+ * A visitor sent here by a search the catalogue could not answer arrives with
+ * the term waiting in the store, and the form opens with it already written.
+ *
+ * Taken in `onMounted` rather than in setup: the store is only ever filled by a
+ * click on another page, so the server can never hold a term, and reading it
+ * after the page has mounted keeps the first client render identical to the
+ * one the server sent. It is a plain message with a marker on it, not a second
+ * kind of form: the fields, the validation and the route are the same ones an
+ * ordinary question uses.
+ */
+const customOrder = useCustomOrderStore()
+onMounted(() => {
+  const term = customOrder.takeTerm()
+  if (!term) return
+  form.kind = 'custom-order'
+  form.message = `I'm looking for: ${term}`
+})
 
 // Names the discount on the opt-in label, so it tracks the active code.
 const { optinOffer } = useStoreSettings()
@@ -46,7 +71,17 @@ useSeoMeta({
     <form v-else class="flex flex-col gap-5" @submit.prevent="submitMessage">
       <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
 
-      <p class="text-surface-600 dark:text-surface-400">
+      <!--
+        The custom-request wording is deliberately short of a promise. The shop
+        has not seen the request yet, so the page cannot say it can be made or
+        what it would cost, and staff answer both questions in their reply.
+      -->
+      <p v-if="form.kind === 'custom-order'" data-testid="custom-order-note" class="text-surface-600 dark:text-surface-400">
+        Tell us what you're after and we'll reply by email with whether we can
+        make it and what it would cost. Sending this orders nothing.
+      </p>
+
+      <p v-else class="text-surface-600 dark:text-surface-400">
         Ask us about a product or an order. We reply by email.
       </p>
 

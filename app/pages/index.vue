@@ -93,6 +93,24 @@ function clearSearch() {
   typed.value = ''
 }
 
+const customOrder = useCustomOrderStore()
+
+/**
+ * The other way out of an empty search: ask staff instead of leaving. The shop
+ * takes custom print requests, and until now the catalogue's only answer to a
+ * term it did not stock was to offer the visitor their own search back.
+ *
+ * The term travels in the store rather than in the address, the way the product
+ * page hands a question to the assistant, so the contact form starts filled
+ * without `/contact` becoming a link that carries the visitor's search around
+ * (see app/stores/custom-order.ts). Nothing is sent here, and no price is
+ * quoted: the form is where they write the request and they send it themselves.
+ */
+function askAboutThis() {
+  customOrder.askFor(term.value)
+  void navigateTo('/contact')
+}
+
 // One request per tab, each keyed on the term and on that tab's own page, so
 // the two page independently. Filtering and paging both happen in the database:
 // a client-side filter could only search the rows the page already holds.
@@ -292,7 +310,11 @@ useSeoMeta({
     <Message v-if="nothingMatched && !error" severity="secondary" class="mb-6">
       Nothing in the catalogue matches "{{ term }}".
       <button type="button" class="underline" @click="clearSearch">Clear the search</button>
-      to see everything.
+      to see everything, or
+      <button type="button" class="underline" data-testid="ask-about-this" @click="askAboutThis">
+        ask us about it
+      </button>
+      and we'll reply by email.
     </Message>
 
     <!--

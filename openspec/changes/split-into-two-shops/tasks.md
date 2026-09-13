@@ -63,11 +63,16 @@ Writes `tests/smoke/production.test.ts` and one new image. No account access.
 The only stream with application code. Touches the contact path, the shop page
 and the assistant's prompt.
 
-- [ ] 4.1 Offer a custom-order request beside the existing "clear the search" offer when a search matches nothing; verify it does not appear when the search matches at least one item
-- [ ] 4.2 Carry the searched term into the request as store state rather than a route query, the way the product-page prefill does; verify a reload does not refill the box and a shared URL does not carry the term
-- [ ] 4.3 Deliver a custom-order request through the existing contact path, marked so staff can tell it from an ordinary message; verify no order, cart line or redemption is created and that a failed send is reported to the visitor
-- [ ] 4.4 Add one sentence to the assistant's system prompt naming where to ask, and **add no tool**; verify `tests/unit/assistant-promo-boundary.test.ts` still pins the tool list unchanged
-- [ ] 4.5 Cover the new behaviour with unit tests and one end-to-end test that counts the POSTs to `/api/chat` to prove the offer costs no provider call; verify `npm run check` and `npm run test:e2e` pass
+- [x] 4.1 Offer a custom-order request beside the existing "clear the search" offer when a search matches nothing; verify it does not appear when the search matches at least one item
+      *The offer sits in the same message as "clear the search", as a second link in the sentence rather than a button of its own, so a visitor reads one answer instead of choosing between two calls to action.*
+- [x] 4.2 Carry the searched term into the request as store state rather than a route query, the way the product-page prefill does; verify a reload does not refill the box and a shared URL does not carry the term
+      *A store of its own, `app/stores/custom-order.ts`, rather than a field on the assistant store: the two handovers share a shape but nothing else, and the assistant has no part in this one.*
+- [x] 4.3 Deliver a custom-order request through the existing contact path, marked so staff can tell it from an ordinary message; verify no order, cart line or redemption is created and that a failed send is reported to the visitor
+      *This needed one thing the plan did not name: a `kind` field on `contactSchema`, defaulting to `question`. Without it the route cannot tell the two apart, and the subject line is what staff sort on. A request goes out as "Custom order request: <name>" against "Contact form: <name>", with a paragraph saying no order exists and no price has been quoted. Nothing else on the path changed.*
+- [x] 4.4 Add one sentence to the assistant's system prompt naming where to ask, and **add no tool**; verify `tests/unit/assistant-promo-boundary.test.ts` still pins the tool list unchanged
+      *One bullet, in the same list as the promo rules. It names the contact page and says the assistant cannot send the request, quote it, or agree the shop will make it. The tool list is untouched at five, and the boundary test passes unchanged.*
+- [x] 4.5 Cover the new behaviour with unit tests and one end-to-end test that counts the POSTs to `/api/chat` to prove the offer costs no provider call; verify `npm run check` and `npm run test:e2e` pass
+      *`npm run check`: 254 unit tests, typecheck and lint clean. `npm run test:e2e`: 38 passed, including five new ones that count chat POSTs and see none. The send is answered locally in the browser tests, because a dev server would hand a real message to Resend and what is under test is what the browser sends and what the visitor is then told.*
 
 ## 5. Verification, and the gate
 

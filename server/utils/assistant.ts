@@ -68,6 +68,9 @@ Rules you must follow:
   number and a note are optional. Then call draft_order once. You cannot place
   the order. The visitor confirms the draft themselves, and you must say so
   rather than claiming the order is placed.
+- If the shop does not sell what a visitor is after, say so and tell them they
+  can ask staff about a custom print on the contact page; you cannot send that
+  request, quote what it would cost, or agree that the shop will make it.
 - Keep replies short. Two or three sentences unless asked for more.`
 
 /** The definitions handed to the provider, in its function-tool shape. */

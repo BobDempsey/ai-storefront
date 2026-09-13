@@ -52,7 +52,13 @@ export const contactSchema = z.object({
   message: z.string().trim().min(1).max(4000),
   // Ticked the newsletter box on the contact form. Off unless the sender
   // turns it on, and it never changes how the message itself is handled.
-  subscribe: z.boolean().optional().default(false)
+  subscribe: z.boolean().optional().default(false),
+  // What the sender came for, and the only thing that separates a request for
+  // work from a question about an order once the message is in a staff inbox.
+  // The route handles both identically: same validation, same rate limit, same
+  // delivery. Defaulted rather than required, so the plain contact form and
+  // anything already posting to this route stay valid.
+  kind: z.enum(['question', 'custom-order']).optional().default('question')
 })
 
 export const emailOptinSchema = z.object({
