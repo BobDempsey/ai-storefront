@@ -1,5 +1,16 @@
 # Handoff
 
+> **This is `main`: the AI Storefront template and the demo it ships with.**
+> Forged in Filament lives on the `fif` branch and has its own copy of this
+> document, which starts from this one and diverges. Where the two disagree from
+> here on, neither is wrong: they describe two different shops.
+>
+> Everything in this document written before 2026-09-12 was written when the
+> repo was one project, and almost all of it still applies to both. What is
+> specific to this side: the demo at `ai-storefront.bobdempsey83.com`, the
+> Supabase project `qtzwrwstixqgnuixfajp`, and the `.mcp.json` that points at
+> it.
+
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
 then revised on 2026-08-31 once the order and email paths had run end to end.
@@ -1699,7 +1710,21 @@ because Vue strips comments from a production build.
 Vercel building every branch by default, and it is harmless: the shop's live
 site only changes on a `fif` push, which is what was verified. It does spend
 build minutes on a Hobby plan, so an Ignored Build Step is worth considering if
-they ever run short. **Template fixes reach the shop only when
+they ever run short.
+
+**Verified 2026-09-12, and this is what "done" looks like here**: a push to
+`fif` built `target: production` and the shop's live site changed; a push to
+`main` built only a preview on that project and the live shop did not move; both
+branches refuse deletion and force-push, tested by trying; CI ran on both; and
+`SMOKE_SHOP=demo` and `SMOKE_SHOP=fif` are 6/6 each. The Vercel Framework Preset
+on the shop's project reads Nuxt now rather than Other.
+
+**The one guard that is instruction rather than mechanism**: nothing stops a
+legitimate push to the wrong branch. `AGENTS.md` and `CLAUDE.md` both open by
+telling an agent to run `git branch --show-current`, and that is the whole
+defence. Branch protection does not help here, because pushing shop code to
+`main` is a perfectly valid push. If this ever goes wrong, the fix is a
+revert on `main` and a cherry-pick onto `fif`, not a force-push. **Template fixes reach the shop only when
 someone takes them**, by cherry-picking; there is no scheduled merge and adding
 one later needs a decision. `fif` never merges back. The two are meant to drift,
 so nothing should try to hold them together.

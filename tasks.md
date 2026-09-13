@@ -1,26 +1,31 @@
 # Remaining tasks
 
+> **You are on `main`: the AI Storefront template and its demo.** Forged in
+> Filament lives on `fif` and is a different project. Shop work never lands
+> here; template fixes are made here and cherry-picked into `fif` when that shop
+> wants them. Run `git branch --show-current` before you edit anything.
+
 ## Now: ai-storefront.bobdempsey83.com
 
-Nothing outstanding. The demo is live and current, and level with
-`origin/main` (`0e7aa5c` as this was written). Note that this line answers for
-the demo only: `fif` feeds the other shop and has its own currency.
+Nothing outstanding. The demo is live and current, level with `origin/main`
+(`677e787` as this was written). That answers for the demo only: `fif` feeds the
+other shop and has its own currency and its own task list.
 
-## Next: fif.bobdempsey83.com, on its own branch
+## Template work, when there is any
 
-The split shipped 2026-09-12 as the OpenSpec change `split-into-two-shops`, then
-the same day the one-branch decision behind it was reversed. Two branches now:
-`main` is the template and the demo, `fif` is Forged in Filament. Both are
-protected against deletion and force-push. Template fixes reach the shop by
-cherry-pick, never on a schedule, and `fif` never merges back.
+- [ ] Widen the Supabase token so `npm run db:types` can read either project,
+      and decide on the deprecated `service_role` keys
+- [ ] Consider an Ignored Build Step on the fif Vercel project, which builds a
+      preview on every `main` push and spends Hobby build minutes doing it
 
-- [ ] Set the fif project's framework preset to Nuxt in the dashboard; the CLI
-      cannot, and it reads "Other" today
-- [ ] Confirm by inbox that the second shop's staff email and buyer
-      confirmation arrive; the agent has no mailbox and cannot check
-- [ ] Widen the Supabase token so db:types can read either project, and decide
-      on the deprecated service_role keys
+## Living on the other branch
+
+Recorded here because it is easy to forget which side a thing belongs to. These
+are Forged in Filament's and are listed in that branch's own `tasks.md`:
+confirming its emails actually arrive, and deciding what its catalogue is, since
+it still carries the template's 15 seeded demo products.
 
 Decided 2026-09-12, do not reopen without asking: the real shop keeps the
-existing database while the demo moves to the new one, and Forged in Filament
+existing Supabase project while the demo has its own, and Forged in Filament
 lives on its own long-lived branch because it will diverge from the template.
+Both branches are protected against deletion and force-push.
