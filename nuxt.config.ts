@@ -100,6 +100,11 @@ export default defineNuxtConfig({
       // nothing in a request tells a prerendered page what its own origin is.
       // Empty means the share image is omitted rather than emitted broken.
       siteUrl: '',
+      // Path to this shop's share image, under `public/`, leading slash and
+      // no origin. Empty means no image rather than a default one: two shops
+      // run this same build, and a preview showing the other shop's name is
+      // worse than a preview showing no picture at all.
+      ogImage: '',
       // Which deployment this is: 'development', 'preview', or anything else
       // you want named on screen. Empty means the live shop and renders nothing,
       // so a deployment that was never told about this behaves as it always

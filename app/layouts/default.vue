@@ -15,7 +15,12 @@ onMounted(() => {
   window.addEventListener('keydown', onKey)
   onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 })
-const { storeName, siteUrl, deployEnv } = useRuntimeConfig().public
+const { storeName, siteUrl, ogImage, deployEnv } = useRuntimeConfig().public
+
+// Both halves have to be configured before a share image can be emitted: the
+// origin because Open Graph drops a relative path, and the path because the
+// image carries the shop's name and this build serves two shops.
+const shareImage = siteUrl && ogImage ? `${siteUrl}${ogImage}` : undefined
 
 // Empty on the live shop, and everything below keys off that. See
 // app/utils/deploy-env.ts for why silence rather than a flag means production.
@@ -47,18 +52,18 @@ useHead({
 
 // Defaults for every page's link preview. A page that sets its own title or
 // description through useSeoMeta wins, because its call runs after this one;
-// the product page overrides the image too. Omitting ogImage when siteUrl is
-// unset is deliberate: a relative path is silently dropped by every consumer,
-// which looks like working tags that never show a picture.
+// the product page overrides the image too. Omitting the image when either
+// half is unset is deliberate: a relative path is silently dropped by every
+// consumer, which looks like working tags that never show a picture.
 useSeoMeta({
   ogSiteName: storeName,
   ogType: 'website',
   ogTitle: () => `${storeName}: 3D-printed goods and printable files`,
   ogDescription: 'Browse the catalogue and submit an order request.',
-  ogImage: siteUrl ? `${siteUrl}/og-image.png` : undefined,
-  ogImageWidth: siteUrl ? 1200 : undefined,
-  ogImageHeight: siteUrl ? 630 : undefined,
-  ogImageAlt: siteUrl ? `${storeName}` : undefined,
+  ogImage: shareImage,
+  ogImageWidth: shareImage ? 1200 : undefined,
+  ogImageHeight: shareImage ? 630 : undefined,
+  ogImageAlt: shareImage ? `${storeName}` : undefined,
   twitterCard: 'summary_large_image'
 })
 
