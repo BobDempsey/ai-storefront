@@ -13,11 +13,17 @@ shop that is misconfigured says so rather than leaving a customer to find out.
 Every deployment SHALL present exactly one shop identity: a name a customer
 reads, an origin its own links are built against, and one database it reads and
 writes. These SHALL come from the deployment's own configuration rather than
-from anything in the code, so two shops can run the same build.
+from anything in the code, so that a shop's identity is never a code change.
+
+Two shops MAY run the same build, and MAY run different ones. A shop that
+diverges from the template SHALL remain a distinct shop by the same rules: its
+identity still comes from its configuration, and nothing about how its code is
+kept SHALL change what this requirement demands of it.
 
 A deployment SHALL NOT read or write another shop's data. In particular an order
 placed on one shop SHALL NOT appear in another shop's orders, and a subscriber
-added on one SHALL NOT appear on another.
+added on one SHALL NOT appear on another. This SHALL hold whether or not the two
+shops share a build.
 
 Where a shop's name is not configured, the storefront SHALL still serve, showing
 a neutral placeholder rather than another shop's name.
@@ -26,6 +32,12 @@ a neutral placeholder rather than another shop's name.
 
 - **WHEN** two deployments of the same build are configured with different shop identities
 - **THEN** each shows its own name, and each reads and writes only its own database
+
+#### Scenario: Two shops whose code has diverged
+
+- **WHEN** one shop's code has diverged from the other's
+- **THEN** each still shows its own name and reads and writes only its own database
+- **AND** neither shop's deployment is affected by a change made only to the other's code
 
 #### Scenario: An order stays in its own shop
 

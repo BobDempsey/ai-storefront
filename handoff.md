@@ -1700,7 +1700,21 @@ template and to a public demo, which is the opposite of what a template is for.
 
 **So `fif` is a long-lived branch**, protected against deletion and force-push,
 and the `forged-in-filament` Vercel project builds production from it. `main`
-stays the template and the demo. **Template fixes reach the shop only when
+stays the template and the demo.
+
+**Where that Vercel setting lives, because it has moved**: Environments, then
+Production, then Branch Tracking. Not the Git page. And **prove it from
+deployment metadata rather than the settings page**: each deployment records
+`githubCommitRef` and `target`, which is what showed the repoint working. The
+same `fif` push built `target: null` before the change and `target: production`
+after it. An HTML comment was tried as a marker first and proved nothing,
+because Vue strips comments from a production build.
+
+**A push to `main` still builds a preview on the shop's project.** That is
+Vercel building every branch by default, and it is harmless: the shop's live
+site only changes on a `fif` push, which is what was verified. It does spend
+build minutes on a Hobby plan, so an Ignored Build Step is worth considering if
+they ever run short. **Template fixes reach the shop only when
 someone takes them**, by cherry-picking; there is no scheduled merge and adding
 one later needs a decision. `fif` never merges back. The two are meant to drift,
 so nothing should try to hold them together.

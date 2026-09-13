@@ -25,7 +25,8 @@
 
 - [x] 4.1 Commit a visible change on `fif` only and push it; verify it appears on `fif.bobdempsey83.com` and is absent from the demo
       *The first attempt used an HTML comment, which Vue strips from a production build, so it proved nothing and was reverted. Deployment metadata is the check that works: branch, commit and target, all three of which the platform records.*
-- [ ] 4.2 Push a commit to `main`; verify the demo updates and the `forged-in-filament` project builds nothing
-- [ ] 4.3 Run `npm run check` on both branches; verify both pass
-- [ ] 4.4 Run `SMOKE_SHOP=demo` and `SMOKE_SHOP=fif`; verify 6 checks each, and that the fif run reports no deployment banner, which is what would appear if its pushes had become Preview deployments
-- [ ] 4.5 Update `handoff.md` and the root `tasks.md` with what shipped and what was decided
+- [x] 4.2 Push a commit to `main`; verify the demo updates and the `forged-in-filament` project builds nothing
+      *It builds something, just not production: Vercel builds every branch by default, so the shop's project made a `target: null` preview from the `main` commit. Harmless, and the live shop is untouched by it, but the task's wording expected silence.*
+- [x] 4.3 Run `npm run check` on both branches; verify both pass
+- [x] 4.4 Run `SMOKE_SHOP=demo` and `SMOKE_SHOP=fif`; verify 6 checks each, and that the fif run reports no deployment banner, which is what would appear if its pushes had become Preview deployments
+- [x] 4.5 Update `handoff.md` and the root `tasks.md` with what shipped and what was decided
