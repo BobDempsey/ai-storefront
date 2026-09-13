@@ -1,19 +1,15 @@
 # Handoff
 
-> **This is the `fif` branch: Forged in Filament, a real shop.** Everything below
-> was written while this repo was the AI Storefront template and one demo, and
-> it is kept because the shop is built from that template and inherits its
-> decisions, its gotchas and its wiring. Read it as history that still mostly
-> applies.
+> **This is `main`: the AI Storefront template and the demo it ships with.**
+> Forged in Filament lives on the `fif` branch and has its own copy of this
+> document, which starts from this one and diverges. Where the two disagree from
+> here on, neither is wrong: they describe two different shops.
 >
-> What is different here, and will keep growing: this branch deploys
-> `fif.bobdempsey83.com` from the Vercel project `forged-in-filament`, reads the
-> Supabase project `wfhhkdmgouyxnrxnbaeo`, and `.mcp.json` points there rather
-> than at the demo's. Template fixes arrive by cherry-pick from `main` when this
-> shop wants them. This branch never merges back.
->
-> Where this document and `main`'s copy disagree from here on, neither is wrong:
-> they describe two different shops.
+> Everything in this document written before 2026-09-12 was written when the
+> repo was one project, and almost all of it still applies to both. What is
+> specific to this side: the demo at `ai-storefront.bobdempsey83.com`, the
+> Supabase project `qtzwrwstixqgnuixfajp`, and the `.mcp.json` that points at
+> it.
 
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
@@ -1714,7 +1710,48 @@ because Vue strips comments from a production build.
 Vercel building every branch by default, and it is harmless: the shop's live
 site only changes on a `fif` push, which is what was verified. It does spend
 build minutes on a Hobby plan, so an Ignored Build Step is worth considering if
-they ever run short. **Template fixes reach the shop only when
+they ever run short.
+
+**Verified 2026-09-12, and this is what "done" looks like here**: a push to
+`fif` built `target: production` and the shop's live site changed; a push to
+`main` built only a preview on that project and the live shop did not move; both
+branches refuse deletion and force-push, tested by trying; CI ran on both; and
+`SMOKE_SHOP=demo` and `SMOKE_SHOP=fif` are 6/6 each. The Vercel Framework Preset
+on the shop's project reads Nuxt now rather than Other.
+
+**Every email names the shop that sent it, 2026-09-12.** Two shops write to one
+staff inbox, and until this a notification read `New order from Ada Lovelace
+($23.20)` whichever shop took the order. Staff mail carries a bracketed prefix,
+`[Forged in Filament] New order from ...`, because an inbox is sorted on
+subjects; customer mail gets a phrase, `Your Forged in Filament order <id>`,
+because a bracket reads as machinery to a buyer. The name comes from
+`NUXT_PUBLIC_STORE_NAME`, the same value the header shows, so a shop cannot send
+under a name it does not display.
+
+**`Store` counts as unconfigured rather than as a name**, and that is an older
+decision respected rather than overruled: `sendCustomerEmail` carried a comment
+saying it omitted the name because "Your order from Store" reads as a bug. A
+shop still on the placeholder gets the older, plainer subject. Mail always
+sends, whatever the name: by the time these run the order is committed and the
+email is the only thing telling anyone about it.
+
+**One subject could not be verified before shipping.** A dev deployment marks
+every order a test and a test order sends no email at all, so the order
+notification's new subject has no way to be seen outside production. The contact
+path was sent for real and Resend delivered `[AI Storefront] Custom order
+request: Subject check`; the order subject goes through the same helper and is
+unit-tested. The first real production order is what confirms it.
+
+**This was the first template fix taken into `fif` by cherry-pick**, which is
+how that branch is meant to receive them. It applied clean, and `.mcp.json` was
+never in the commit, so nothing had to be held back.
+
+**The one guard that is instruction rather than mechanism**: nothing stops a
+legitimate push to the wrong branch. `AGENTS.md` and `CLAUDE.md` both open by
+telling an agent to run `git branch --show-current`, and that is the whole
+defence. Branch protection does not help here, because pushing shop code to
+`main` is a perfectly valid push. If this ever goes wrong, the fix is a
+revert on `main` and a cherry-pick onto `fif`, not a force-push. **Template fixes reach the shop only when
 someone takes them**, by cherry-picking; there is no scheduled merge and adding
 one later needs a decision. `fif` never merges back. The two are meant to drift,
 so nothing should try to hold them together.

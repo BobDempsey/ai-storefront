@@ -13,4 +13,4 @@
       *The contact message was sent and Resend reports it delivered as `[AI Storefront] Custom order request: Subject check`. **The order half cannot be done on a dev server**: a dev deployment marks every order a test and a test order sends no email at all, so there was nothing to receive. The order subject goes through the same `forStaff()` helper and is covered by unit tests. It will be seen for real on the next production order.*
 - [x] 2.3 Cherry-pick onto `fif` and confirm it names that shop rather than the template's; verify `npm run check` passes there too **(the branches have separate `.mcp.json`; do not carry that file across)**
       *Clean cherry-pick, and `.mcp.json` was never in the commit, so nothing had to be kept back. 264 tests pass on `fif`. The name it sends under comes from that deployment's own `NUXT_PUBLIC_STORE_NAME`, "Forged in Filament", rather than from anything in this commit, which is the point.*
-- [ ] 2.4 Update `handoff.md` and `tasks.md` on both branches
+- [x] 2.4 Update `handoff.md` and `tasks.md` on both branches
