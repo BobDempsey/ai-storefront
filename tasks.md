@@ -1,26 +1,24 @@
 # Remaining tasks
 
-## Now: ai-storefront.bobdempsey83.com
+> **You are on `fif`, the Forged in Filament shop.** `main` is the AI Storefront
+> template and its demo. Shop work belongs here and never on `main`. Template
+> fixes are made on `main` and cherry-picked in when this shop wants them; this
+> branch never merges back. See AGENTS.md.
 
-Nothing outstanding. The demo is live and current, and level with
-`origin/main` (`0e7aa5c` as this was written). Note that this line answers for
-the demo only: `fif` feeds the other shop and has its own currency.
+## Now: fif.bobdempsey83.com
 
-## Next: fif.bobdempsey83.com, on its own branch
+The shop is live at `fif.bobdempsey83.com`, on the Supabase project
+`wfhhkdmgouyxnrxnbaeo`, and this branch is where it diverges from the template.
 
-The split shipped 2026-09-12 as the OpenSpec change `split-into-two-shops`, then
-the same day the one-branch decision behind it was reversed. Two branches now:
-`main` is the template and the demo, `fif` is Forged in Filament. Both are
-protected against deletion and force-push. Template fixes reach the shop by
-cherry-pick, never on a schedule, and `fif` never merges back.
+- [ ] Set this project's framework preset to Nuxt in the Vercel dashboard; the
+      CLI cannot, and it reads "Other" today
+- [ ] Confirm by inbox that the staff email and buyer confirmation arrive for a
+      real order here; the agent has no mailbox and cannot check
+- [ ] Decide what this shop's catalogue actually is. It carries the template's
+      15 seeded demo products today, which is the first thing a real customer
+      would notice
 
-- [ ] Set the fif project's framework preset to Nuxt in the dashboard; the CLI
-      cannot, and it reads "Other" today
-- [ ] Confirm by inbox that the second shop's staff email and buyer
-      confirmation arrive; the agent has no mailbox and cannot check
-- [ ] Widen the Supabase token so db:types can read either project, and decide
-      on the deprecated service_role keys
+## Inherited from the template, still true here
 
-Decided 2026-09-12, do not reopen without asking: the real shop keeps the
-existing database while the demo moves to the new one, and Forged in Filament
-lives on its own long-lived branch because it will diverge from the template.
+- [ ] Widen the Supabase token so `npm run db:types` can read either project,
+      and decide on the deprecated `service_role` keys

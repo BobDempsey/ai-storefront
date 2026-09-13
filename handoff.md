@@ -1,5 +1,20 @@
 # Handoff
 
+> **This is the `fif` branch: Forged in Filament, a real shop.** Everything below
+> was written while this repo was the AI Storefront template and one demo, and
+> it is kept because the shop is built from that template and inherits its
+> decisions, its gotchas and its wiring. Read it as history that still mostly
+> applies.
+>
+> What is different here, and will keep growing: this branch deploys
+> `fif.bobdempsey83.com` from the Vercel project `forged-in-filament`, reads the
+> Supabase project `wfhhkdmgouyxnrxnbaeo`, and `.mcp.json` points there rather
+> than at the demo's. Template fixes arrive by cherry-pick from `main` when this
+> shop wants them. This branch never merges back.
+>
+> Where this document and `main`'s copy disagree from here on, neither is wrong:
+> they describe two different shops.
+
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
 then revised on 2026-08-31 once the order and email paths had run end to end.
