@@ -1472,6 +1472,16 @@ a different staff address will silently fail until a domain is verified.
   NUXT_PORT=3100` and the variable set on that command, rather than editing
   `.env`, which loses the real credential the moment the run is killed.
   `tests/db/chat-guards.test.ts` does exactly this and is the worked example.
+- **`vercel deploy` from the repo directory uploads `.env`.** Found 2026-09-12
+  while standing up the second shop: `vercel deploy --dry` listed `.env`,
+  `.env.local` and `.env.example` among the files it would send. `.gitignore`
+  does not stop it, because the CLI uploads a working directory rather than a
+  git tree. Every live credential this project holds would have gone to Vercel
+  as build input. The way round it, if a CLI deploy is ever needed, is to deploy
+  from a clean `git clone` of `main` with `.git` removed, which carries only
+  `.env.example`. **The ordinary path does not have this problem**: a push to
+  `main` builds from GitHub, where `.env` was never committed. Do not run
+  `vercel deploy` in this repo.
 - **Never pipe a secret into `vercel env add` from PowerShell.**
   `Get-Clipboard | vercel env add NAME production` prepends a UTF-8 BOM and
   Vercel stores it. The build succeeds, `vercel env ls` looks perfect, and every
@@ -1728,6 +1738,30 @@ reports its own name rather than the `Store` placeholder. `SMOKE_BASE_URL` still
 works for an address in no list, such as a preview or a fork. It is 6 checks now
 and the reporter prints which shop each line checked, because a green run should
 still answer "which one?".
+
+**The second shop is live, 2026-09-12.**
+`https://fif.bobdempsey83.com` serves over valid TLS from the Vercel project
+`forged-in-filament` (`prj_kSlBPYnexX9YcOfmNZAiic73g6iF`), built from the same
+repo and the same `main` branch. Ten variables on Production and Preview, its
+own store name, its own share image, and the **real shop's** database
+`wfhhkdmgouyxnrxnbaeo`, which it keeps. **The two shops are split**: the demo
+reads `qtzwrwstixqgnuixfajp` and the real shop reads the original, so an order on
+one cannot appear on the other. `npm run test:smoke` is 6/6 against each.
+
+Four things from standing it up that the next shop will hit. **The Vercel MCP's
+`create_git_project` cannot make a second project from an already-linked repo**;
+it finds the first one and hands that back. `vercel project add <name>` then
+`vercel git connect <repo url>` from a scratch directory holding a
+`.vercel/project.json` for the new id does work. **The per-domain CNAME target
+does not need the dashboard after all**: `vercel domains verify <domain>`, run
+from a directory linked to the project, prints the record, and here it was
+`2b224a9aefe77392.vercel-dns-017.com.`. `vercel domains inspect` still refuses
+the subdomain. **The domain resolved and certified immediately**, on a 300-second
+TTL, as the demo's did. And **the new project's framework preset reads "Other"
+rather than "Nuxt"**, which the CLI cannot change; the build works regardless,
+because Nitro detects Vercel and writes `.vercel/output` whatever the preset
+says, but the two projects do not match and it is worth one click in the
+dashboard.
 
 **The plan is written up as the OpenSpec change `split-into-two-shops`**,
 proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel

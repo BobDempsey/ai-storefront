@@ -11,8 +11,11 @@ Planned as the OpenSpec change `split-into-two-shops`, with four streams that
 can run in parallel and a verification gate after them. Run `/opsx:apply` to
 start; the change's own tasks.md is the working list.
 
-- [ ] Stream A: second Vercel project, its env vars and the Route 53 CNAME.
-      In flight 2026-09-12, and told about NUXT_PUBLIC_OG_IMAGE mid-run
+- [x] Stream A: second Vercel project, its env vars and the Route 53 CNAME.
+      Done 2026-09-12. fif.bobdempsey83.com is live on the real shop's
+      database, and test:smoke is 6/6 against each shop
+- [ ] Set the fif project's framework preset to Nuxt in the dashboard; the CLI
+      cannot, and it reads "Other" today
 - [x] Stream B: new Supabase project for the demo, and repoint it. Done
       2026-09-12, `qtzwrwstixqgnuixfajp`, verified with a real order
 - [ ] Stream B follow-ups: widen the Supabase token so db:types can read either
