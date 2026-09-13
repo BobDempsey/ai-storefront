@@ -122,6 +122,53 @@ check constraint with its literal already cast, as `kind = 'digital'::text`, so
 conversion and added back after it. Missing one fails the migration with
 `operator does not exist`.
 
+## Running more than one shop from this repo
+
+One build, many shops. Nothing in the code differs between them: the shop's
+name, its origin, its share image and its database are all environment
+variables, so a second shop is a second Vercel project on the same repo and the
+same branch rather than a branch of its own.
+
+This template runs two, which is what the checklist below was written from:
+`ai-storefront.bobdempsey83.com` and `fif.bobdempsey83.com`.
+
+1. **Give the shop its own Supabase project.** Run `supabase/schema.sql` then
+   `supabase/seed.sql` against it. Two shops sharing one database means an order
+   placed on either lands in the same table, and one forgotten `where` clause
+   away from each other.
+2. **Create a second Vercel project** from the same repo and branch. The Vercel
+   MCP's `create_git_project` will not do this: it finds the existing project
+   and hands that back. Use `vercel project add <name>` then
+   `vercel git connect <repo url>`.
+3. **Set every variable on Production and Preview**, with this shop's own
+   values. `NUXT_PUBLIC_STORE_NAME`, `NUXT_PUBLIC_SITE_URL`,
+   `NUXT_PUBLIC_OG_IMAGE` and the two Supabase ones are the per-shop ones.
+4. **Render this shop's share image**, because the file has the shop's name
+   drawn into it:
+
+   ```bash
+   node scripts/og-image.mjs --name "Your Shop" --domain your.example.com      --out public/og-image-your-shop.png
+   ```
+
+   Then point `NUXT_PUBLIC_OG_IMAGE` at it. Leaving it unset ships previews with
+   no picture, which is deliberate: a preview showing another shop's name is
+   worse than one showing none.
+5. **Add the domain and its DNS record.** Vercel issues a per-domain CNAME
+   target rather than `cname.vercel-dns.com`. Read it with
+   `vercel domains verify <domain>` from a directory linked to the project;
+   `vercel domains inspect` refuses a subdomain attached to a project.
+6. **Redeploy**, because setting a variable does not rebuild what is running.
+7. **Check it**: `SMOKE_SHOP=<name> npm run test:smoke`, after adding the shop
+   to the list in `tests/smoke/production.test.ts`.
+
+Two things that will cost you an afternoon otherwise. **Never pipe a secret into
+`vercel env add`** from PowerShell: it prepends a UTF-8 BOM, Vercel stores it,
+the build passes, and every request then fails at runtime with a character
+65279 error. Write the value to a BOM-free file and redirect it instead. And
+**never run `vercel deploy` from your working copy**: the CLI uploads a
+directory rather than a git tree, so `.gitignore` does not protect `.env` and
+your live credentials go up as build input. Deploy by pushing to your branch.
+
 ## Before you take it live
 
 The steps above give you a working shop on your machine. These four are what

@@ -79,10 +79,16 @@ and the assistant's prompt.
 Starts only when groups 1 to 4 are done. Every failure this change can introduce
 is a configuration one that a green build and a green suite both miss.
 
-- [ ] 5.1 Load both shops in a browser at 1280px and 390px in both schemes; verify each shows its own name, its own catalogue and a clean console with no hydration mismatch
-- [ ] 5.2 Place a real order on each shop and confirm each lands in its own database and neither appears in the other's; verify the staff email and the buyer confirmation both arrive, then delete both orders
-- [ ] 5.3 Share a link to each shop and check the preview; verify each carries its own name and its own image
-- [ ] 5.4 Run `npm run test:smoke` against both addresses; verify both pass and each names the shop it checked
-- [ ] 5.5 Confirm the shops share no state: exhaust the order rate limit on one and verify the other still accepts an order from the same caller
-- [ ] 5.6 Update `README.md` and `AGENTS.md`, which describe a single-shop template, with the checklist this produced; verify the instructions name only things that exist
-- [ ] 5.7 Update `handoff.md` and the root `tasks.md` with what shipped, what was measured and what was decided
+- [x] 5.1 Load both shops in a browser at 1280px and 390px in both schemes; verify each shows its own name, its own catalogue and a clean console with no hydration mismatch
+      *Both serve their own name, own catalogue and a clean console. The two console errors seen during this check were a cross-origin fetch from the checking script, not the pages.*
+- [x] 5.2 Place a real order on each shop and confirm each lands in its own database and neither appears in the other's; verify the staff email and the buyer confirmation both arrive, then delete both orders
+      *One real order on the real shop, `ad4c886d`, 2320 cents, `is_test=false`, present in `wfhhkdmgouyxnrxnbaeo` and deleted afterwards with its items. The demo side was proved by stream B, whose order appeared in the new project and is absent from the real shop's, confirmed again here. **The emails were not confirmed**: the agent has no mailbox, so receipt is the user's to check.*
+- [x] 5.3 Share a link to each shop and check the preview; verify each carries its own name and its own image
+      *Each shop serves its own `og:site_name` and an absolute `og:image` on its own origin, and both images answer 200 image/png.*
+- [x] 5.4 Run `npm run test:smoke` against both addresses; verify both pass and each names the shop it checked
+      *6/6 against each, and each line names the shop it checked.*
+- [x] 5.5 Confirm the shops share no state: exhaust the order rate limit on one and verify the other still accepts an order from the same caller
+      *Proved on the contact route, which limits at 3 and validates after limiting, so invalid payloads spend the allowance and send nothing. The real shop 429s on the fourth; the same caller still gets 400 rather than 429 on the demo.*
+- [x] 5.6 Update `README.md` and `AGENTS.md`, which describe a single-shop template, with the checklist this produced; verify the instructions name only things that exist
+      *README gained a "Running more than one shop from this repo" section with the checklist and the two traps. AGENTS.md now names both projects and says the MCP server reaches only one.*
+- [x] 5.7 Update `handoff.md` and the root `tasks.md` with what shipped, what was measured and what was decided

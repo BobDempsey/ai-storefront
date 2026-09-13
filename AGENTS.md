@@ -59,10 +59,20 @@ Never commit secrets — configuration comes from `.env` (template in
 
 ## Database access
 
+**There are two Supabase projects now, one per shop.** `wfhhkdmgouyxnrxnbaeo`
+belongs to Forged in Filament at `fif.bobdempsey83.com`, and
+`qtzwrwstixqgnuixfajp` to the demo at `ai-storefront.bobdempsey83.com`. They run
+the same `supabase/schema.sql` and share nothing else. Know which shop you are
+working on before you write anything.
+
 `.mcp.json` configures the Supabase MCP server for this project. It is scoped to
-project `wfhhkdmgouyxnrxnbaeo` and to the `database` and `docs` tool groups, so
-it can read tables, list and apply migrations, and run SQL, but it cannot create
-or pause projects, touch storage, or deploy Edge Functions.
+project `wfhhkdmgouyxnrxnbaeo`, the real shop, and to the `database` and `docs`
+tool groups, so it can read tables, list and apply migrations, and run SQL, but
+it cannot create or pause projects, touch storage, or deploy Edge Functions.
+**To reach the demo's project you have to repoint `project_ref` in `.mcp.json`
+and restart the session to re-authorise.** There is no `create_project` tool,
+and `SUPABASE_ACCESS_TOKEN` is scoped to one project too, so standing up a new
+shop's database needs a human at the dashboard.
 
 Use it for schema work. `apply_migration` and `execute_sql` run the DDL that the
 Supabase REST API cannot, which is what previously forced a human to paste

@@ -23,10 +23,16 @@ start; the change's own tasks.md is the working list.
 - [x] Stream C: per-shop share image, and a smoke test that checks either shop.
       Done 2026-09-12 at `ff4fc83`. Added NUXT_PUBLIC_OG_IMAGE, which both
       deployments must set or their previews ship no picture
-- [ ] Stream D: custom-order requests from an empty search. In flight
-      2026-09-12, uncommitted work in app/, server/ and tests/
-- [ ] Gate: drive both shops, place an order on each, confirm they share nothing
-- [ ] Update README.md and AGENTS.md, which describe a single-shop template
+- [x] Stream D: custom-order requests from an empty search. Done 2026-09-12 at
+      `379b280`, reusing the contact path, and the assistant gained no tool
+- [x] Gate: both shops serve their own identity, share no rate-limit state, and
+      an order on one is absent from the other's database. Done 2026-09-12
+- [ ] Confirm by inbox that the second shop's staff email and buyer
+      confirmation arrive; the agent has no mailbox and cannot check
+- [ ] Push, which is what puts the custom-order feature and the per-shop share
+      images on both live shops (ask first)
+- [x] Update README.md and AGENTS.md. Done 2026-09-12: the README has a
+      "Running more than one shop" checklist and AGENTS.md names both projects
 
 Decided 2026-09-12, do not reopen without asking: a second Vercel project rather
 than a branch, and the real shop keeps the existing database while the demo

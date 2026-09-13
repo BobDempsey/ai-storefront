@@ -1763,6 +1763,29 @@ because Nitro detects Vercel and writes `.vercel/output` whatever the preset
 says, but the two projects do not match and it is worth one click in the
 dashboard.
 
+**Custom-order requests are built**, the last stream: a search that matches
+nothing now offers "ask us about it" beside "clear the search", which carries the
+term to the contact form. It goes through the **existing** contact path with a
+`kind` on the schema rather than a second route, so validation, rate limiting,
+delivery and failure reporting are all the ones already in use; staff see
+"Custom order request:" in the subject and a paragraph saying no order exists
+and no price was quoted. The assistant gained a sentence of `SYSTEM_PROMPT` and
+**no tool**, the fifth change in a row to take that shape. The term travels on
+its own store rather than the assistant's, deliberately: a path that avoids the
+model should not hold its state.
+
+**The split is verified, 2026-09-12.** Both shops serve their own name, their
+own catalogue and their own share image, with clean consoles; `test:smoke` is
+6/6 against each. A real order on the real shop landed in
+`wfhhkdmgouyxnrxnbaeo` and was deleted; the demo's equivalent, placed by stream
+B, is absent from that database. **They share no rate-limit state**: the contact
+route limits at 3 and validates afterwards, so invalid payloads spend the
+allowance without sending anything, and the real shop 429s on the fourth while
+the same caller still gets 400 on the demo. **What is not verified is email**:
+the agent has no mailbox, so whether the staff notification and the buyer
+confirmation actually arrive for the second shop is the user's to confirm, the
+way the opt-in welcome was.
+
 **The plan is written up as the OpenSpec change `split-into-two-shops`**,
 proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel
 agents: four streams over disjoint files and accounts, then a verification gate.
