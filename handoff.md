@@ -1195,6 +1195,13 @@ NUXT_OPENAI_API_KEY         SET — a real sk-proj... key, powers the assistant.
                             assistant unavailable; nothing else changes
 NUXT_PUBLIC_STORE_NAME      SET — "AI Storefront" as of 2026-09-11, locally and
                             on Vercel Production. The placeholder is gone
+NUXT_PUBLIC_OG_IMAGE        NOT in `.env`; SET on the demo's Vercel Production
+                            and Preview as /og-image.png, 2026-09-12. A path
+                            under public/ with a leading slash and no origin.
+                            Per deployment, because the image carries the shop's
+                            name. Unset omits the share tags rather than serving
+                            another shop's picture, which is the default and is
+                            deliberate
 NUXT_PUBLIC_SITE_URL        SET — https://ai-storefront.bobdempsey83.com, no
                             trailing slash, locally and on Vercel Production.
                             The origin the share tags build an absolute image
@@ -1698,6 +1705,29 @@ tool and every write would have landed on the real shop. The access token is
 scoped the same way: `POST /v1/projects` is 403 and `GET /v1/organizations`
 returns empty. Creating a project needs a human at the dashboard or a token with
 organisation scope, and that is worth knowing before planning the third shop.
+
+**Per-shop share images landed 2026-09-12**, the second stream of that plan.
+`public/og-image-forged-in-filament.png` is committed, and
+`scripts/og-image.mjs` generates one for any shop from a name and a domain, so a
+third shop's image is a command rather than an afternoon. Nothing in the repo had
+ever drawn `og-image.png`, so that script is new rather than recovered.
+
+**This added `NUXT_PUBLIC_OG_IMAGE`, and it defaults to empty on purpose.** It
+is a path under `public/` with a leading slash, set per deployment because the
+image has the shop's name drawn into it. Defaulting it to `/og-image.png` would
+put the demo's picture on the real shop's link previews, which is the thing the
+work exists to stop, so an unset one omits the share tags instead. **Both
+deployments must set it**: the demo's Production and Preview carry
+`/og-image.png` as of 2026-09-12, and the real shop needs
+`/og-image-forged-in-filament.png`. A shop that forgets it ships previews with
+no picture, which is quiet rather than broken, and so easy to miss.
+
+**The smoke test names a shop rather than an address.** `SMOKE_SHOP=demo|fif`
+carries both the address and the store name it expects, so it can assert a shop
+reports its own name rather than the `Store` placeholder. `SMOKE_BASE_URL` still
+works for an address in no list, such as a preview or a fork. It is 6 checks now
+and the reporter prints which shop each line checked, because a green run should
+still answer "which one?".
 
 **The plan is written up as the OpenSpec change `split-into-two-shops`**,
 proposed 2026-09-12 and not yet started. It is deliberately shaped for parallel
