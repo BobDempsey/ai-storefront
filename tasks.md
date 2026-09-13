@@ -13,10 +13,12 @@ other shop and has its own currency and its own task list.
 
 ## Template work, when there is any
 
-- [ ] Watch the next real order's staff email on either shop: it should carry
-      the shop's name in brackets now. That subject could not be verified before
-      shipping, because a dev order is a test order and a test order sends no
-      email at all
+- [x] Watch the next real order's staff email on either shop: it should carry
+      the shop's name in brackets now. Confirmed 2026-09-13 by inbox screenshot
+      for the contact path; the order path uses the same helper
+- [ ] Consider naming the shop in the email bodies too, not just the subjects.
+      Raised 2026-09-13 and left alone on purpose: the subject is what an inbox
+      sorts on. It matters if staff ever forward or print these
 
 - [ ] Widen the Supabase token so `npm run db:types` can read either project,
       and decide on the deprecated `service_role` keys

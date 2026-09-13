@@ -1742,6 +1742,18 @@ path was sent for real and Resend delivered `[AI Storefront] Custom order
 request: Subject check`; the order subject goes through the same helper and is
 unit-tested. The first real production order is what confirms it.
 
+**Confirmed by inbox screenshots, 2026-09-13.** The fixed subject arrives as
+`[AI Storefront] Custom order request: Subject check`; four earlier emails, two
+of them the two shops' order notifications, are indistinguishable from each
+other, which is the gap this closed. All arrive from `orders@bobdempsey83.com`
+and land in Gmail's Updates tab rather than spam, so SPF and DKIM are working.
+
+**Only the subject names the shop; the bodies do not.** The headings still read
+`New order <id>` and `Custom order request`, so a forwarded or printed email is
+anonymous again. Raised with the user on 2026-09-13 and **deliberately left**:
+the subject is what an inbox sorts on, which was the actual problem. Worth
+revisiting if staff ever forward these.
+
 **This was the first template fix taken into `fif` by cherry-pick**, which is
 how that branch is meant to receive them. It applied clean, and `.mcp.json` was
 never in the commit, so nothing had to be held back.
