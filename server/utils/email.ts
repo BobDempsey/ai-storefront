@@ -31,6 +31,30 @@ export interface OrderEmailPayload {
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
 
 /**
+ * The shop's own name, or null when it does not really have one.
+ *
+ * `Store` is the placeholder the template ships with, so it is treated as
+ * unconfigured rather than as a name: "Your order from Store" reads as a bug,
+ * which is why the buyer's confirmation used to carry no name at all. Naming
+ * the shop matters once more than one of them writes to the same inbox, and a
+ * shop that has not been named yet is better served by the older, plainer
+ * subject than by an empty bracket.
+ */
+function shopName(): string | null {
+  // `public?.` rather than `public.`: this runs in tests that stub only the
+  // keys they care about, and a missing name must read as unconfigured rather
+  // than throw inside a send that an order is depending on.
+  const configured = useRuntimeConfig().public?.storeName?.trim()
+  return !configured || configured === 'Store' ? null : configured
+}
+
+/** Files a staff inbox that may carry more than one shop's mail. */
+const forStaff = (subject: string) => {
+  const name = shopName()
+  return name ? `[${name}] ${subject}` : subject
+}
+
+/**
  * Everything interpolated below is attacker-controlled: the customer fields come
  * straight from a public, unauthenticated form. Escape before interpolating so a
  * submission cannot inject markup into a staff inbox.
@@ -126,7 +150,9 @@ export async function sendOrderEmail(order: OrderEmailPayload) {
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: order.customer.email,
-    subject: `New order from ${order.customer.name.replace(/\s+/g, ' ').trim()} (${money(order.totalCents)})`,
+    subject: forStaff(
+      `New order from ${order.customer.name.replace(/\s+/g, ' ').trim()} (${money(order.totalCents)})`
+    ),
     html: renderHtml(order)
   })
 
@@ -226,9 +252,15 @@ export async function sendCustomerEmail(order: CustomerEmailPayload) {
     from: orderFromEmail,
     to: order.customer.email,
     replyTo: orderAdminEmail,
-    // No store name: NUXT_PUBLIC_STORE_NAME is the `Store` placeholder in the
-    // template as shipped, and "Your order from Store" reads as a bug.
-    subject: `Your order ${order.orderId} (${money(order.totalCents)})`,
+    // A phrase rather than the staff mail's bracketed tag: a buyer knows which
+    // shop they bought from and wants a sentence, not a filing aid. Falls back
+    // to the older, nameless subject when the shop is still the `Store`
+    // placeholder, because "Your Store order" reads as a bug.
+    subject: (() => {
+      const name = shopName()
+      const tail = `order ${order.orderId} (${money(order.totalCents)})`
+      return name ? `Your ${name} ${tail}` : `Your ${tail}`
+    })(),
     html: renderCustomerHtml(order)
   })
 
@@ -273,7 +305,7 @@ export async function sendContactEmail(contact: ContactEmailPayload) {
     from: orderFromEmail,
     to: orderAdminEmail,
     replyTo: contact.email,
-    subject: custom ? `Custom order request: ${sender}` : `Contact form: ${sender}`,
+    subject: forStaff(custom ? `Custom order request: ${sender}` : `Contact form: ${sender}`),
     html: `
       <h2>${custom ? 'Custom order request' : 'Message from the contact form'}</h2>
       <p>
@@ -310,7 +342,11 @@ export async function sendWelcomeEmail(email: string) {
   const { error } = await resend.emails.send({
     from: orderFromEmail,
     to: email,
-    subject: promo ? "You're subscribed, here's your promo code" : "You're subscribed",
+    subject: (() => {
+      const name = shopName()
+      const to = name ? ` to ${name}` : ''
+      return promo ? `You're subscribed${to}, here's your promo code` : `You're subscribed${to}`
+    })(),
     html: `
       <h2>Thanks for subscribing</h2>
       <p>We'll email you when there's something new.</p>
