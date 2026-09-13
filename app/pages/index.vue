@@ -500,3 +500,5 @@ useSeoMeta({
   appearance: none;
 }
 </style>
+
+<!-- Branch wiring check: this comment exists only on the fif branch. -->
