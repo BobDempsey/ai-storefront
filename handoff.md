@@ -1,15 +1,26 @@
 # Handoff
 
-> **This is `main`: the AI Storefront template and the demo it ships with.**
-> Forged in Filament lives on the `fif` branch and has its own copy of this
-> document, which starts from this one and diverges. Where the two disagree from
-> here on, neither is wrong: they describe two different shops.
+> **This is the `fif` branch: Forged in Filament, a real shop.** Everything below
+> was written while this repo was the AI Storefront template and one demo, and
+> it is kept because the shop is built from that template and inherits its
+> decisions, its gotchas and its wiring. Read it as history that still mostly
+> applies.
 >
-> Everything in this document written before 2026-09-12 was written when the
-> repo was one project, and almost all of it still applies to both. What is
-> specific to this side: the demo at `ai-storefront.bobdempsey83.com`, the
-> Supabase project `qtzwrwstixqgnuixfajp`, and the `.mcp.json` that points at
-> it.
+> What is different here, and will keep growing: this branch deploys
+> `fif.bobdempsey83.com` from the Vercel project `forged-in-filament`, reads the
+> Supabase project `wfhhkdmgouyxnrxnbaeo`, and `.mcp.json` points there rather
+> than at the demo's. Template fixes arrive by cherry-pick from `main` when this
+> shop wants them. This branch never merges back.
+>
+> Where this document and `main`'s copy disagree from here on, neither is wrong:
+> they describe two different shops. Today the only difference is this banner:
+> everything else has been kept level by cherry-pick, and that will stop being
+> true as the shop diverges.
+>
+> **Resolving a cherry-pick conflict in this file, take care**: `git checkout
+> --theirs handoff.md` takes `main`'s whole document, banner included, and the
+> result claims to be `main`. It happened once already. Merge the conflicting
+> hunk rather than the file.
 
 Everything needed to pick this project up cold. Written 2026-08-30 at the end of
 the initial scaffold, updated the same day after the Supabase project was created,
