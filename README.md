@@ -82,7 +82,8 @@ and arrange payment off-app.
 
 7. Continuous integration:
 
-   `.github/workflows/check.yml` runs `npm run check` on a push to `main` and on
+   `.github/workflows/check.yml` runs `npm run check` on a push to either
+   long-lived branch, `main` or `fif`, and on
    every pull request. It runs nothing else on purpose. `test:db` and `test:llm`
    write to your live Supabase project and spend provider calls, and `test:e2e`
    and `test:smoke` need a running server or a deployment, so none of them
@@ -124,22 +125,38 @@ conversion and added back after it. Missing one fails the migration with
 
 ## Running more than one shop from this repo
 
-One build, many shops. Nothing in the code differs between them: the shop's
-name, its origin, its share image and its database are all environment
-variables, so a second shop is a second Vercel project on the same repo and the
-same branch rather than a branch of its own.
+A shop's name, its origin, its share image and its database are all environment
+variables, so a second shop is a second Vercel project on the same repo. The
+question is whether it also wants its own branch, and the answer depends on one
+thing: whether the shop will diverge from the template.
 
-This template runs two, which is what the checklist below was written from:
-`ai-storefront.bobdempsey83.com` and `fif.bobdempsey83.com`.
+**If it will not**, put it on the same branch. One push updates both, nothing
+drifts, and there is nothing to keep in step.
+
+**If it will**, give it a long-lived branch and set that Vercel project's
+Production Branch to it. Every shop change then stays out of the template, and
+template fixes reach the shop only when you cherry-pick them. Expect the two to
+drift: that is the point, not a problem to solve later with a scheduled merge.
+
+This template runs two, one of each, which is what the checklist below was
+written from. `ai-storefront.bobdempsey83.com` is the demo on `main`, and
+`fif.bobdempsey83.com` is a real shop on its own `fif` branch, because it is
+going to diverge.
 
 1. **Give the shop its own Supabase project.** Run `supabase/schema.sql` then
    `supabase/seed.sql` against it. Two shops sharing one database means an order
    placed on either lands in the same table, and one forgotten `where` clause
    away from each other.
-2. **Create a second Vercel project** from the same repo and branch. The Vercel
-   MCP's `create_git_project` will not do this: it finds the existing project
-   and hands that back. Use `vercel project add <name>` then
+2. **Create a second Vercel project** from the same repo. The Vercel MCP's
+   `create_git_project` will not do this: it finds the existing project and
+   hands that back. Use `vercel project add <name>` then
    `vercel git connect <repo url>`.
+   If this shop gets its own branch, create the branch and set the project's
+   **Production Branch** to it in the dashboard. Miss that step and pushes to
+   the branch become Preview deployments, which carry the Preview environment
+   and the "not the live shop" bar, while pushes to `main` keep redeploying the
+   shop. Protecting the branch against deletion is worth doing at the same time:
+   once it diverges there is no upstream to recover it from.
 3. **Set every variable on Production and Preview**, with this shop's own
    values. `NUXT_PUBLIC_STORE_NAME`, `NUXT_PUBLIC_SITE_URL`,
    `NUXT_PUBLIC_OG_IMAGE` and the two Supabase ones are the per-shop ones.

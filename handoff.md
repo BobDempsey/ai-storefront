@@ -1519,10 +1519,14 @@ a different staff address will silently fail until a domain is verified.
 - **A green `npm run test:smoke` does not mean your code is deployed.** It
   asks the production alias four questions the store has answered correctly
   since 2026-09-10, so it passes just as well against a build from before
-  anything you wrote. Vercel builds from `origin/main`, not the working tree,
-  so the check that the live site is current is `git status -sb` — if it says
+  anything you wrote. Vercel builds from the remote, not the working tree, so
+  the check that the live site is current is `git status -sb` — if it says
   `ahead N`, production is N commits old however green the suite is. This is
   how the 31-commit gap in section 10 went unnoticed.
+  **Since 2026-09-12 that check answers for one shop only.** Each branch feeds
+  its own Vercel project, so `git status -sb` on `fif` says nothing about the
+  demo and `main` says nothing about the real shop. Standing on the wrong branch
+  gives a false all-clear. Check the branch you are asking about.
 - **`npm` does not load `.env`.** A script in `package.json` that shells out to
   a CLI expecting an environment variable will not see anything `.env` holds.
   This is why `npm run db:types` goes through `scripts/db-types.mjs`, which
@@ -1666,13 +1670,25 @@ happens first and the split happens later. Until it is repointed, orders placed
 on the demo land in the real shop's tables.
 
 ~~The open question is whether the second shop needs a branch at all.~~
-**Settled 2026-09-12: a second Vercel project built from `main`, not a branch.**
-Nothing in the code differs between the two shops. The store name, the Supabase
-credentials, the Resend sender and the domain are all environment variables, so
-two projects from one branch do it with no merge to keep them in step. A branch
-only earns its keep if the two shops' code has to diverge, and today it does
-not; if that ever changes, a configuration flag is the smaller answer and a
-branch is still available.
+~~Settled 2026-09-12: a second Vercel project built from `main`, not a branch.~~
+**Reversed the same day, and this is now the shape of the project.** What that
+decision said: nothing in the code differs between the two shops, the store
+name, credentials, sender and domain are all environment variables, so two
+projects from one branch do it with no merge to keep them in step. It ended with
+the condition that undid it: *a branch only earns its keep if the two shops'
+code has to diverge, and today it does not.*
+
+**The premise was wrong about tomorrow.** `ai-storefront` is a template and
+Forged in Filament is a shop built from it, which will diverge from it
+substantially. Sharing a branch means every shop change also ships to the
+template and to a public demo, which is the opposite of what a template is for.
+
+**So `fif` is a long-lived branch**, protected against deletion and force-push,
+and the `forged-in-filament` Vercel project builds production from it. `main`
+stays the template and the demo. **Template fixes reach the shop only when
+someone takes them**, by cherry-picking; there is no scheduled merge and adding
+one later needs a decision. `fif` never merges back. The two are meant to drift,
+so nothing should try to hold them together.
 
 **Also settled the same day: the real shop keeps the existing database and the
 demo moves.** The existing project is `wfhhkdmgouyxnrxnbaeo`, already named
@@ -1742,7 +1758,7 @@ still answer "which one?".
 **The second shop is live, 2026-09-12.**
 `https://fif.bobdempsey83.com` serves over valid TLS from the Vercel project
 `forged-in-filament` (`prj_kSlBPYnexX9YcOfmNZAiic73g6iF`), built from the same
-repo and the same `main` branch. Ten variables on Production and Preview, its
+repo and, as of later that day, from its own `fif` branch. Ten variables on Production and Preview, its
 own store name, its own share image, and the **real shop's** database
 `wfhhkdmgouyxnrxnbaeo`, which it keeps. **The two shops are split**: the demo
 reads `qtzwrwstixqgnuixfajp` and the real shop reads the original, so an order on

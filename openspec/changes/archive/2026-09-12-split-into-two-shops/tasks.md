@@ -41,7 +41,8 @@ stream that can take the demo offline.**
 These came out of group 2 and belong to nobody else's stream. They are small and
 none of them blocks another group.
 
-- [ ] 2b.1 Repoint `.mcp.json` when a session needs to reach a shop other than the real one; it pins `project_ref` to `wfhhkdmgouyxnrxnbaeo`, so verify a session restarted against another ref re-authorises and reads that project
+- [x] 2b.1 Repoint `.mcp.json` when a session needs to reach a shop other than the real one; it pins `project_ref` to `wfhhkdmgouyxnrxnbaeo`, so verify a session restarted against another ref re-authorises and reads that project
+      *Answered by the branch split rather than by a procedure. Each branch's `.mcp.json` now points at its own shop's project: `main` at the demo's, `fif` at the real shop's. Checking out the branch is the repoint. AGENTS.md says the file differs on purpose and must not be reconciled.*
 - [ ] 2b.2 Widen `SUPABASE_ACCESS_TOKEN`'s scope, or add a second token, so `npm run db:types` can read either project; verify `SUPABASE_PROJECT_REF=<new ref> npm run db:types` succeeds, which today fails with `LegacyGenTypesUnexpectedStatusError` because the token reaches one project only **(new env var if a second token is the answer)**
 - [ ] 2b.3 Decide whether both shops move from the legacy `service_role` JWT to `sb_secret_` keys, which Supabase marks deprecated; verify each shop still serves its catalogue afterwards **(new env values, not new names)**
 

@@ -5,9 +5,12 @@
 # them belongs on a pull request from a fork.
 name: check
 
+# Both long-lived branches, because each one deploys a shop. main is the
+# template and the demo; fif is Forged in Filament and diverges from it. A
+# branch left out here is a branch that deploys with nothing checking it.
 on:
   push:
-    branches: [main]
+    branches: [main, fif]
   pull_request:
 
 # A second push to the same branch cancels the first, since only the latest

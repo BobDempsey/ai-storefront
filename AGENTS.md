@@ -2,6 +2,36 @@
 
 Instructions for any AI coding agent working in this repository.
 
+## Check the branch before you write anything
+
+**This repository holds two shops on two long-lived branches**, and they are not
+the same project.
+
+| Branch | What it is | Where it deploys |
+| --- | --- | --- |
+| `main` | the AI Storefront template, and the demo that shows it off | `ai-storefront.bobdempsey83.com` |
+| `fif` | Forged in Filament, a real shop built from the template | `fif.bobdempsey83.com` |
+
+Both are protected: neither can be deleted or force-pushed.
+
+Three rules, and the first one is the one that gets broken:
+
+- **Run `git branch --show-current` before you edit code, and name the branch
+  when you report.** An agent told to "fix the shop" will otherwise work on
+  whatever happens to be checked out and push to `main` out of habit, which
+  ships shop code to the template and to a public demo.
+- **Shop work never lands on `main`.** If a change is about Forged in Filament's
+  products, copy, pricing or design, it belongs on `fif` and nowhere else.
+- **Template work is done on `main` and taken into `fif` deliberately**, by
+  cherry-picking the commit when the shop actually wants it. There is no
+  scheduled merge and there should not be one: the two are expected to diverge,
+  which is the whole reason the branch exists. `fif` never merges back.
+
+**`.mcp.json` differs between the branches on purpose.** It pins the Supabase
+MCP server to one project, and each branch points at its own shop's database.
+Do not "fix" it by copying the other branch's value, and do not carry it across
+in a cherry-pick.
+
 ## This project uses OpenSpec
 
 Spec-driven development is the default workflow here. **Do not jump straight to
