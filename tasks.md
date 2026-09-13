@@ -23,6 +23,14 @@ other shop and has its own currency and its own task list.
 - [ ] Consider an Ignored Build Step on the fif Vercel project, which builds a
       preview on every `main` push and spends Hobby build minutes doing it
 
+## Keeping the branches level
+
+`fif` is level with `main` as of 2026-09-12, by cherry-pick. One `main` commit
+is deliberately never taken, the one naming which branch each document belongs
+to, so those two files always differ. Check for content rather than commits:
+`git cherry fif main` compares patch ids and reports a resolved conflict as
+missing.
+
 ## Living on the other branch
 
 Recorded here because it is easy to forget which side a thing belongs to. These

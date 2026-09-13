@@ -1746,6 +1746,21 @@ unit-tested. The first real production order is what confirms it.
 how that branch is meant to receive them. It applied clean, and `.mcp.json` was
 never in the commit, so nothing had to be held back.
 
+**The branches were brought level by cherry-pick on 2026-09-12**, and the way to
+check is worth knowing because the obvious way lies. `git cherry fif main`
+compares patch ids, so a commit whose conflict you resolved shows as missing
+from `fif` even though its content is all there. Check for the content, not the
+commit.
+
+**One `main` commit is deliberately never taken**: the one that puts "you are on
+`main`" at the top of `handoff.md` and `tasks.md`. That is the class of change
+that must not cross, and it is the reason those two files will always show a
+diff between the branches.
+
+**Resolving a `handoff.md` conflict, do not reach for `--theirs`.** It takes
+`main`'s whole document, banner included, and `fif`'s copy then announces itself
+as `main`. That happened once. Merge the conflicting hunk instead.
+
 **The one guard that is instruction rather than mechanism**: nothing stops a
 legitimate push to the wrong branch. `AGENTS.md` and `CLAUDE.md` both open by
 telling an agent to run `git branch --show-current`, and that is the whole
