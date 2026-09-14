@@ -4,6 +4,15 @@ A Nuxt 4 storefront template with a shopping assistant, and a request-an-order
 checkout: customers build a cart and submit it, staff receive the order by email
 and arrange payment off-app.
 
+**Live demo: [ai-storefront.bobdempsey83.com](https://ai-storefront.bobdempsey83.com/)**
+
+![The storefront in light mode: the shop page with the assistant panel and the product grid](docs/screenshot-storefront.png)
+
+The same page in dark mode, which the navbar toggles and the page applies before
+first paint:
+
+![The storefront in dark mode](docs/screenshot-storefront-dark.png)
+
 ## Stack
 
 | Concern | Choice |
@@ -122,132 +131,6 @@ check constraint with its literal already cast, as `kind = 'digital'::text`, so
 **every** constraint mentioning the column has to be dropped before the
 conversion and added back after it. Missing one fails the migration with
 `operator does not exist`.
-
-## Running more than one shop from this repo
-
-A shop's name, its origin, its share image and its database are all environment
-variables, so a second shop is a second Vercel project on the same repo. The
-question is whether it also wants its own branch, and the answer depends on one
-thing: whether the shop will diverge from the template.
-
-**If it will not**, put it on the same branch. One push updates both, nothing
-drifts, and there is nothing to keep in step.
-
-**If it will**, give it a long-lived branch and set that Vercel project's
-Production Branch to it. Every shop change then stays out of the template, and
-template fixes reach the shop only when you cherry-pick them. Expect the two to
-drift: that is the point, not a problem to solve later with a scheduled merge.
-
-This template runs two, one of each, which is what the checklist below was
-written from. `ai-storefront.bobdempsey83.com` is the demo on `main`, and
-`fif.bobdempsey83.com` is a real shop on its own `fif` branch, because it is
-going to diverge.
-
-1. **Give the shop its own Supabase project.** Run `supabase/schema.sql` then
-   `supabase/seed.sql` against it. Two shops sharing one database means an order
-   placed on either lands in the same table, and one forgotten `where` clause
-   away from each other.
-2. **Create a second Vercel project** from the same repo. The Vercel MCP's
-   `create_git_project` will not do this: it finds the existing project and
-   hands that back. Use `vercel project add <name>` then
-   `vercel git connect <repo url>`.
-   If this shop gets its own branch, create the branch and set the project's
-   **Production Branch** to it in the dashboard. Miss that step and pushes to
-   the branch become Preview deployments, which carry the Preview environment
-   and the "not the live shop" bar, while pushes to `main` keep redeploying the
-   shop. Protecting the branch against deletion is worth doing at the same time:
-   once it diverges there is no upstream to recover it from.
-3. **Set every variable on Production and Preview**, with this shop's own
-   values. `NUXT_PUBLIC_STORE_NAME`, `NUXT_PUBLIC_SITE_URL`,
-   `NUXT_PUBLIC_OG_IMAGE` and the two Supabase ones are the per-shop ones.
-4. **Render this shop's share image**, because the file has the shop's name
-   drawn into it:
-
-   ```bash
-   node scripts/og-image.mjs --name "Your Shop" --domain your.example.com      --out public/og-image-your-shop.png
-   ```
-
-   Then point `NUXT_PUBLIC_OG_IMAGE` at it. Leaving it unset ships previews with
-   no picture, which is deliberate: a preview showing another shop's name is
-   worse than one showing none.
-5. **Add the domain and its DNS record.** Vercel issues a per-domain CNAME
-   target rather than `cname.vercel-dns.com`. Read it with
-   `vercel domains verify <domain>` from a directory linked to the project;
-   `vercel domains inspect` refuses a subdomain attached to a project.
-6. **Redeploy**, because setting a variable does not rebuild what is running.
-7. **Check it**: `SMOKE_SHOP=<name> npm run test:smoke`, after adding the shop
-   to the list in `tests/smoke/production.test.ts`.
-
-Two things that will cost you an afternoon otherwise. **Never pipe a secret into
-`vercel env add`** from PowerShell: it prepends a UTF-8 BOM, Vercel stores it,
-the build passes, and every request then fails at runtime with a character
-65279 error. Write the value to a BOM-free file and redirect it instead. And
-**never run `vercel deploy` from your working copy**: the CLI uploads a
-directory rather than a git tree, so `.gitignore` does not protect `.env` and
-your live credentials go up as build input. Deploy by pushing to your branch.
-
-## Before you take it live
-
-The steps above give you a working shop on your machine. These four are what
-separate that from a shop a stranger can buy from, and none of them is code: the
-template cannot do them for you, because each one is about your shop, your
-domain and your accounts.
-
-**Name the shop.** `NUXT_PUBLIC_STORE_NAME` ships as `Store`, which is what the
-header and the page titles will say until you change it. Along with the sandbox
-sender address below, it is one of the two placeholders a customer can see.
-
-**Buy a domain and verify it in Resend.** Until you do, the template sends
-through Resend's sandbox sender (`onboarding@resend.dev`), and the sandbox
-delivers to exactly one address: the one on your Resend account. That has two
-consequences worth being clear about.
-
-- Your own order notifications work, as long as `NUXT_ORDER_ADMIN_EMAIL` is that
-  same address. Point it at a colleague and the mail silently goes nowhere.
-- **Your customers receive nothing.** The order confirmation the buyer is
-  promised is sent, refused, and logged. They are told to expect an email that
-  cannot arrive.
-
-So verify a domain in Resend before launch, then set `NUXT_ORDER_FROM_EMAIL` to
-an address on it. Now both emails reach anyone.
-
-**Add SPF and DKIM.** Resend gives you the DNS records when you verify the
-domain. Skipping them does not stop mail going out, which is what makes it easy
-to skip: it lands in spam instead, and you find out from the customer who says
-they never heard back. Add the records, then send yourself a test order.
-
-**Point `NUXT_TRUSTED_IP_HEADER` at your host.** Covered in step 3 above. It
-defaults to Vercel's header; if you deploy elsewhere and leave it, every visitor
-shares one rate-limit bucket.
-
-**Leave `NUXT_PUBLIC_DEPLOY_ENV` unset in production.** Name it on anything that
-is not the live shop (`preview` on a preview deployment) and the storefront
-carries a bar saying so, and puts it in the tab title too. Unset means the live
-shop and renders nothing, so forgetting it is safe; typing it in production is
-what you have to avoid. A dev server marks itself without the variable, because
-`import.meta.dev` tells it. A preview cannot: its build is identical to
-production's.
-
-**Point the smoke test at your own domain.** `SMOKE_BASE_URL` overrides the
-default in `tests/smoke/production.test.ts`. Give it the custom domain rather
-than a per-deployment URL: those sit behind Vercel's deployment protection and
-answer a login page, which the test would happily assert on while your store
-was down.
-
-### Deploying to Vercel
-
-Import the repository, then set every variable from your `.env` on both
-Production and Preview. Two things that cost an afternoon the first time:
-
-- **A variable set to an empty string is not the same as an unset one.** Empty
-  wins over the built-in default, so the app reports itself unconfigured while
-  `vercel env ls` shows the variable present. It hides the values, so it cannot
-  tell the two apart.
-- **Adding a variable does not rebuild what is already deployed.** Run
-  `vercel redeploy <url>` afterwards, or the running build never sees it.
-
-Leave `NUXT_TEST_ORDER_TOKEN` unset in production. Unset means no request can
-mark an order as a test, which is the setting you want on a real shop.
 
 ## Contributing with AI agents
 
