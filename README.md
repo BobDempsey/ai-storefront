@@ -4,14 +4,14 @@ A Nuxt 4 storefront template with a shopping assistant, and a request-an-order
 checkout: customers build a cart and submit it, staff receive the order by email
 and arrange payment off-app.
 
-**Live demo: [ai-storefront.bobdempsey83.com](https://ai-storefront.bobdempsey83.com/)**
+**Live shop: [fif.bobdempsey83.com](https://fif.bobdempsey83.com/)**
 
-![The storefront in light mode: the shop page with the assistant panel and the product grid](docs/screenshot-storefront.png)
+![Forged in Filament in light mode: the shop page with the assistant panel and the product grid](docs/screenshot-storefront.png)
 
 The same page in dark mode, which the navbar toggles and the page applies before
 first paint:
 
-![The storefront in dark mode](docs/screenshot-storefront-dark.png)
+![Forged in Filament in dark mode](docs/screenshot-storefront-dark.png)
 
 ## Stack
 
