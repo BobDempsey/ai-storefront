@@ -1,8 +1,9 @@
-# AI Storefront
+# Forged in Filament
 
-A Nuxt 4 storefront template with a shopping assistant, and a request-an-order
-checkout: customers build a cart and submit it, staff receive the order by email
-and arrange payment off-app.
+An AI-assisted shop for desk organisers, planters, lamps, gaming gear and other
+3D-printed goods, built on the AI Storefront template that lives on `main`. It
+has a shopping assistant and a request-an-order checkout: customers build a cart
+and submit it, staff receive the order by email and arrange payment off-app.
 
 **Live shop: [fif.bobdempsey83.com](https://fif.bobdempsey83.com/)**
 
@@ -75,8 +76,8 @@ first paint:
    3, which is why `test:unit` exists for the loop you run on every save.
 
    The conventions behind that split are in [AGENTS.md](AGENTS.md).
-   `test:smoke` defaults to this template's own demo at
-   `ai-storefront.bobdempsey83.com`; set `SMOKE_BASE_URL` to check yours.
+   `test:smoke` defaults to the template's demo, so check this shop with
+   `SMOKE_SHOP=fif npm run test:smoke`.
 
 6. Lint:
 
