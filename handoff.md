@@ -136,7 +136,9 @@ and is built (section 10); stock decrementing and paid-order file delivery were
 in it until the user dropped both the same day. A real store name, a domain and
 SPF/DKIM are the second, and the user closed that group the same day too: they
 are per-deployment setup, not repo work, and belong in the README as setup
-steps. Do not open work on a domain, SPF/DKIM, a store name or a deploy without
+steps. They were written there on 2026-09-11 and removed again on 2026-09-14
+(see the end of this trail); the steps themselves are still the user's to do,
+and the prose is recoverable with `git show e53e745:README.md`. Do not open work on a domain, SPF/DKIM, a store name or a deploy without
 asking. No feature work is queued as a result, and the one idea still written
 down in section 10 is parked rather than next. `tasks.md` holds only the push
 and redeploy that close the gap between local `main` and production
@@ -653,6 +655,42 @@ that matters, found and then closed in the same session: `origin/main` had
 fallen six commits behind local `main`, so the prefill, the latency work and
 both deployment changes were committed and none of them was live. They are
 live now.
+
+Reviewed against the code again on 2026-09-14, working tree clean at `e53e745`.
+The session's work was the public face of the repository rather than the shop,
+and it started on `main`: the template's README gained the demo's URL and two
+screenshots, and lost two sections. Both changes were cherry-picked here as
+`72d8b9f`, then made this shop's own. `e72e8ef` replaces the demo's link and
+screenshots with Forged in Filament's, taken from `fif.bobdempsey83.com` at
+1440x900 in each theme and committed to `docs/` rather than `public/` so the
+app never serves them. `777e3a9` retitles the README after the shop, since its
+heading and opening paragraph still described the template, and points the
+smoke-test line at `SMOKE_SHOP=fif`, since the default in that paragraph is the
+demo's address and not this shop's.
+
+**The README here no longer carries "Running more than one shop from this repo"
+or "Before you take it live"**, the second having taken its nested Vercel
+deployment notes with it. That is the thing to know about this session. The
+store name, the domain, SPF and DKIM, the trusted-IP header and the two Vercel
+traps are now only in this document and in git history; read them back with
+`git show e53e745:README.md` rather than writing them again from memory.
+
+GitHub's **About panel gained a description and fifteen topics** the same day.
+It is repository-wide, so this branch cannot have its own: the description, the
+website link and the topics are shared with `main`, and the link points at the
+demo rather than at this shop. There is no per-branch setting for it.
+
+The user asked whether GitHub's "fif had recent pushes" banner should become a
+pull request. It should not, and the answer is worth keeping: this branch
+diverges from the template on purpose, so it never merges into `main`. No pull
+request has ever been opened on this repository. The banner is GitHub's
+automatic prompt for any branch pushed in the last day, it has no dismiss
+control, and it goes away on its own.
+
+A read-only review of the whole repository ran in the same session, against
+`main` but over code this branch shares. It found five things worth acting on,
+recorded in section 9 of the template's handoff and repeated in section 9 here.
+Nothing was changed in response to them.
 
 ---
 
@@ -1629,6 +1667,39 @@ were re-verified against the code on 2026-08-31.
   `form.promoCode` and `appliedCode` whenever the server's status is anything
   but `applied`, so a rejected code cannot sit in the field for a following
   Submit to resend. See the top of this document.
+- **`/api/cart/preview` is an unrate-limited promo-code oracle.** Found
+  2026-09-14. It is public, unauthenticated, and the only write-shaped route
+  that does not call `rateLimitByCaller`. It answers with `promoStatus`, which
+  separates `unknown` from `inactive` from `used` from `applied`, so a caller
+  can guess codes as fast as the network allows and be told which ones are
+  real. `create_order` still refuses a code the buyer may not use, so the worst
+  case is a discount reaching someone who was never emailed one, not a free
+  order. The fix is a bucket of its own on that route, the way `contact` and
+  `email-optin` have theirs.
+- **The in-memory stores are per-instance, and this deploys to Vercel.** Found
+  2026-09-14. `server/utils/rate-limit.ts` and `server/utils/confirmations.ts`
+  both keep a module-level `Map`, and both docstrings reason about a single
+  long-running instance. Serverless gives each instance its own copy, so the
+  real limits are the stated ones multiplied by however many instances are
+  warm, and an assistant draft minted on one instance can have its Confirm
+  land on another and come back as "that confirmation is no longer valid". The
+  confirmation case is the one a visitor sees. Neither has been observed in
+  production; the traffic is too low to have produced a second instance.
+- **The promo preview and `create_order` normalise a code differently.** Found
+  2026-09-14. `checkPromoCode` in `server/utils/promo.ts` matches
+  `.eq('code', upper(trim(...)))` against the stored value as it is, while
+  `create_order` matches `upper(btrim(code)) = v_code`. A row stored with
+  padding or in lower case resolves in the order and not in the preview, so the
+  checkout would show "not recognised" and then accept the same code on
+  Submit. The unique index makes such a row unlikely rather than impossible.
+- **Two costs that grow with the catalogue.** Found 2026-09-14, neither a
+  defect, and worth knowing here because this shop's catalogue is the one
+  expected to grow. `search_catalogue` in `server/utils/assistant.ts` hands the
+  model the whole catalogue when a term matches nothing, unpaginated, so the
+  token cost of a failed search is the size of the `products` table. And
+  `getSaleState()` and `getActivePromo()` are read fresh on every request that
+  prices anything, including every catalogue page and every assistant tool
+  call, with no cache in front of either.
 
 ## 10. Not done yet
 
@@ -2056,7 +2127,8 @@ Known gaps, roughly in the order they were prioritized with the user:
   `NUXT_PUBLIC_STORE_NAME` in production; all three were to land in the README
   instead, and did, in a "Before you take it live" section added 2026-09-11
   covering the store name, the domain and SPF/DKIM, plus the trusted-IP header
-  and the two Vercel traps this project hit. **The other two closed the same
+  and the two Vercel traps this project hit. That section was removed from the
+  README on 2026-09-14 and now survives only at `git show e53e745:README.md`. **The other two closed the same
   day**: the domain is live and the production store name is set (both below).
   This one is what is left, and it is still the user's to do. Note that the
   domain now exists, so the remaining work is verifying `bobdempsey83.com` (or
@@ -2332,7 +2404,7 @@ Known gaps, roughly in the order they were prioritized with the user:
   `.vercel.app` alias, overridable with `SMOKE_BASE_URL`, which is how the
   second shop will be checked by the same suite; `npm run test:smoke` passes
   4/4 against it. The README gained a matching note in "Before you take it
-  live".
+  live", which was removed on 2026-09-14 along with the rest of that section.
 - ~~Production is 31 commits behind local `main`.~~ **Closed 2026-09-11.**
   `main` was pushed at `7419568`, 40 commits on from `e0fd7e1`, and Vercel's
   GitHub integration built and promoted it on its own. Verified beyond the
