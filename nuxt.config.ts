@@ -47,7 +47,20 @@ export default defineNuxtConfig({
             "if(m==='dark'||((!m||m==='system')&&matchMedia('(prefers-color-scheme: dark)').matches))" +
             "document.documentElement.classList.add('dark')}catch(e){}",
           tagPosition: 'head'
-        }
+        },
+        // Vercel Web Analytics page views, production builds only: Vercel
+        // serves /_vercel/insights/script.js, and it 404s anywhere else. The
+        // @vercel/analytics package is not used because npm cannot resolve its
+        // optional @sveltejs/kit peer against this project's Vite.
+        ...(process.env.NODE_ENV === 'production'
+          ? [
+              {
+                innerHTML:
+                  'window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };'
+              },
+              { src: '/_vercel/insights/script.js', defer: true }
+            ]
+          : [])
       ]
     }
   },
