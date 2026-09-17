@@ -692,6 +692,23 @@ A read-only review of the whole repository ran in the same session, against
 recorded in section 9 of the template's handoff and repeated in section 9 here.
 Nothing was changed in response to them.
 
+Revised on 2026-09-16 for Vercel Web Analytics, which is live on both shops.
+`nuxt.config.ts` now adds Vercel's page view script to `app.head`, in
+production builds only, because Vercel serves `/_vercel/insights/script.js`
+and the path 404s anywhere else. This shop's copy is `78429b1`, cherry-picked from `9f0493c` on `main`. CI passed on both branches. The user
+turned Web Analytics on for the Vercel projects `ai-storefront` and
+`forged-in-filament` by running `npx vercel@latest project web-analytics
+enable <project> --scope bobdempseys-projects` in their own terminal, because
+the CLI will not take that confirmation from a non-interactive session. A
+browser visit to each live domain then sent a page view, and each project
+counted it. The `@vercel/analytics` package was not added: `npm install`
+without `--legacy-peer-deps` fails on its optional `@sveltejs/kit` peer, and a
+plain script tag matches how the portfolio site and the UI library comparison
+load it. The Hobby plan counts 50,000 analytics events a month across every
+project in the team and keeps one month of data. The project folder has also
+moved since the last revision: it is `C:\code\ai-storefront` now, and section 1
+says so.
+
 ---
 
 ## 1. What this is
@@ -701,7 +718,7 @@ storefront. Payment is deliberately **out of scope** — customers build a cart 
 submit an order request; staff receive the order by email and arrange payment
 off-app.
 
-Project root: `C:\Users\bobde\Desktop\ai-storefront`
+Project root: `C:\code\ai-storefront`
 
 Status: **the storefront is live against a real database.** A Supabase project
 (`forged in filament`, ref `wfhhkdmgouyxnrxnbaeo`) exists, the schema and seed
@@ -1744,7 +1761,8 @@ targets, though: that now points at the custom domain (below). Vercel's GitHub
 integration also followed the repo rename on its own and kept deploying.
 
 The rename is **complete as of 2026-09-11**. The last piece, the **local
-folder**, is now `C:\Users\bobde\Desktop\ai-storefront`; it was renamed between
+folder**, was then `C:\Users\bobde\Desktop\ai-storefront` (it has since moved to
+`C:\code\ai-storefront`); it was renamed between
 sessions, because doing it from inside a session moves the working directory out
 from under the session doing it. Nothing broke in the move: git, the `.vercel`
 link and `node_modules` all travelled with the folder, and `npm test` passes
