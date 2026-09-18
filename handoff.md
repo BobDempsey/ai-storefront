@@ -752,10 +752,10 @@ Confirmed still true: the change is 0 of 28 tasks, so "not started" holds, the
 Neon project's database is still empty, `.env` carries the three new entries,
 and thirty archived changes and seventeen capabilities both match the tree.
 
-The same session then started the work, and **the demo runs on Neon locally**:
-16 of the change's 28 tasks, with `test:db` 46 of 46 and `test:e2e` 38 of 38
-against the Neon project and `npm run check` green at 290. Nothing is deployed
-and nothing is committed. Section 10 has the state, the two shim decisions
+The same session then did the work and **took the demo live on Neon**: 26 of
+the change's 28 tasks, committed as `6f19869` and deployed, with `test:db` 46
+of 46 against each backend, `test:e2e` 38 of 38 against Neon, `npm run check`
+green at 290 and `SMOKE_SHOP=demo` 6 of 6 against the live domain. Section 10 has the state, the two shim decisions
 worth knowing and what the remaining twelve tasks are waiting on. The paragraph
 above is what was true at the start of that work: the Neon database is seeded
 now, 15 products, 12 physical and 3 digital.
@@ -2151,10 +2151,10 @@ once two of them are live and each deployment has to judge itself.
 
 `tasks.md` carries both phases as a checklist.
 
-**The demo's database is moving to Neon, and locally it has moved.** The change
-is `move-demo-database-to-neon`, 16 of its 28 tasks done as of 2026-09-18, and
-nothing is deployed: production still reads Supabase. Why it exists is in
-section 3's decisions; what follows is the state an agent picking it up needs.
+**The demo's database is on Neon.** The change is `move-demo-database-to-neon`,
+26 of its 28 tasks done as of 2026-09-18, deployed and verified live. Why it
+exists is in section 3's decisions; what follows is the state an agent picking
+it up needs.
 
 **What works today.** `NUXT_DATABASE_BACKEND` names the backend, `supabase` or
 `neon`, and local `.env` currently says `neon`. Against the Neon project, a dev
@@ -2216,17 +2216,44 @@ are doing the work rather than the tables happening to be empty. Worth knowing
 for any future check, because `orders`, `order_items`, `promo_redemptions` and
 `email_subscribers` are all genuinely empty and would look the same either way.
 
-**What is left, and what each is waiting on.** Seven tasks. Five are the deploy
-(6.1 to 6.5), which is the owner's call, and the cold-start figure 7.1 wants
-comes out of 6.5. The other two are small and stuck on tooling rather than on
-anything unknown: proving the two type-generation paths agree (3.3), which
-needs Docker for the `--from neon` path.
+**The demo is live on Neon as of 2026-09-18**, commit `6f19869`, deployment
+`dpl_9SWG55ETD3Y3W42zr5YWBhFL9pmQ`. `NUXT_DATABASE_BACKEND=neon` and
+`NUXT_NEON_DATABASE_URL` are set on the demo's Vercel Production and Preview,
+both as secrets. `SMOKE_SHOP=demo npm run test:smoke` is 6 of 6 against
+`ai-storefront.bobdempsey83.com`, and the live catalogue returns Neon's row ids
+rather than Supabase's, which is the check worth repeating because both
+databases hold the same fifteen products and only the ids tell them apart. A
+real order was placed on the live shop, found in Neon, confirmed absent from
+the demo's Supabase project, and deleted.
+
+**The cold start is about two seconds.** Measured after seven idle minutes:
+the first request to `/api/products` took 2.26s, and three warm requests that
+followed took 0.32s, 0.17s and 0.18s. Scale-to-zero after five idle minutes
+cannot be disabled on the Free plan, so a demo nobody has visited pays that
+once. Two seconds is the number to weigh if a keep-warm ping is ever proposed.
+
+**Rollback is one variable.** Set `NUXT_DATABASE_BACKEND` back to `supabase` on
+the demo's Vercel Production and redeploy. The Supabase project still holds the
+schema and its seed data, so this is a setting and a build rather than a
+restore.
+
+**Two tasks are not done, and neither is about Neon.** 6.4 wanted
+`SMOKE_SHOP=fif` at 6 of 6 to show Forged in Filament was untouched; it is 2 of
+6, because that shop's Supabase project no longer resolves. Untouched is still
+true by every other measure: the `forged-in-filament` Vercel project has no
+`NUXT_DATABASE_BACKEND` at all, so it takes the `supabase` default, and the
+push to `main` built only a Preview there while its Production is still the
+deployment from two days earlier. And 3.3, proving the two type-generation
+paths emit the same file, was dropped at the owner's direction rather than
+install Docker for it; `scripts/compare-schemas.mjs` already proves the two
+schemas identical, which is what that check was for.
 
 **Local `.env` now names the demo's own Supabase project**, `qtzwrwstixqgnuixfajp`,
 where it had been carrying Forged in Filament's URL and key. Both backends are
 therefore reachable from here, and `NUXT_DATABASE_BACKEND` switches between
 them with nothing else changing, which is the property the whole design was
-for. It is left on `supabase`, matching production.
+for. It is left on `supabase`, so a local dev server reads the rollback
+database rather than the live one.
 
 The **Neon account and project exist**. The project is `solitary-surf-65980038`,
 `ai-storefront-demo`, AWS `us-east-2` to match the Supabase demo project it

@@ -5,7 +5,8 @@
 > here; template fixes are made here and cherry-picked into `fif` when that shop
 > wants them. Run `git branch --show-current` before you edit anything.
 
-- [ ] Move the demo's database to Neon: `/opsx:apply move-demo-database-to-neon`
+- [x] Move the demo's database to Neon: live, 26 of 28 tasks, `6f19869`
+- [ ] Restore the paused Forged in Filament Supabase project, which is down
 - [ ] Decide whether Forged in Filament follows the demo onto Neon
 - [ ] Rate-limit `/api/cart/preview`, which today answers promo-code guesses freely
 - [ ] Decide what replaces the in-memory rate limiter and draft confirmations on serverless

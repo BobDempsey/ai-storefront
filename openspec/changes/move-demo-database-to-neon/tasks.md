@@ -38,13 +38,13 @@
 
 ## 6. Cut the demo over
 
-- [ ] 6.1 Set `NUXT_DATABASE_BACKEND` and `NUXT_NEON_DATABASE_URL` on the demo's Vercel Production and Preview, and verify both are present on both environments before deploying. **New env vars.**
-- [ ] 6.2 Deploy and verify `SMOKE_SHOP=demo npm run test:smoke` is 6/6 against `ai-storefront.bobdempsey83.com`.
-- [ ] 6.3 Place a real order on the live demo, verify it appears in Neon and is absent from both Supabase projects, then delete it.
+- [x] 6.1 Set `NUXT_DATABASE_BACKEND` and `NUXT_NEON_DATABASE_URL` on the demo's Vercel Production and Preview, and verify both are present on both environments before deploying. **New env vars.**
+- [x] 6.2 Deploy and verify `SMOKE_SHOP=demo npm run test:smoke` is 6/6 against `ai-storefront.bobdempsey83.com`.
+- [x] 6.3 Place a real order on the live demo, verify it appears in Neon and is absent from both Supabase projects, then delete it.
 - [ ] 6.4 Verify Forged in Filament is untouched: `SMOKE_SHOP=fif npm run test:smoke` is 6/6 and its backend setting is still `supabase`.
-- [ ] 6.5 Measure the cold-start delay on the first request after five idle minutes and record the figure in `handoff.md`.
+- [x] 6.5 Measure the cold-start delay on the first request after five idle minutes and record the figure in `handoff.md`.
 
 ## 7. Record it
 
-- [ ] 7.1 Update `handoff.md` with the new backend setting, the Neon project id, the RLS difference, the `PGRST103` emulation and the cold-start figure, and verify `/handoff:sync` reports no drift.
+- [x] 7.1 Update `handoff.md` with the new backend setting, the Neon project id, the RLS difference, the `PGRST103` emulation and the cold-start figure, and verify `/handoff:sync` reports no drift.
 - [x] 7.2 Leave the demo's Supabase project `qtzwrwstixqgnuixfajp` in place and note in `handoff.md` that freeing the slot is the owner's call once the demo has run on Neon long enough to trust.
