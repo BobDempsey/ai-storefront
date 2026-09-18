@@ -698,6 +698,77 @@ project in the team and keeps one month of data. The project folder has also
 moved since the last revision: it is `C:\code\ai-storefront` now, and section 1
 says so.
 
+Reviewed against the code again on 2026-09-18, working tree clean at `bee5163`
+and `origin/main` level with local `main`. Nothing in the app changed; the pass
+corrected four stale claims in place. Section 7 said the homepage shows 9 rows,
+6 products and 3 files, which was the catalogue before pagination added six
+more: `seed.sql` has 15 rows, 12 and 3. Section 10's test list said 236 unit
+tests across 18 files and 5 smoke checks, both of which this document already
+contradicted elsewhere; `npm run test:unit` is 264 across 20, and
+`tests/smoke/production.test.ts` is 6. And section 4's tree had never listed
+`scripts/`, `docs/`, `.github/workflows/` or `.mcp.json`, all of which exist and
+two of which this document refers to by name from section 10. The lesson worth
+keeping: a count stated in two sections drifts in one of them first, so when
+this document disagrees with itself, the later revision-trail entry has usually
+been checked more recently than the section. The same pass missed two more of
+its own: section 2 said twenty-seven archived changes and fifteen capabilities
+when the repository held thirty and seventeen. Those are corrected too, and the
+three missing rows are back in the table.
+
+Also confirmed still open, by reading the code rather than this document:
+`/api/cart/preview` is still the one write-shaped route with no
+`rateLimitByCaller`, `checkPromoCode` still matches the stored code as-is,
+`search_catalogue` is still unpaginated, and `getSaleState()` still has no
+cache in front of it. All four are section 9's open findings and all four are
+on `tasks.md`, which needed no edit.
+
+Revised later on 2026-09-18, when the session turned into a database move. The
+owner's Supabase free plan caps active projects at two and this repo runs two,
+so the demo is going to Neon. Section 3 carries the decision and why the shim
+shape was chosen, section 10 carries the state of the work, section 6 the three
+new `.env` entries and section 8 two gotchas from the Neon CLI, one of which is
+a credential worth reading before the next session assumes where keys live.
+
+Nothing in the app changed. What exists is an OpenSpec change,
+`move-demo-database-to-neon`, validating strict at 4 of 4 artifacts, and a Neon
+account, project and link. The working tree is dirty: `neon.ts`, `skills-lock.json`,
+eight Neon skills under `.claude/skills/`, the change directory, and edits to
+`.gitignore`, `package.json`, `package-lock.json` and `tasks.md`, which gained
+the two Neon lines. None of it is committed and none of it is pushed.
+
+**The reason this is a change rather than an afternoon** is in the design, and
+it is worth one line here so nobody re-discovers it: two call sites depend on
+PostgREST rather than on Postgres. `products.get.ts` branches on the error code
+`PGRST103`, and `search.ts` builds a PostgREST filter string. Plain Postgres
+produces neither.
+
+Synced against the code later on 2026-09-18, with the Neon work still sitting
+uncommitted at `bee5163` and `origin/main` level with local `main`. Three stale
+claims are corrected above. Section 10 said `neon.ts` is committed, which the
+revision trail four paragraphs up already contradicted; nothing of that work is
+tracked yet. That trail's own list of dirty files left out `tasks.md`, which had
+gained the two Neon lines. And section 4 had never listed `neon.ts` or `.neon/`.
+Confirmed still true: the change is 0 of 28 tasks, so "not started" holds, the
+Neon project's database is still empty, `.env` carries the three new entries,
+and thirty archived changes and seventeen capabilities both match the tree.
+
+The same session then started the work, and **the demo runs on Neon locally**:
+16 of the change's 28 tasks, with `test:db` 46 of 46 and `test:e2e` 38 of 38
+against the Neon project and `npm run check` green at 290. Nothing is deployed
+and nothing is committed. Section 10 has the state, the two shim decisions
+worth knowing and what the remaining twelve tasks are waiting on. The paragraph
+above is what was true at the start of that work: the Neon database is seeded
+now, 15 products, 12 physical and 3 digital.
+
+Two findings from that session that are not about Neon. **Forged in Filament is
+down**: `wfhhkdmgouyxnrxnbaeo.supabase.co` no longer resolves, so
+`fif.bobdempsey83.com` serves its shell and 502s the catalogue. A free-plan
+project that has been paused loses its DNS this way, and restoring it is a
+dashboard action. **Local `.env` on `main` names that same project**, which is
+the real shop's rather than the demo's `qtzwrwstixqgnuixfajp`, so a local dev
+server on this branch has been reading the wrong shop's database and is why
+five of the change's tasks cannot be verified from here.
+
 ---
 
 ## 1. What this is
@@ -892,7 +963,7 @@ carry a **Non-goals** section, and any change touching **Supabase schema or RLS*
 must say so explicitly. Tasks must flag when they need a migration or a new env
 var.
 
-Twenty-seven changes have been through the full cycle, all in
+Thirty changes have been through the full cycle, all in
 `openspec/changes/archive/`:
 
 | Change | Accepted spec |
@@ -924,18 +995,22 @@ Twenty-seven changes have been through the full cycle, all in
 | `2026-09-12-deepen-typescript` | none — same, and archived with 3 optional tasks open |
 | `2026-09-12-type-product-kind` | none — `skip_specs`: the two kinds and every rule about them are unchanged, only where the rule is enforced |
 | `2026-09-12-open-panel-from-catalogue-field` | modifications folded into `specs/catalog/catalogue-search/`, the first change here to rewrite an accepted requirement rather than add one |
+| `2026-09-12-split-into-two-shops` | `specs/storefront/shop-identity/` and `specs/contact/custom-order-request/`, plus modifications folded into `specs/ordering/test-order/` |
+| `2026-09-12-branch-the-fif-shop` | modifications folded into `specs/storefront/shop-identity/` |
+| `2026-09-12-name-the-shop-in-every-email` | modifications folded into `specs/storefront/shop-identity/` |
 
 Read the dark-mode pair first to see the expected shape of a proposal, design,
 tasks and spec.
 
-All four were archived later on 2026-09-12, and `openspec/changes/` holds
-nothing but `archive/`. The two catalogue changes brought new capabilities,
+All four were archived later on 2026-09-12. `openspec/changes/` held nothing
+but `archive/` from then until 2026-09-18, when `move-demo-database-to-neon`
+was proposed; see section 10. The two catalogue changes brought new capabilities,
 `catalog/catalogue-search` and `catalog/catalogue-pagination`, taking the tree
-to fifteen. The two typing changes brought none: they added no behaviour a spec
+to fifteen, and the two-shops work later took it to seventeen. The two typing changes brought none: they added no behaviour a spec
 describes. `deepen-typescript` was archived at 21 of 24, with the
 `noUncheckedIndexedAccess` measurement and one `test:llm` run left as optional
 follow-ups rather than unfinished work. `openspec validate --specs --strict`
-passes 15 of 15.
+passes 17 of 17.
 
 `add-store-wide-sale` (code complete and verified end to end, section 1,
 section 10, committed as `de3f67d`) and `add-promo-codes` (39 of 39 tasks,
@@ -952,8 +1027,8 @@ archived in one session on 2026-09-03 (section 1); its spec is now
 
 Specs cover theming, contact, five ordering capabilities, the catalogue's
 file products and store-wide sale, the shopping assistant, the newsletter,
-promo codes, the deployment banner and the catalogue's search and pagination:
-fifteen capabilities as of 2026-09-12. `catalog/catalogue-search` is the one
+promo codes, the deployment banner, the catalogue's search and pagination, and
+what makes a deployment one shop: seventeen capabilities as of 2026-09-12. `catalog/catalogue-search` is the one
 whose accepted text has been rewritten rather than extended, when the catalogue
 page's field became a launcher; the requirement it replaced described a field
 that filtered in place. Everything else in this document predates OpenSpec and is not
@@ -969,7 +1044,7 @@ should be.
 | Framework | Nuxt 4 (SSR) | Catalog is public — needs SEO and fast product pages, which a pure Vue SPA can't give. Nitro server routes also remove the need for a separate backend. |
 | UI | PrimeVue 4.5.5 + Tailwind CSS 4 | PrimeVue was a user requirement; it ships an official Nuxt module. Tailwind handles layout. Pinned to 4.x because 5.x is commercially licensed — see gotchas. |
 | State | Pinia + `pinia-plugin-persistedstate` | Cart survives refresh. Note the Nuxt module stores to a **cookie** by default, not localStorage — see gotchas. |
-| Data | Supabase (Postgres + RLS) | User's preference; RLS lets the catalog be public-read while orders stay server-only. |
+| Data | Supabase (Postgres + RLS) | User's preference; RLS lets the catalog be public-read while orders stay server-only. The demo is moving to Neon Postgres on 2026-09-18 to free a Supabase project slot; see the decision below and section 10. |
 | Email | Resend | Best DX, generous free tier, Vue template support if richer emails are wanted later. |
 | Validation | Zod | Payload validation at the API boundary. |
 
@@ -1020,6 +1095,25 @@ should be.
   the same two requests the checkout page makes. It never becomes a tool
   argument and never enters the message history. `TOOL_NAMES` is pinned by a
   test so adding a promo tool has to be a deliberate edit. See section 10.
+- **The demo's database moves to Neon, and the backend becomes configuration.**
+  Decided 2026-09-18. The Supabase free plan caps active projects at two and
+  this repo runs two, so the owner wanted a slot back. The demo uses none of
+  Supabase's own services: no auth, no storage, no realtime, and no browser-side
+  client, because every query runs server-side through a service-role key that
+  bypasses RLS anyway. What it needs is Postgres, and Neon's free plan allows
+  100 projects rather than two. Rather than rewrite the fifteen call sites, a
+  shim keeps the `supabase-js` query surface and picks its backend from
+  configuration, so the same build serves a shop on either. That is what keeps
+  a move back to Supabase a setting rather than a rewrite, and it is why
+  Forged in Filament can stay where it is for now. See the OpenSpec change
+  `move-demo-database-to-neon` and section 10.
+- **RLS does not survive the move, and that is accepted.** On Supabase the
+  policies guard PostgREST, which anyone holding a publishable key can reach.
+  This app has never shipped one. Neon exposes no such endpoint, so on that
+  backend there is nothing for a policy to defend, and the Neon path omits
+  them. It is a real loss of defence-in-depth against a future mistake, such as
+  someone adding a browser-side client later, and it is written down here
+  rather than discovered in the schema.
 - **The navbar theme control offers two schemes, not three.** `system` is still
   the default for a new visitor, still honoured by the pre-paint script and
   still settable through `set()`, but the navbar no longer shows it and a
@@ -1176,10 +1270,26 @@ shared/
                             exposes shared/ to app/ and server/ alike, which is
                             why this is the one place both sides can agree
 
-Also present, not listed above: README.md, package.json, tsconfig.json,
+scripts/
+  db-types.mjs              regenerates server/types/database.ts. Takes
+                            SUPABASE_PROJECT_REF, defaults to the real shop
+  og-image.mjs              draws a share image for any shop from a name and a
+                            domain, headlessly through the repo's Playwright
+
+docs/                     the README's two screenshots, light and dark. Not
+                          public/, so the app never serves them
+.github/workflows/        check.yml, the typecheck, the linter and the unit
+                          tests on every push to either branch
+.mcp.json                 pins the Supabase MCP server to the real shop's
+                          project_ref -- see section 10
+
+Also present, not listed above: README.md, handoff.md, tasks.md, package.json,
+neon.ts (the Neon deploy policy) and .neon/ (the CLI's project link, gitignored),
+tsconfig.json,
 tsconfig.tests.json (the suites and the root config files, which Nuxt's own
 generated projects do not cover), eslint.config.mjs,
-playwright.config.ts, and one vitest config per suite (vitest.config.ts plus
+playwright.config.ts, playwright.llm.config.ts, and one vitest config per suite
+(vitest.config.ts plus
 vitest.db, vitest.llm and vitest.smoke). Section 10 has what each one runs.
 ```
 
@@ -1235,6 +1345,20 @@ address in the example even though `.env` has moved off it, because an adopter
 has no verified domain on their first run.
 
 ```
+NUXT_DATABASE_BACKEND       SET — `supabase` locally, 2026-09-18. Names which
+                            Postgres this deployment reads and writes:
+                            `supabase` or `neon`. It is named rather than
+                            guessed from the shape of a connection string, and
+                            a deployment naming a backend whose settings are
+                            missing fails at startup through
+                            server/plugins/database-backend.ts rather than
+                            serving a page that half works
+NUXT_NEON_DATABASE_URL      SET locally, 2026-09-18 — the `ai-storefront-demo`
+                            Neon project's pooled connection string. A
+                            CREDENTIAL: server-only, and it must never take the
+                            NUXT_PUBLIC_ prefix, which would ship the database
+                            password to every browser that loads a page. Read
+                            only when NUXT_DATABASE_BACKEND is `neon`
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
                             locally and for the real shop. The demo's Vercel
                             project points at qtzwrwstixqgnuixfajp as of
@@ -1297,6 +1421,20 @@ NUXT_TEST_ORDER_TOKEN       SET locally — a random hex string. SERVER ONLY. Le
                             request mark an order as a test, which skips the staff
                             email. Deliberately NOT set on Vercel: unset means no
                             request can mark anything
+DATABASE_URL                SET locally as of 2026-09-18, written into `.env` by
+                            `neon link` rather than by hand. The pooled
+                            connection string for the Neon project's production
+                            branch. A CREDENTIAL: it carries the password, it is
+                            SERVER ONLY, and it must never take a NUXT_PUBLIC_
+                            prefix. Nothing in the app reads it yet; the change
+                            that will is `move-demo-database-to-neon`
+DATABASE_URL_UNPOOLED       SET locally, same source and the same warning. The
+                            direct connection, for work that cannot go through
+                            the pooler
+NEON_BRANCH                 SET locally — `production`, the Neon branch the
+                            directory is linked to. Not a secret
+                            NOT on Vercel: none of these three are, and none
+                            should be until the cutover in section 10
 
 `NUXT_NEWSLETTER_PROMO_CODE` is gone as of 2026-09-03. The promo code lives in
 the `promo_codes` table, so staff can change it and its redemptions can be
@@ -1325,7 +1463,7 @@ npm run dev                        # http://localhost:3000
 ```
 
 The database is already provisioned and seeded, and `.env` already points at it,
-so this should just work: the homepage shows the catalogue's 9 rows, 6 under a
+so this should just work: the homepage shows the catalogue's 15 rows, 12 under a
 Products tab and 3 under Files. Only if you are
 standing up a **fresh** Supabase project do you need to run `supabase/schema.sql`
 then `supabase/seed.sql` in the SQL editor and repoint `.env`.
@@ -1558,6 +1696,25 @@ a different staff address will silently fail until a domain is verified.
   `od -c value.txt | head -1`, and redirect:
   `npx vercel env add NAME production < value.txt`. This is the empty-string
   trap's cousin: both make a variable that is present, wrong, and invisible.
+- **`neon mcp` mints an account-wide API key and writes it into three global
+  config files.** Found 2026-09-18 setting the project up. The CLI says so
+  itself: *"This key reaches everything your account can, in every
+  organization."* It wrote `C:\Users\bobde\.claude.json`,
+  `C:\Users\bobde\.copilot\mcp-config.json` and VS Code's
+  `AppData\Roaming\Code\User\mcp.json`, so the key is in three places, none of
+  them this repository, and it outlives any project. The key here is
+  `neon-cli-mcp-20260918T123259Z-c2e5`, id 3346831, revoked with
+  `neon api-keys revoke 3346831`. Two things follow. Revoking it breaks the MCP
+  server in every tool at once, not just this one. And an OAuth connection,
+  `claude mcp add --transport http neon https://mcp.neon.tech/mcp`, needs no
+  stored key at all, which is the option to prefer if this is ever set up again.
+- **`neon link` writes credentials straight into `.env`.** It pulled
+  `DATABASE_URL`, `DATABASE_URL_UNPOOLED` and `NEON_BRANCH` in without asking,
+  and `neon deploy` pulls them again on every run. `.env` is gitignored so
+  nothing leaked, but two of the three carry a password and the file is now
+  written by a tool rather than only by hand. Read section 6 before assuming
+  what is in there, and remember the `vercel deploy` gotcha above: that command
+  would upload this file.
 - **A component rendered with `v-if` cannot watch the flag that renders it.**
   `SearchPalette.vue` is mounted by `v-if="palette.open"` in the layout, so by
   the time its setup runs the flag is already true and a `watch` on it never
@@ -1994,6 +2151,143 @@ once two of them are live and each deployment has to judge itself.
 
 `tasks.md` carries both phases as a checklist.
 
+**The demo's database is moving to Neon, and locally it has moved.** The change
+is `move-demo-database-to-neon`, 16 of its 28 tasks done as of 2026-09-18, and
+nothing is deployed: production still reads Supabase. Why it exists is in
+section 3's decisions; what follows is the state an agent picking it up needs.
+
+**What works today.** `NUXT_DATABASE_BACKEND` names the backend, `supabase` or
+`neon`, and local `.env` currently says `neon`. Against the Neon project, a dev
+server serves the whole storefront, `npm run test:db` is 46 of 46 and
+`npm run test:e2e` is 38 of 38, checkout through to a placed order included.
+`npm run check` is green at 290 unit tests. The code lives in
+`server/utils/db/`: `backend.ts` is the interface, `supabase-backend.ts` is the
+old client moved behind it, and `neon-sql.ts` plus `neon-backend.ts` are the
+shim. `server/utils/supabase.ts` still exports `useSupabase()` and still
+returns the one client, which is why none of the fifteen call sites changed;
+`git diff --stat server/api server/utils` naming anything else means the shim
+is wrong.
+
+**Two things in that shim to know before editing it.** It **emulates
+`PGRST103`**, PostgREST's past-the-end range code, because `products.get.ts`
+branches on it to turn a stale link to page nine into an empty catalogue rather
+than a 502. That bakes a PostgREST code into a module that will outlive
+PostgREST here, and the cleanup is a one-line call-site change once both shops
+are off Supabase. And it **parses the PostgREST filter string** `searchFilter()`
+builds, accepting only the `col.ilike.*pattern*` form and throwing on anything
+else. Every method it does not implement throws too: a query that quietly
+matches nothing looks exactly like an empty catalogue, and nobody reports one.
+
+**`server/plugins/database-backend.ts` fails the server at startup** when the
+named backend's settings are missing, naming them. Without it a missing
+connection string first shows itself as a 502 on the catalogue, which reads
+like the database being down rather than a deployment that was never told where
+its database is.
+
+**`tests/db/client.ts` follows the same setting**, so the suite proves the two
+backends agree by running unchanged against each. That file was not in the
+change's task list and had to be taught the switch; it is the one place outside
+`server/` that opens a database connection.
+
+**`npm run db:types` takes `--from neon`** as well as its default Supabase
+project ref, and the generated header names which database a run read. The Neon
+path runs the same Supabase CLI generator against a connection string, which
+needs Docker or Podman on PATH; without one it fails with
+`LegacyDockerRunError`. Nothing else in this repo needs Docker, and the
+committed `server/types/database.ts` is still the Supabase-generated one.
+
+**The two backends agree, proved three ways on 2026-09-18** once local `.env`
+was pointed at the demo's own Supabase project rather than the real shop's.
+`npm run test:db` is 46 of 46 against each. `scripts/compare-schemas.mjs` reads
+every column's name, type and nullability from both, 48 columns each, and the
+md5 digests are identical; it takes Supabase's side from PostgREST's OpenAPI
+document, because the read-only personal access token cannot run SQL through
+the Management API. And the same cart, priced with the sale on at 20% and
+`WELCOME25` beating it at 25%, recorded the same figures on both to the cent:
+subtotal 6400, discount `code` at 25 percent, total 4800, one redemption row
+and the same two lines. Both orders were deleted and the sale put back off.
+
+**The Supabase project's policies were re-applied and proved, 2026-09-18.**
+`rls.sql` ran in the dashboard's SQL editor, the schema digest was unchanged
+afterwards, and the publishable key then read `products` and `store_settings`
+and got nothing from the other five tables. The decisive one is `promo_codes`:
+it holds `WELCOME25`, and a public read returns an empty array, so the policies
+are doing the work rather than the tables happening to be empty. Worth knowing
+for any future check, because `orders`, `order_items`, `promo_redemptions` and
+`email_subscribers` are all genuinely empty and would look the same either way.
+
+**What is left, and what each is waiting on.** Seven tasks. Five are the deploy
+(6.1 to 6.5), which is the owner's call, and the cold-start figure 7.1 wants
+comes out of 6.5. The other two are small and stuck on tooling rather than on
+anything unknown: proving the two type-generation paths agree (3.3), which
+needs Docker for the `--from neon` path.
+
+**Local `.env` now names the demo's own Supabase project**, `qtzwrwstixqgnuixfajp`,
+where it had been carrying Forged in Filament's URL and key. Both backends are
+therefore reachable from here, and `NUXT_DATABASE_BACKEND` switches between
+them with nothing else changing, which is the property the whole design was
+for. It is left on `supabase`, matching production.
+
+The **Neon account and project exist**. The project is `solitary-surf-65980038`,
+`ai-storefront-demo`, AWS `us-east-2` to match the Supabase demo project it
+replaces, in org `org-flat-grass-49048682`, on the Free plan. Its branch is
+`production`. **The database is empty**: nothing has applied `schema.sql` or
+`seed.sql` to it yet, which is task 4.1.
+
+The working directory is **linked** to it. `.neon` holds the link and is
+gitignored, `neon.ts` holds an empty policy and is untracked like the rest of
+this work, and `neon deploy`
+has run once against the `production` branch reporting no changes. Postgres is
+the only service enabled; Object Storage, Functions, the AI Gateway and Neon
+Auth were all left off deliberately, because this project needs a database and
+nothing else.
+
+**Three findings from the code review behind the change, and they are the
+reason it needs a design at all.** `server/api/products.get.ts` branches on
+`error.code === 'PGRST103'`, which is PostgREST's code for a range starting
+past the end of a result, and turns it into an empty page rather than a 502;
+nothing in Postgres produces that code, so the shim has to emulate it or that
+call site has to change. `searchFilter()` in `server/utils/search.ts` builds a
+PostgREST filter string, `name.ilike.*term*,description.ilike.*term*`, which
+again nothing but PostgREST parses. And `orders.post.ts` matches substrings of
+`error.message` for the exceptions `create_order` raises, so whatever driver
+replaces `supabase-js` has to surface a raised message intact.
+
+**The shape of the surface is smaller than it looks**: thirteen query methods
+across fifteen call sites in nine files, plus one `rpc`. `design.md` lists them.
+
+**Free-plan limits, checked 2026-09-18**: 100 projects, 0.5 GB storage, 100
+CU-hours and 5 GB of transfer per project per month, 10 branches. The one that
+matters is **scale-to-zero after five minutes idle, which cannot be disabled on
+the Free plan**. A demo with no visitors pays a cold start on its first request.
+That is accepted rather than worked around, and measuring it is task 6.5.
+
+**Forged in Filament is not part of this.** Its server code is identical to the
+demo's and uses no Supabase service either, so it can follow later; the owner
+asked to prove the path on the shop that sells nothing first. The only thing it
+would lose is the Supabase dashboard staff use to flip `in_stock` by hand, and
+the owner has accepted Neon's table editor in its place.
+
+**Do not delete the demo's Supabase project** `qtzwrwstixqgnuixfajp` as part of
+this. Freeing the slot is the point of the work, and it is still the owner's
+call once the demo has run on Neon long enough to trust. Until then it is the
+rollback.
+
+**The Neon path runs without row-level security, and that is a real reduction
+in defence-in-depth rather than a tidy-up.** `supabase/schema.sql` no longer
+carries the `enable row level security` lines, the two `select` policies or the
+revoke naming `anon` and `authenticated`; they moved into `supabase/rls.sql`,
+which is applied on Supabase and not on Neon. Why it is safe here: those
+policies defend PostgREST, which anyone can reach with a project's publishable
+key, and this app has never shipped one. There is no browser-side database
+client, no auth and no realtime, and every query runs server-side through a
+credential that never leaves the server. Neon exposes no equivalent endpoint at
+all, so there is nothing for a policy to defend. What it gives up, said plainly:
+on Supabase, a future mistake that shipped a publishable key to the browser
+would still hit a closed door, and on Neon the equivalent mistake is shipping
+`NUXT_NEON_DATABASE_URL` to the browser, which nothing would catch. The long
+version is at the head of `supabase/rls.sql`.
+
 Known gaps, roughly in the order they were prioritized with the user:
 
 - ~~The email leg has never run.~~ **Done** — verified 2026-08-31, see section 1.
@@ -2001,7 +2295,7 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — the typecheck, then 236 unit tests across 18 files, over
+  - `npm test` — the typecheck, then 264 unit tests across 20 files, over
     `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
     tools, its promo boundary, its product prefill, `confirmations`, the orders
@@ -2011,7 +2305,8 @@ Known gaps, roughly in the order they were prioritized with the user:
     assistant-promo, navbar and dot changes brought the rest, and removing the
     auto-open and the dot's storage flag took 21 back off. The prefill,
     reasoning-effort and two deployment changes took it 173 to 198, then search,
-    pagination and the two typing changes took it to 236. The tests themselves
+    pagination and the two typing changes took it to 236, and the custom-order
+    request and the shop name in every email took it to 264. The tests themselves
     run in about a second and the typecheck ahead of them costs about 13, so
     `npm run test:unit` is still the fast loop. No network, no database. The two newest files test
     Pinia stores rather than server
@@ -2038,8 +2333,9 @@ Known gaps, roughly in the order they were prioritized with the user:
     `npm test` because it took the run from 20 seconds to 36. `npm run check`
     is the typecheck, the linter and the tests together, which is what to run
     before a push. 0 errors and 0 warnings as of 2026-09-12.
-  - `npm run test:smoke` — 5 checks against the deployed site, the last of
-    them that the live shop renders no deployment banner. Fails when the
+  - `npm run test:smoke` — 6 checks against the deployed site, one of
+    them that the live shop renders no deployment banner, and it names a shop
+    with `SMOKE_SHOP=demo|fif` rather than an address. Fails when the
     network or the deploy is down, which is why it is not in `npm test`.
   - `npm run test:llm` — two real `gpt-5-mini` calls through a running dev
     server, added 2026-09-10. The only script that spends money. **The dollar
@@ -2584,6 +2880,14 @@ Known gaps, roughly in the order they were prioritized with the user:
   should report back. Write the report-back list as numbered, specific
   questions: the answers come back verbatim and are what this session resumes
   from.
+- **They will drive a whole decision through yes-or-no questions.** The Neon
+  move on 2026-09-18 was settled in about a dozen turns of `yn`, `1 sentence`
+  and `which ones?`, each one narrowing the last. Answer at exactly that length
+  and wait; the next question is the next step, and a paragraph of context
+  volunteered early gets in the way of it.
+- **They check a claim before acting on it.** Told Neon's free tier would work,
+  they asked for a web search to confirm it rather than taking the answer.
+  Verify first and say what was verified, or expect to be sent back.
 - They ask a lot of closed questions, "Yes or no?", "explain in one sentence",
   and mean them literally. Answer at that length first. Anything longer is read
   as not having answered.

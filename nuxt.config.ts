@@ -92,8 +92,16 @@ export default defineNuxtConfig({
 
   // Server-only secrets. Override with NUXT_* env vars.
   runtimeConfig: {
+    // Which Postgres this deployment reads and writes: 'supabase' or 'neon'.
+    // Named rather than sniffed from the shape of a connection string, because
+    // guessing is how a shop ends up on the wrong database with nothing in the
+    // logs saying so. Two shops run this same build against different hosts.
+    databaseBackend: 'supabase',
     supabaseUrl: '',
     supabaseServiceKey: '',
+    // Postgres connection string for the 'neon' backend. A credential, so it
+    // is server-only and must never take the NUXT_PUBLIC_ prefix.
+    neonDatabaseUrl: '',
     resendApiKey: '',
     openaiApiKey: '',
     orderFromEmail: 'onboarding@resend.dev',

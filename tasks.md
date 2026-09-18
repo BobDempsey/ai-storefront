@@ -5,6 +5,8 @@
 > here; template fixes are made here and cherry-picked into `fif` when that shop
 > wants them. Run `git branch --show-current` before you edit anything.
 
+- [ ] Move the demo's database to Neon: `/opsx:apply move-demo-database-to-neon`
+- [ ] Decide whether Forged in Filament follows the demo onto Neon
 - [ ] Rate-limit `/api/cart/preview`, which today answers promo-code guesses freely
 - [ ] Decide what replaces the in-memory rate limiter and draft confirmations on serverless
 - [ ] Make the promo preview normalise a code the way `create_order` does

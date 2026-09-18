@@ -42,7 +42,7 @@ export default createConfigForNuxt({
             // Only this file needs it: everything else, tests and vitest
             // configs included, is reachable through tsconfig.json's
             // references now.
-            allowDefaultProject: ['eslint.config.mjs', 'scripts/*.mjs'],
+            allowDefaultProject: ['eslint.config.mjs', 'scripts/*.mjs', 'neon.ts'],
             defaultProject: 'tsconfig.tests.json'
           },
           tsconfigRootDir: import.meta.dirname
