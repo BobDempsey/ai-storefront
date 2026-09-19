@@ -182,7 +182,10 @@ test('Escape closes the panel without searching anything', async ({ page }) => {
 test('one Back leaves the page rather than replaying the typing', async ({ page }) => {
   await page.goto('/products/hex-dice-tower')
   await hydrated(page)
-  await page.getByRole('link', { name: 'AI Storefront' }).click()
+  // By where the link goes, not by what it says: the header link is the shop's
+  // own name, so naming one here passes on the template and fails on every
+  // shop built from it.
+  await page.locator('header a[href="/"]').click()
   await expect(page.locator(SEARCH)).toBeVisible()
 
   // One history entry for the whole search, not one per keystroke, which is
