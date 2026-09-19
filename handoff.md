@@ -760,12 +760,13 @@ worth knowing and what the two unfinished tasks are waiting on. The paragraph
 above is what was true at the start of that work: the Neon database is seeded
 now, 15 products, 12 physical and 3 digital.
 
-Two findings from that session that are not about Neon. **Forged in Filament is
-down**: `wfhhkdmgouyxnrxnbaeo.supabase.co` no longer resolves, so
-`fif.bobdempsey83.com` serves its shell and 502s the catalogue. A free-plan
+Two findings from that session that are not about Neon. ~~**Forged in Filament
+is down**~~ **Restored 2026-09-19, and that shop is on Neon now.**
+`wfhhkdmgouyxnrxnbaeo.supabase.co` stopped resolving, so
+`fif.bobdempsey83.com` served its shell and 502ed the catalogue. A free-plan
 project that has been paused loses its DNS this way, and restoring it is a
-dashboard action, and it is the one thing on `tasks.md` that costs the owner
-money while it waits. **Local `.env` on `main` named that same project**, the
+dashboard action the owner performed; the shop then moved to its own Neon
+project so it cannot happen again. **Local `.env` on `main` named that same project**, the
 real shop's rather than the demo's `qtzwrwstixqgnuixfajp`, so a local dev
 server on this branch had been reading the wrong shop's database; that is
 corrected, and correcting it is what unblocked the five comparison tasks.
@@ -809,6 +810,60 @@ Confirmed still true by reading the code: `move-demo-database-to-neon` is 26 of
 capabilities, `/api/cart/preview` still has no `rateLimitByCaller`, and
 `checkPromoCode` still matches the stored code as-is. `tasks.md` needed no
 edit.
+
+**Forged in Filament is back up, and it is on Neon now**, both on 2026-09-19.
+The shop's own branch carries the detail; what matters on this side is what
+changed here, and it is more than it looks.
+
+The paused Supabase project was restored from the dashboard by the owner, so
+`fif.bobdempsey83.com` serves its catalogue again. That was the one item on
+`tasks.md` costing money while it waited, and it is gone from the list, as is
+"decide whether Forged in Filament follows the demo onto Neon", which was
+decided the same session and done.
+
+**Both of this change's open tasks are now moot rather than done**, and the
+distinction matters if anyone archives it. 3.3 was dropped at the owner's
+direction rather than install Docker. 6.4 wanted `SMOKE_SHOP=fif` at 6 of 6
+**and** that shop's backend setting still reading `supabase`; the first half
+is true now and the second is deliberately false, because that shop moved on
+purpose. The question 6.4 existed to answer, whether the demo's move disturbed
+the other shop, was answered at the time and cannot be re-asked in those terms.
+
+**Three commits here came out of the shop's move, and two are real template
+bugs the demo could never have found.** `8b619cd`: `scripts/compare-schemas.mjs`
+reported six differences between two identical schemas, because a Supabase
+project restored onto a newer PostgREST names the integer types `int32` and
+`int64` where `information_schema` says `integer` and `bigint`. Both sides go
+through an alias map now. This will bite the demo's project the day it gets
+upgraded, so the fix belongs here rather than only on the shop.
+`0cb16c0`: `tests/e2e/catalogue-search.spec.ts` clicked a link named "AI
+Storefront", which passes on the template and fails on every shop built from
+it; it finds the header link by its href now. And `94bbb12` takes `openspec/`
+out of ESLint's reach, because a change that needs a one-off script keeps it
+beside its own artifacts and nothing builds it.
+
+**The pattern worth keeping**: a template file that assumes the template's own
+shop is a bug only the other branch can find. Two of them in one afternoon
+says there are probably more.
+
+**`.env` on this machine now names Forged in Filament**, not the demo. The
+demo's values are on a commented line directly above each one it replaced, and
+there is a banner at the top of the file saying so. Put them back before
+running a dev server on this branch, or `main` reads the real shop. This is the
+second time that trap has been hit on this repo.
+
+**Port 3000 here is held by an unrelated project**, `C:\code\bobdempsey83.com`,
+running since 2026-09-16, so `npm run dev` lands on 3002 and a request to 3000
+answers a 404 from the other app rather than failing to connect. `tests/db`
+takes `TEST_BASE_URL` and Playwright takes `E2E_BASE_URL`. Note that
+`playwright.config.ts` still hardcodes `webServer.url` to 3000 with
+`reuseExistingServer`, so it accepts the other app's server as good enough and
+then runs against `E2E_BASE_URL` anyway; it works by accident.
+
+**Pushing `main` builds a preview on the shop's Vercel project**, which this
+document already said was harmless, and it is, with one cost now measured: on
+the Hobby plan the shop's own production build queued behind it for several
+minutes. An Ignored Build Step is the fix if that ever matters.
 
 ---
 
@@ -2308,23 +2363,35 @@ the demo's Vercel Production and redeploy. The Supabase project still holds the
 schema and its seed data, so this is a setting and a build rather than a
 restore.
 
-**Two tasks are not done, and neither is about Neon.** 6.4 wanted
-`SMOKE_SHOP=fif` at 6 of 6 to show Forged in Filament was untouched; it is 2 of
-6, because that shop's Supabase project no longer resolves. Untouched is still
-true by every other measure: the `forged-in-filament` Vercel project has no
-`NUXT_DATABASE_BACKEND` at all, so it takes the `supabase` default, and the
-push to `main` built only a Preview there while its Production is still the
+**Two tasks are not done, and both are now moot rather than pending.** 6.4
+wanted `SMOKE_SHOP=fif` at 6 of 6 to show Forged in Filament was untouched,
+**and** that shop's backend setting still reading `supabase`. It was 2 of 6
+while that shop's Supabase project did not resolve. As of 2026-09-19 the first
+half is true and the second is deliberately false: that shop was restored and
+then moved to Neon on purpose, so the condition cannot be met in the terms it
+was written in. Untouched was true by every other measure at the time: the
+`forged-in-filament` Vercel project had no
+`NUXT_DATABASE_BACKEND` at all, so it took the `supabase` default, and the
+push to `main` built only a Preview there while its Production was still the
 deployment from two days earlier. And 3.3, proving the two type-generation
 paths emit the same file, was dropped at the owner's direction rather than
 install Docker for it; `scripts/compare-schemas.mjs` already proves the two
 schemas identical, which is what that check was for.
 
-**Local `.env` now names the demo's own Supabase project**, `qtzwrwstixqgnuixfajp`,
+**Local `.env` named the demo's own Supabase project**, `qtzwrwstixqgnuixfajp`,
 where it had been carrying Forged in Filament's URL and key. Both backends are
 therefore reachable from here, and `NUXT_DATABASE_BACKEND` switches between
 them with nothing else changing, which is the property the whole design was
 for. It is left on `supabase`, so a local dev server reads the rollback
 database rather than the live one.
+
+**It names Forged in Filament again as of 2026-09-19**, set while that shop
+moved to Neon, and this time on purpose and visibly: the demo's values sit on
+a commented line directly above each one they replaced, and the file opens
+with a banner saying which shop it currently names. Put them back before
+running a dev server on this branch. The variables to swap are
+`NUXT_SUPABASE_URL`, `NUXT_SUPABASE_SERVICE_KEY`, `NUXT_NEON_DATABASE_URL`,
+`NUXT_PUBLIC_STORE_NAME` and `NUXT_PUBLIC_SITE_URL`.
 
 The **Neon account and project exist**. The project is `solitary-surf-65980038`,
 `ai-storefront-demo`, AWS `us-east-2` to match the Supabase demo project it
