@@ -101,5 +101,8 @@ export default createConfigForNuxt({
     // `server/types/database.ts` is written by `npm run db:types` and read by
     // the typecheck, which is the check that matters for it. Linting generated
     // output only produces findings nobody may fix by hand.
-    ignores: ['.nuxt/**', '.output/**', 'node_modules/**', 'dist/**', '.vercel/**', 'server/types/database.ts']
+    // openspec/ is planning, not shipped code. A change that needs a one-off
+    // script keeps it beside its own artifacts and is archived with them, and
+    // the linter has nothing useful to say about a file with that lifespan.
+    ignores: ['.nuxt/**', '.output/**', 'node_modules/**', 'dist/**', '.vercel/**', 'openspec/**', 'server/types/database.ts']
   })
