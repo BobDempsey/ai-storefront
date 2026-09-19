@@ -37,3 +37,10 @@ test-results
 *.tsbuildinfo
 supabase/.temp/
 .neon
+
+# Neon's skills, vendored into .claude/ by the skills installer rather than
+# written here. Nothing in the app reads them and the repo is public, so they
+# stay local; skills-lock.json is that installer's own state.
+.claude/skills/neon
+.claude/skills/neon-*/
+skills-lock.json
