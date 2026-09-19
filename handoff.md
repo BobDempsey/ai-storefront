@@ -782,6 +782,34 @@ not been watched end to end through. The eight Neon skill folders under
 them untracked made every `git status` look dirty. Two stale lines in the
 paragraph above were corrected in place.
 
+Synced against the code again on 2026-09-19, working tree clean at `012311b`.
+Nothing in the app changed. **`origin/main` is two commits behind local `main`**,
+sitting at `1eefb34`, so `4235222` and `012311b` are committed and unpushed;
+both are documentation and neither changes what is deployed. Six stale claims
+are corrected above. Section 6 said local `.env` names
+`wfhhkdmgouyxnrxnbaeo`, which the entry above already says was corrected to the
+demo's own project, and it said nothing in the app reads `DATABASE_URL` yet
+when the change that would read it has shipped; that entry now says what is
+actually true, which is that `DATABASE_URL` and `NUXT_NEON_DATABASE_URL` hold
+the same string for two different readers. Section 10 said local `.env` names
+`neon`, contradicting its own later line and the file, which says `supabase`.
+The gaps list still said 264 unit tests across 20 files; `npm run test:unit`
+is 290 across 21, the extra file being `tests/unit/neon-sql.test.ts`. And
+section 4's tree had never listed `server/utils/db/`,
+`server/plugins/database-backend.ts`, `supabase/rls.sql` or two of the four
+scripts, all of which section 10 refers to by name, and it still described
+`schema.sql` as carrying the RLS policies it no longer holds.
+
+The lesson from last time held again: every one of these was contradicted
+somewhere else in this document before the code was read. When a section and
+the revision trail disagree, check the code and trust neither.
+
+Confirmed still true by reading the code: `move-demo-database-to-neon` is 26 of
+28 with 3.3 and 6.4 the open pair, thirty archived changes and seventeen
+capabilities, `/api/cart/preview` still has no `rateLimitByCaller`, and
+`checkPromoCode` still matches the stored code as-is. `tasks.md` needed no
+edit.
+
 ---
 
 ## 1. What this is
@@ -1178,12 +1206,30 @@ nuxt.config.ts            modules, Tailwind vite plugin, PrimeVue theme, runtime
 
 supabase/
   schema.sql              tables (incl. email_subscribers, store_settings),
-                          RLS policies, create_order() function
+                          create_order() function. No RLS: it moved to rls.sql
+  rls.sql                 the row-level security policies and the revoke naming
+                          anon and authenticated. Applied on Supabase only,
+                          because Neon exposes nothing for them to defend.
+                          Its header says why at length
   seed.sql                12 physical products and 3 downloadable files
 
 server/
   utils/supabase.ts       memoized service-role client (bypasses RLS), typed
-                          SupabaseClient<Database> since 2026-09-12
+                          SupabaseClient<Database> since 2026-09-12. Still the
+                          one client every call site asks for, which is how the
+                          Neon shim landed without touching any of them
+  utils/db/backend.ts     the interface both backends implement: thirteen query
+                          methods and one rpc
+  utils/db/supabase-backend.ts  the client above, behind that interface
+  utils/db/neon-sql.ts    the Postgres driver and the query builder that turns
+                          those method calls into SQL. Emulates PGRST103 and
+                          parses PostgREST filter strings; throws on anything
+                          it does not implement, because a query that quietly
+                          matches nothing looks like an empty catalogue
+  utils/db/neon-backend.ts      the same interface over neon-sql.ts
+  plugins/database-backend.ts   fails the server at startup when the backend
+                          named by NUXT_DATABASE_BACKEND is missing its
+                          settings, naming them
   types/database.ts       generated, do not hand-edit. `npm run db:types`
   utils/rows.ts           withProductFiles(), which ties the three file columns
                           to the kind. The schema's check constraint guarantees
@@ -1285,7 +1331,13 @@ shared/
 
 scripts/
   db-types.mjs              regenerates server/types/database.ts. Takes
-                            SUPABASE_PROJECT_REF, defaults to the real shop
+                            SUPABASE_PROJECT_REF, defaults to the real shop,
+                            and --from neon for a connection string instead
+  compare-schemas.mjs       md5s every column's name, type and nullability on
+                            both backends and compares the digests. This is
+                            what proves the two databases agree
+  apply-sql.mjs             runs a .sql file against a connection string; how
+                            schema.sql and seed.sql reached Neon
   og-image.mjs              draws a share image for any shop from a name and a
                             domain, headlessly through the repo's Playwright
 
@@ -1372,11 +1424,15 @@ NUXT_NEON_DATABASE_URL      SET locally, 2026-09-18 — the `ai-storefront-demo`
                             NUXT_PUBLIC_ prefix, which would ship the database
                             password to every browser that loads a page. Read
                             only when NUXT_DATABASE_BACKEND is `neon`
-NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
-                            locally and for the real shop. The demo's Vercel
-                            project points at qtzwrwstixqgnuixfajp as of
-                            2026-09-12: one variable, two values, which is the
-                            whole mechanism separating the shops
+NUXT_SUPABASE_URL           SET — https://qtzwrwstixqgnuixfajp.supabase.co
+                            locally since 2026-09-18, the demo's own project
+                            and the rollback for the Neon move. It had been
+                            carrying the real shop's wfhhkdmgouyxnrxnbaeo, so
+                            a local dev server on this branch was reading the
+                            wrong shop. The real shop's Vercel project still
+                            names wfhhkdmgouyxnrxnbaeo: one variable, two
+                            values, which is the whole mechanism separating
+                            the shops
 SUPABASE_PROJECT_REF        NOT SET, and optional — read by scripts/db-types.mjs
                             only, to say which project to generate types from.
                             Unset means the real shop. The token cannot reach
@@ -1439,8 +1495,10 @@ DATABASE_URL                SET locally as of 2026-09-18, written into `.env` by
                             connection string for the Neon project's production
                             branch. A CREDENTIAL: it carries the password, it is
                             SERVER ONLY, and it must never take a NUXT_PUBLIC_
-                            prefix. Nothing in the app reads it yet; the change
-                            that will is `move-demo-database-to-neon`
+                            prefix. Nothing in the app reads it: the app reads
+                            NUXT_NEON_DATABASE_URL instead, and this one is the
+                            Neon CLI's own. Two names for one string, which is
+                            worth knowing before changing either
 DATABASE_URL_UNPOOLED       SET locally, same source and the same warning. The
                             direct connection, for work that cannot go through
                             the pooler
@@ -2170,7 +2228,7 @@ exists is in section 3's decisions; what follows is the state an agent picking
 it up needs.
 
 **What works today.** `NUXT_DATABASE_BACKEND` names the backend, `supabase` or
-`neon`, and local `.env` currently says `neon`. Against the Neon project, a dev
+`neon`, and local `.env` says `supabase`. Against the Neon project, a dev
 server serves the whole storefront, `npm run test:db` is 46 of 46 and
 `npm run test:e2e` is 38 of 38, checkout through to a placed order included.
 `npm run check` is green at 290 unit tests. The code lives in
@@ -2335,18 +2393,19 @@ Known gaps, roughly in the order they were prioritized with the user:
 - ~~No tests of any kind.~~ **Done, 2026-09-10.** A committed suite now runs in
   four parts, each with its own script, because they need different things to
   be true before they can pass:
-  - `npm test` — the typecheck, then 264 unit tests across 20 files, over
+  - `npm test` — the typecheck, then 290 unit tests across 21 files, over
     `pricing`, `promo`,
     `rate-limit`, `schemas`, `client-address`, the assistant's read and write
     tools, its promo boundary, its product prefill, `confirmations`, the orders
-    route, the customer email, the colour-mode toggle, the navbar attention dot
-    and the deployment environment. It was 60 when
+    route, the customer email, the colour-mode toggle, the navbar attention dot,
+    the deployment environment and the Neon query builder. It was 60 when
     this suite landed; the assistant, client-address, buyer-confirmation,
     assistant-promo, navbar and dot changes brought the rest, and removing the
     auto-open and the dot's storage flag took 21 back off. The prefill,
     reasoning-effort and two deployment changes took it 173 to 198, then search,
     pagination and the two typing changes took it to 236, and the custom-order
-    request and the shop name in every email took it to 264. The tests themselves
+    request and the shop name in every email took it to 264, and
+    `tests/unit/neon-sql.test.ts` took it to 290. The tests themselves
     run in about a second and the typecheck ahead of them costs about 13, so
     `npm run test:unit` is still the fast loop. No network, no database. The two newest files test
     Pinia stores rather than server
