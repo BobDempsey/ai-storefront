@@ -1,21 +1,31 @@
-// Regenerates server/types/database.ts from the live Supabase project.
+// Regenerates server/types/database.ts from a live database.
 //
-// The Supabase CLI reads SUPABASE_ACCESS_TOKEN from the environment and npm
-// does not load .env, so this reads the token out of .env first. The token is
-// needed only here: nothing at build or run time reads it.
+// Two backends hold the same schema, so the types can be generated from either.
+// Which one is named rather than sniffed:
+//
+//   npm run db:types                  the Supabase project (the default)
+//   npm run db:types -- --from neon   the Neon connection in .env
+//
+// Both paths run the same Supabase CLI generator, one against a project ref and
+// one against a connection string, which is what makes "the two agree" a real
+// check rather than two generators that happen to look alike. The generated
+// header names the database a given run read, so a file cannot be mistaken for
+// one describing the other shop.
+//
+// One thing to know before reaching for `--from neon`: the project-ref path
+// goes through Supabase's hosted API, but the connection-string path runs
+// pg_meta in a container, so it needs Docker or Podman on PATH and fails with
+// LegacyDockerRunError without one. Nothing else in this repo needs Docker.
+//
+// The CLI reads SUPABASE_ACCESS_TOKEN from the environment and npm does not
+// load .env, so this reads what it needs out of .env first. The token is needed
+// only for the project-ref path: nothing at build or run time reads it.
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-// Which shop's database to read. Two deployments run this code against two
-// projects, so a hardcoded ref would silently regenerate from the wrong one:
-// the schemas are identical today, so the diff would be empty either way and
-// the mistake would not show. Set SUPABASE_PROJECT_REF in .env to point it
-// somewhere else; the default is the real shop.
-const PROJECT_REF =
-  process.env.SUPABASE_PROJECT_REF || fromEnvFile('SUPABASE_PROJECT_REF') || 'wfhhkdmgouyxnrxnbaeo'
 const OUT = resolve(root, 'server/types/database.ts')
 
 /** Reads one key out of .env without pulling in a dotenv dependency. */
@@ -33,16 +43,65 @@ function fromEnvFile(key) {
   return undefined
 }
 
-const token = process.env.SUPABASE_ACCESS_TOKEN || fromEnvFile('SUPABASE_ACCESS_TOKEN')
-if (!token) {
-  console.error('SUPABASE_ACCESS_TOKEN is not set. Put it in .env; see .env.example.')
+const args = process.argv.slice(2)
+const fromFlag = args.indexOf('--from')
+const source = fromFlag === -1 ? 'supabase' : args[fromFlag + 1]
+
+if (source !== 'supabase' && source !== 'neon') {
+  console.error(`Unknown source ${JSON.stringify(source)}. Use --from supabase or --from neon.`)
   process.exit(1)
 }
 
+/** The CLI arguments and the header line for whichever database was named. */
+function target() {
+  if (source === 'neon') {
+    const url =
+      process.env.NUXT_NEON_DATABASE_URL ||
+      fromEnvFile('NUXT_NEON_DATABASE_URL') ||
+      fromEnvFile('DATABASE_URL')
+    if (!url) {
+      console.error('NUXT_NEON_DATABASE_URL is not set. Put it in .env; see .env.example.')
+      process.exit(1)
+    }
+    // The host, never the credential: this line is committed.
+    const host = (() => {
+      try {
+        return new URL(url).host
+      } catch {
+        return 'a Neon connection'
+      }
+    })()
+    return { flags: ['--db-url', url], describe: `Neon ${host}`, env: {} }
+  }
+
+  // Which shop's database to read. Two deployments run this code against two
+  // projects, so a hardcoded ref would silently regenerate from the wrong one:
+  // the schemas are identical today, so the diff would be empty either way and
+  // the mistake would not show. Set SUPABASE_PROJECT_REF in .env to point it
+  // somewhere else; the default is the real shop.
+  const ref =
+    process.env.SUPABASE_PROJECT_REF || fromEnvFile('SUPABASE_PROJECT_REF') || 'wfhhkdmgouyxnrxnbaeo'
+  const token = process.env.SUPABASE_ACCESS_TOKEN || fromEnvFile('SUPABASE_ACCESS_TOKEN')
+  if (!token) {
+    console.error('SUPABASE_ACCESS_TOKEN is not set. Put it in .env; see .env.example.')
+    process.exit(1)
+  }
+  return { flags: ['--project-id', ref], describe: `Supabase project ${ref}`, env: { SUPABASE_ACCESS_TOKEN: token } }
+}
+
+const { flags, describe, env } = target()
+
+// spawnSync runs through a shell on Windows so that `npx` resolves, and a
+// connection string carries `&` between its query parameters, which the shell
+// would read as "run the rest in the background". Quoting the argument is what
+// stops `sslmode=require` becoming its own command.
+const shell = process.platform === 'win32'
+const quoted = shell ? flags.map(flag => (/[&|<>^ ]/.test(flag) ? `"${flag}"` : flag)) : flags
+
 const result = spawnSync(
   'npx',
-  ['--no-install', 'supabase', 'gen', 'types', 'typescript', '--project-id', PROJECT_REF, '--schema', 'public'],
-  { env: { ...process.env, SUPABASE_ACCESS_TOKEN: token }, encoding: 'utf8', shell: process.platform === 'win32' }
+  ['--no-install', 'supabase', 'gen', 'types', 'typescript', ...quoted, '--schema', 'public'],
+  { env: { ...process.env, ...env }, encoding: 'utf8', shell }
 )
 
 if (result.status !== 0) {
@@ -50,7 +109,7 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1)
 }
 
-const header = `// Generated by \`npm run db:types\` from Supabase project ${PROJECT_REF}.\n// Do not edit by hand: change supabase/schema.sql, apply it, then re-run.\n`
+const header = `// Generated by \`npm run db:types\` from ${describe}.\n// Do not edit by hand: change supabase/schema.sql, apply it, then re-run.\n`
 mkdirSync(dirname(OUT), { recursive: true })
 writeFileSync(OUT, header + result.stdout.replace(/\r\n/g, '\n'), 'utf8')
-console.log(`Wrote ${OUT}`)
+console.log(`Wrote ${OUT} from ${describe}`)

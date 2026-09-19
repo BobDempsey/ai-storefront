@@ -103,19 +103,8 @@ create table if not exists public.email_subscribers (
   created_at timestamptz not null default now()
 );
 
--- Row Level Security ------------------------------------------------------
-alter table public.products         enable row level security;
-alter table public.orders           enable row level security;
-alter table public.order_items      enable row level security;
-alter table public.email_subscribers enable row level security;
-
--- Catalog is world-readable; everything else is unreachable from the browser.
--- The service role key used by the Nitro server bypasses RLS.
-drop policy if exists "products are public" on public.products;
-create policy "products are public"
-  on public.products for select
-  to anon, authenticated
-  using (true);
+-- Row-level security and the policies that go with it live in rls.sql, which
+-- is applied on Supabase and not on Neon. See the head of that file for why.
 
 -- Store-wide sale --------------------------------------------------------
 -- A single row holding whether a sale is on and, if so, by how much. The `id`
@@ -133,16 +122,6 @@ create table if not exists public.store_settings (
 insert into public.store_settings (id, sale_active, sale_percent)
 values (true, false, 0)
 on conflict (id) do nothing;
-
-alter table public.store_settings enable row level security;
-
--- Readable by the storefront the same way products are; writes stay staff-only
--- through the Supabase dashboard, which uses the service-role key.
-drop policy if exists "store settings are public" on public.store_settings;
-create policy "store settings are public"
-  on public.store_settings for select
-  to anon, authenticated
-  using (true);
 
 -- Promo codes -------------------------------------------------------------
 -- A code a buyer types at checkout. Staff edit these rows in the Supabase
@@ -181,12 +160,6 @@ create table if not exists public.promo_redemptions (
 
 create unique index if not exists promo_redemptions_code_email_key
   on public.promo_redemptions (promo_code_id, lower(btrim(email)));
-
--- No policies, like email_subscribers: unreachable from the browser, readable
--- only through the service-role key the Nitro server holds. A visitor must
--- never be able to list codes they were not sent.
-alter table public.promo_codes       enable row level security;
-alter table public.promo_redemptions enable row level security;
 
 -- Seeding the code that was already emailed to subscribers keeps every welcome
 -- message sent before this table existed redeemable.
@@ -429,9 +402,9 @@ begin
 end;
 $$;
 
--- Postgres grants EXECUTE to PUBLIC by default, and anon/authenticated inherit it.
--- Revoking PUBLIC is what actually closes the RPC to the browser; the second
--- revoke is belt-and-braces in case an explicit grant is ever added. These do
--- not carry over from the dropped two-argument signature.
+-- Postgres grants EXECUTE to PUBLIC by default, and on Supabase anon and
+-- authenticated inherit it. Revoking PUBLIC is what actually closes the RPC to
+-- the browser, and it means the same thing on any Postgres. The matching
+-- revoke from the two Supabase roles is in rls.sql, because those roles exist
+-- only there. This does not carry over from the dropped two-argument signature.
 revoke execute on function public.create_order(jsonb, jsonb, text, boolean) from public;
-revoke execute on function public.create_order(jsonb, jsonb, text, boolean) from anon, authenticated;

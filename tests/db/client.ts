@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createNeonBackend } from '../../server/utils/db/neon-backend'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -29,8 +30,26 @@ export const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3000'
 
 let client: SupabaseClient | null = null
 
+/**
+ * Which backend these tests run against, read from the same `.env` entry the
+ * server reads. That is the point of the switch: the suite proves the two
+ * backends agree by running unchanged against each, so it has to follow the
+ * same setting rather than carry its own.
+ */
+export const BACKEND = values.NUXT_DATABASE_BACKEND ?? 'supabase'
+
 export function db(): SupabaseClient {
   if (client) return client
+
+  if (BACKEND === 'neon') {
+    const url = values.NUXT_NEON_DATABASE_URL
+    if (!url) throw new Error('NUXT_NEON_DATABASE_URL must be set in .env for the neon backend')
+    // The same shim the server uses, so a difference these tests find is a
+    // difference the storefront would have had.
+    client = createNeonBackend(url) as unknown as SupabaseClient
+    return client
+  }
+
   const url = values.NUXT_SUPABASE_URL
   const key = values.NUXT_SUPABASE_SERVICE_KEY
   if (!url || !key) {
