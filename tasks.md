@@ -15,7 +15,6 @@ from the template. The Supabase project `wfhhkdmgouyxnrxnbaeo` is the rollback.
 - [ ] Archive move-fif-database-to-neon, 29 of 30, with 4.5 unverifiable
 - [ ] Decide when to release the Supabase project, which is now only the rollback
 - [ ] Decide what this shop's catalogue actually is, still the seeded 15 demo products
-- [ ] Watch the next real order's staff email for the "[Forged in Filament]" subject
 - [ ] Verify a domain in Resend so the buyer confirmation reaches a real customer
 
 ## Inherited from the template, still true here

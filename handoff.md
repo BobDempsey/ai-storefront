@@ -771,6 +771,23 @@ and a real order placed on the live shop was found in Neon, confirmed absent
 from Supabase, and deleted. `SMOKE_SHOP=demo` is 6 of 6, so the demo is
 untouched.
 
+**Both emails arrived and were checked against the record**, which is the leg
+an agent cannot verify for itself. Staff got `[Forged in Filament] New order
+from Neon Cutover Check ($25.60)` and the buyer got `Your Forged in Filament
+order 9470fd9f-4ea8-4ed3-941a-5256881c6cb3 ($25.60)`, both from
+`orders@bobdempsey83.com`, both landing in Gmail's Updates tab rather than
+spam, so SPF and DKIM still hold on Neon. The figures match the row: one
+Self-Watering Planter, subtotal $32.00, store sale 20 percent off at −$6.40,
+total $25.60. That closes this shop's standing "watch the next real order's
+staff email" task as well as the cutover's.
+
+**The shop's sale is genuinely on at 20 percent**, and that is migrated data
+rather than anything this work left behind: both databases read `sale_active`
+true at 20 after the move. Worth knowing before someone reads a discounted
+total as a bug. One cosmetic difference to expect while reading rows by hand:
+Neon's HTTP driver returns `numeric` as a string, so `sale_percent` comes back
+as `"20"` there and `20` from PostgREST. Pricing agreed to the cent either way.
+
 **The cold start is about 1.3 seconds**, measured after six and a half idle
 minutes: the first request to `/api/products` took 1.31s and three warm
 requests after it took 0.24s, 0.20s and 0.23s. That is faster than the demo's
