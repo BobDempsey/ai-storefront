@@ -756,7 +756,7 @@ The same session then did the work and **took the demo live on Neon**: 26 of
 the change's 28 tasks, committed as `6f19869` and deployed, with `test:db` 46
 of 46 against each backend, `test:e2e` 38 of 38 against Neon, `npm run check`
 green at 290 and `SMOKE_SHOP=demo` 6 of 6 against the live domain. Section 10 has the state, the two shim decisions
-worth knowing and what the remaining twelve tasks are waiting on. The paragraph
+worth knowing and what the two unfinished tasks are waiting on. The paragraph
 above is what was true at the start of that work: the Neon database is seeded
 now, 15 products, 12 physical and 3 digital.
 
@@ -764,10 +764,23 @@ Two findings from that session that are not about Neon. **Forged in Filament is
 down**: `wfhhkdmgouyxnrxnbaeo.supabase.co` no longer resolves, so
 `fif.bobdempsey83.com` serves its shell and 502s the catalogue. A free-plan
 project that has been paused loses its DNS this way, and restoring it is a
-dashboard action. **Local `.env` on `main` names that same project**, which is
-the real shop's rather than the demo's `qtzwrwstixqgnuixfajp`, so a local dev
-server on this branch has been reading the wrong shop's database and is why
-five of the change's tasks cannot be verified from here.
+dashboard action, and it is the one thing on `tasks.md` that costs the owner
+money while it waits. **Local `.env` on `main` named that same project**, the
+real shop's rather than the demo's `qtzwrwstixqgnuixfajp`, so a local dev
+server on this branch had been reading the wrong shop's database; that is
+corrected, and correcting it is what unblocked the five comparison tasks.
+
+Reviewed again on 2026-09-19, working tree clean at `4235222` and `origin/main`
+level. Nothing in the app changed. The staff notification for the cutover order
+arrived and was checked against the record: subject "[AI Storefront] New order
+from Neon Cutover Check ($16.00)", order `399e97f6`, one line at $16.00, from
+`orders@bobdempsey83.com`, landing in Updates. That is the email leg confirmed
+on Neon as well as the database one, and it is the last thing the cutover had
+not been watched end to end through. The eight Neon skill folders under
+`.claude/skills/` and `skills-lock.json` are gitignored rather than committed
+(`4235222`): nothing in the app reads them, the repo is public, and leaving
+them untracked made every `git status` look dirty. Two stale lines in the
+paragraph above were corrected in place.
 
 ---
 
