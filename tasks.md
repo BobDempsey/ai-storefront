@@ -7,9 +7,13 @@
 
 ## Now: fif.bobdempsey83.com
 
-The shop is live at `fif.bobdempsey83.com`, on the Supabase project
-`wfhhkdmgouyxnrxnbaeo`, and this branch is where it diverges from the template.
+The shop is live at `fif.bobdempsey83.com`, on the Neon project
+`round-dream-79243828` since 2026-09-19, and this branch is where it diverges
+from the template. The Supabase project `wfhhkdmgouyxnrxnbaeo` is the rollback.
 
+- [ ] Rotate this shop's Supabase service key and the Neon password, both seen by an agent
+- [ ] Archive move-fif-database-to-neon, 29 of 30, with 4.5 unverifiable
+- [ ] Decide when to release the Supabase project, which is now only the rollback
 - [ ] Decide what this shop's catalogue actually is, still the seeded 15 demo products
 - [ ] Watch the next real order's staff email for the "[Forged in Filament]" subject
 - [ ] Verify a domain in Resend so the buyer confirmation reaches a real customer

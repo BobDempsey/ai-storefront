@@ -709,6 +709,111 @@ project in the team and keeps one month of data. The project folder has also
 moved since the last revision: it is `C:\code\ai-storefront` now, and section 1
 says so.
 
+**This shop is on Neon as of 2026-09-19**, commit `69bdfee`, deployment
+`dpl_CXS1Q2GuQCqwS9Sdwvs1RH6aMd8P`, its own project `round-dream-79243828`
+(`forged-in-filament`, AWS `us-east-2`, Free plan, branch `production`). The
+change is `move-fif-database-to-neon`. What happened, and what the next agent
+needs.
+
+**The shop had been down since some time before this.** Its Supabase project
+had been paused, which on the free plan takes the hostname out of DNS
+altogether, so `fif.bobdempsey83.com` served its shell and 502ed the catalogue.
+That is the failure this move exists to stop happening again: Neon scales to
+zero and wakes on the next request rather than disappearing. The project was
+restored from the dashboard by the owner, which is the only way; a read-only
+personal access token can see `INACTIVE` and cannot change it.
+
+**The backend switch was cherry-picked, not rewritten.** `bf1f5b3` here is
+`6f19869` on `main`. Three things were held back from that pick and the reason
+matters: `handoff.md` and `tasks.md` belong to their own branch, and
+`openspec/changes/move-demo-database-to-neon/` is the demo's planning work.
+Note that git **auto-merged both documents without a conflict**, so nothing
+stops the wrong one crossing except checking. `git show --pretty=format:
+--name-only` on both commits, diffed, is how that was confirmed.
+
+**The rows were migrated rather than reseeded**, ids and timestamps intact:
+15 products, 1 promo code, the settings singleton and 1 subscriber. The script
+is `openspec/changes/move-fif-database-to-neon/migrate-rows.mjs`. Two things in
+it are worth knowing before trusting a similar job. It reads through
+`supabase-js` with the service key, because nobody has the Supabase database
+password and no Postgres client tools are installed on this machine, which
+means PostgREST and its **1000-row page cap**; every table is read in explicit
+ranges and the script fails loudly on a count of exactly 1000. And the
+verification reads Neon back through `to_jsonb`, because the driver returns a
+JS `Date` for a `timestamptz`, which has milliseconds and silently drops the
+microseconds the column holds; the first run reported four tables DIFFERS for
+that reason alone and the data was identical. All seven digests match now.
+
+**This shop had no order history at all**, which is worth saying plainly
+because the change was planned around preserving one: `orders`, `order_items`
+and `promo_redemptions` were all empty. The change's task 4.5, finding a
+pre-move order on Neon by its original id, is therefore unverifiable rather
+than skipped, and it is left unticked.
+
+**Two template bugs surfaced doing this, both fixed on `main` and
+cherry-picked.** `scripts/compare-schemas.mjs` reported six differences between
+two identical schemas, because a restored Supabase project comes back on a
+newer PostgREST that names the integer types `int32` and `int64` where
+`information_schema` says `integer` and `bigint`; both sides go through an
+alias map now (`fc9bce0`, from `8b619cd`). And `tests/e2e/catalogue-search.spec.ts`
+clicked a link named "AI Storefront", which passes on the template and fails on
+every shop built from it; it finds the header link by its href now (`e6cc092`,
+from `0cb16c0`). The pattern behind both: a template file that assumes the
+template's own shop is a bug that only this branch can find.
+
+**What was verified, and how.** `npm run check` green at 290. `npm run test:db`
+46 of 46 against each backend. `npm run test:e2e` 38 of 38 against Neon.
+`scripts/compare-schemas.mjs` MATCH at 48 columns. The same cart, sale on at 20
+percent and `WELCOME25` beating it at 25, recorded the same figures on both to
+the cent: subtotal 6400, discount `code` at 25 percent, total 4800, one line at
+2400 x2, one redemption (`parity-order.mjs`). Live: `SMOKE_SHOP=fif` 6 of 6,
+and a real order placed on the live shop was found in Neon, confirmed absent
+from Supabase, and deleted. `SMOKE_SHOP=demo` is 6 of 6, so the demo is
+untouched.
+
+**The cold start is about 1.3 seconds**, measured after six and a half idle
+minutes: the first request to `/api/products` took 1.31s and three warm
+requests after it took 0.24s, 0.20s and 0.23s. That is faster than the demo's
+2.26s, measured the same way a day earlier, so take 1 to 2 seconds as the range
+rather than either number as the figure. Scale-to-zero after five idle minutes
+cannot be disabled on the Free plan, so a shop nobody has visited pays it once.
+
+**That live order also closes the demo change's last open task.** On `main`,
+`move-demo-database-to-neon` task 6.4 wanted `SMOKE_SHOP=fif` at 6 of 6 and
+could not have it while this shop was down. It has it now.
+
+**The order id cannot tell you which database answered any more.** The demo
+could check that, because it reseeded and got fresh ids. This shop's rows were
+copied with their ids, so both databases return the same ones. Read
+`NUXT_DATABASE_BACKEND` off the deployment instead, or place an order and see
+where it lands.
+
+**Rollback is one variable.** Set `NUXT_DATABASE_BACKEND` back to `supabase` on
+this project's Production and redeploy. The Supabase project
+`wfhhkdmgouyxnrxnbaeo` still holds the schema and every row as of the migration,
+so anything recorded on Neon after the cutover is lost; that is the known cost
+of rolling back rather than a defect. **Do not delete that project** without
+asking. Freeing the free-plan slot is the point of all this work, and it is the
+owner's call once both shops have run on Neon long enough to trust.
+
+**Two credentials went through an agent transcript** and should be rotated: this
+shop's Supabase service key, and the Neon password for `round-dream-79243828`.
+The demo's Neon password was already on `tasks.md` for the same reason.
+
+**A gotcha that will waste half an hour otherwise.** Port 3000 on this machine
+is held by an unrelated project, `C:\code\bobdempsey83.com`, running since
+2026-09-16, so `npm run dev` here lands on 3002 and answers a 404 from the other
+app if you assume 3000. `tests/db` takes `TEST_BASE_URL` and Playwright takes
+`E2E_BASE_URL`; both were needed. Playwright's `webServer.url` is still
+hardcoded to 3000 with `reuseExistingServer`, so it considers the other app's
+server good enough and runs the tests against `E2E_BASE_URL` anyway, which
+works by accident rather than by design.
+
+**And the build queue is one deep on Hobby.** Pushing `main` builds a preview on
+this project, which is harmless but real: the production build from `fif` sat
+`QUEUED` behind it for several minutes. If that ever matters, an Ignored Build
+Step on this project for `main` is the fix.
+
 ---
 
 ## 1. What this is
@@ -1246,11 +1351,37 @@ address in the example even though `.env` has moved off it, because an adopter
 has no verified domain on their first run.
 
 ```
+NUXT_DATABASE_BACKEND       SET — `neon` on this shop's Vercel Production and
+                            Preview since 2026-09-19, and `supabase` in local
+                            `.env`, which is deliberate: a dev server here
+                            reads the rollback rather than the live database.
+                            Names which Postgres a deployment reads, and a
+                            deployment naming one whose settings are missing
+                            fails at startup through
+                            server/plugins/database-backend.ts. Set as
+                            `encrypted` rather than sensitive on purpose, so
+                            it can be read back to answer "which database is
+                            this shop on?" without a redeploy
+NUXT_NEON_DATABASE_URL      SET on Vercel Production and Preview as a secret,
+                            and locally. The pooled connection string for this
+                            shop's own Neon project, round-dream-79243828. A
+                            CREDENTIAL: server-only, and it must never take the
+                            NUXT_PUBLIC_ prefix, which would ship the database
+                            password to every browser that loads a page
+FIF_SUPABASE_URL            SET locally, 2026-09-19. Three FIF_-prefixed
+FIF_SUPABASE_SERVICE_KEY    entries read by the migration script in
+FIF_NEON_DATABASE_URL       openspec/changes/move-fif-database-to-neon/ and by
+                            nothing else. They name this shop explicitly, so
+                            the script cannot be pointed at the demo by a
+                            `.env` that has drifted. NOT on Vercel and they
+                            must not be; delete them when the change is
+                            archived
 NUXT_SUPABASE_URL           SET — https://wfhhkdmgouyxnrxnbaeo.supabase.co
-                            locally and for the real shop. The demo's Vercel
-                            project points at qtzwrwstixqgnuixfajp as of
-                            2026-09-12: one variable, two values, which is the
-                            whole mechanism separating the shops
+                            locally and for the real shop, which is now the
+                            rollback rather than what the live shop reads. The
+                            demo's Vercel project points at qtzwrwstixqgnuixfajp
+                            as of 2026-09-12: one variable, two values, which
+                            is the whole mechanism separating the shops
 SUPABASE_PROJECT_REF        NOT SET, and optional — read by scripts/db-types.mjs
                             only, to say which project to generate types from.
                             Unset means the real shop. The token cannot reach

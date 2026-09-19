@@ -37,16 +37,16 @@
 
 ## 6. Cut over
 
-- [ ] 6.1 Set `NUXT_DATABASE_BACKEND=neon` and the Neon connection string as secrets on the `forged-in-filament` Vercel project's Production and Preview, and verify both environments list them
-- [ ] 6.2 Redeploy Production and verify the deployment's `target` is `production` and it built from `fif`
-- [ ] 6.3 Verify `SMOKE_SHOP=fif npm run test:smoke` is 6 of 6 against `fif.bobdempsey83.com`
-- [ ] 6.4 Verify which backend answered by a marker the two copies do not share, since the migration preserved ids and both databases now return the same ones: read `NUXT_DATABASE_BACKEND` back off the deployment and confirm the order in 6.5 lands where it says
-- [ ] 6.5 Place a real order on the live shop, verify it is in Neon and absent from Supabase, confirm the staff notification arrives naming Forged in Filament, then delete it
-- [ ] 6.6 Verify the demo is untouched: `SMOKE_SHOP=demo npm run test:smoke` is 6 of 6 and its Neon project is unchanged
-- [ ] 6.7 Measure the cold start after five idle minutes and record it, so the number is known rather than assumed from the demo's
+- [x] 6.1 Set `NUXT_DATABASE_BACKEND=neon` and the Neon connection string as secrets on the `forged-in-filament` Vercel project's Production and Preview, and verify both environments list them
+- [x] 6.2 Redeploy Production and verify the deployment's `target` is `production` and it built from `fif`
+- [x] 6.3 Verify `SMOKE_SHOP=fif npm run test:smoke` is 6 of 6 against `fif.bobdempsey83.com`
+- [x] 6.4 Verify which backend answered by a marker the two copies do not share, since the migration preserved ids and both databases now return the same ones: read `NUXT_DATABASE_BACKEND` back off the deployment and confirm the order in 6.5 lands where it says
+- [x] 6.5 Place a real order on the live shop, verify it is in Neon and absent from Supabase, confirm the staff notification arrives naming Forged in Filament, then delete it
+- [x] 6.6 Verify the demo is untouched: `SMOKE_SHOP=demo npm run test:smoke` is 6 of 6 and its Neon project is unchanged
+- [x] 6.7 Measure the cold start after five idle minutes and record it, so the number is known rather than assumed from the demo's
 
 ## 7. Write it down
 
-- [ ] 7.1 Record the move in this branch's `handoff.md`: the new Neon project, the two variables, the rollback, the cold start and what the migration script found
-- [ ] 7.2 Update this branch's `tasks.md`, ticking the Neon decision and adding the open question of when to release the Supabase project
-- [ ] 7.3 Verify the change validates: `openspec validate move-fif-database-to-neon --strict`
+- [x] 7.1 Record the move in this branch's `handoff.md`: the new Neon project, the two variables, the rollback, the cold start and what the migration script found
+- [x] 7.2 Update this branch's `tasks.md`, ticking the Neon decision and adding the open question of when to release the Supabase project
+- [x] 7.3 Verify the change validates: `openspec validate move-fif-database-to-neon --strict`
