@@ -860,6 +860,23 @@ takes `TEST_BASE_URL` and Playwright takes `E2E_BASE_URL`. Note that
 `reuseExistingServer`, so it accepts the other app's server as good enough and
 then runs against `E2E_BASE_URL` anyway; it works by accident.
 
+**Both Neon passwords were rotated on 2026-09-20**, and the shop's Supabase
+service key with them. The demo's `neondb_owner` password is new, the shop's is
+new, and both Vercel projects carry the new pooled connection strings on
+Production and Preview. Both shops were redeployed and both smoke at 6 of 6.
+
+Three things worth knowing before doing this again. **Rotating takes the live
+shop down** between the reset and the redeploy, because the deployment is still
+holding the old password; it was a few minutes each here and nobody noticed,
+but it is not a zero-downtime operation. **`upsert` on a Vercel variable that
+exists twice leaves a duplicate**, one per target, and the API then refuses to
+edit or remove either; the leftover Preview entry had to be deleted in the
+dashboard. And **the rotation only helps if the new value stays out of the
+transcript**, which it did not here, by agreement: the alternative was the
+owner pasting each value into two dashboards by hand. If that trade is ever
+declined, the new values have to be set in the dashboards rather than passed
+through a session.
+
 **Pushing `main` builds a preview on the shop's Vercel project**, which this
 document already said was harmless, and it is, with one cost now measured: on
 the Hobby plan the shop's own production build queued behind it for several

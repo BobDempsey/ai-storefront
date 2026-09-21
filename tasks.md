@@ -5,7 +5,6 @@
 > here; template fixes are made here and cherry-picked into `fif` when that shop
 > wants them. Run `git branch --show-current` before you edit anything.
 
-- [ ] Rotate the demo's Neon password, which was exposed to an agent transcript
 - [ ] Archive move-demo-database-to-neon, 26 of 28 with both open tasks now moot
 - [ ] Rate-limit `/api/cart/preview`, which today answers promo-code guesses freely
 - [ ] Decide what replaces the in-memory rate limiter and draft confirmations on serverless
