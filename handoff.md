@@ -817,6 +817,21 @@ owner's call once both shops have run on Neon long enough to trust.
 shop's Supabase service key, and the Neon password for `round-dream-79243828`.
 The demo's Neon password was already on `tasks.md` for the same reason.
 
+**Both credentials were rotated on 2026-09-20**, which closes the item this
+document raised. The Supabase secret key is new: `default` was deleted and
+`fif_server_rollback` replaces it, in `.env` on both `NUXT_SUPABASE_SERVICE_KEY`
+and `FIF_SUPABASE_SERVICE_KEY`, and on this project's Vercel Production and
+Preview. The Neon `neondb_owner` password for `round-dream-79243828` is new
+too, with the pooled string updated in `.env` and on Vercel. The shop was
+redeployed and smokes 6 of 6. The demo's Neon password was rotated in the same
+pass.
+
+Two things that bite. **A rotation takes the live shop down** between the reset
+and the redeploy, because the running deployment still holds the old
+credential. And **`upsert` on a Vercel variable that already exists twice**,
+once per target, leaves a duplicate the API will then neither edit nor remove;
+the leftover Preview entry had to go from the dashboard.
+
 **A gotcha that will waste half an hour otherwise.** Port 3000 on this machine
 is held by an unrelated project, `C:\code\bobdempsey83.com`, running since
 2026-09-16, so `npm run dev` here lands on 3002 and answers a 404 from the other
