@@ -140,14 +140,14 @@ describe('the buckets the routes actually use', () => {
    * controls, which is the whole thing this guards against.
    */
   it('has no route reading a client-supplied forwarded header', () => {
-    for (const route of ['orders.post.ts', 'contact.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
+    for (const route of ['orders.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
       expect(source(route)).not.toContain('xForwardedFor')
       expect(source(route)).toContain('rateLimitByCaller(')
     }
   })
 
   it('leaves no caller pooled under a shared fallback key', () => {
-    for (const route of ['orders.post.ts', 'contact.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
+    for (const route of ['orders.post.ts', 'email-optin.post.ts', 'chat.post.ts']) {
       expect(source(route)).not.toContain("'unknown'")
     }
   })

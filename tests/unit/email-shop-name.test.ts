@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRuntimeConfigReturning } from './setup'
 import {
-  sendContactEmail,
   sendCustomerEmail,
   sendOrderEmail,
   sendWelcomeEmail,
@@ -85,21 +84,6 @@ describe('a shop that has been named', () => {
     expect(subject()).not.toContain('[')
   })
 
-  it('files a contact message under the shop', async () => {
-    await sendContactEmail({ name: 'Ada Lovelace', email: 'ada@example.com', message: 'hello' })
-    expect(subject()).toBe('[Forged in Filament] Contact form: Ada Lovelace')
-  })
-
-  it('files a custom-order request under the shop', async () => {
-    await sendContactEmail({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      message: 'a chainmail lampshade',
-      kind: 'custom-order'
-    })
-    expect(subject()).toBe('[Forged in Filament] Custom order request: Ada Lovelace')
-  })
-
   it('names the shop in the newsletter welcome', async () => {
     await sendWelcomeEmail('ada@example.com')
     expect(subject()).toBe("You're subscribed to Forged in Filament")
@@ -144,7 +128,7 @@ describe('a shop with no name configured at all', () => {
 
   it('leaves no empty bracket behind', async () => {
     shopNamed('   ')
-    await sendContactEmail({ name: 'Ada Lovelace', email: 'ada@example.com', message: 'hello' })
-    expect(subject()).toBe('Contact form: Ada Lovelace')
+    await sendOrderEmail(order)
+    expect(subject()).toBe('New order from Ada Lovelace ($24.00)')
   })
 })

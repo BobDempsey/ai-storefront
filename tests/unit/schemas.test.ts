@@ -3,7 +3,6 @@ import {
   MAX_PAGE_SIZE,
   PAGE_SIZE,
   catalogueQuerySchema,
-  contactSchema,
   emailOptinSchema,
   mergeItems,
   orderSchema
@@ -115,26 +114,6 @@ describe('mergeItems', () => {
     if (!merged) throw new Error('mergeItems returned nothing')
     expect(merged).toEqual({ product_id: uuid, quantity: 1 })
     expect('productId' in merged).toBe(false)
-  })
-})
-
-describe('contactSchema', () => {
-  const valid = { name: 'Bob', email: 'bob@example.com', message: 'Hello' }
-
-  it('accepts a valid message and defaults subscribe to false', () => {
-    expect(contactSchema.parse(valid).subscribe).toBe(false)
-  })
-
-  it('rejects an empty message', () => {
-    expect(contactSchema.safeParse({ ...valid, message: '   ' }).success).toBe(false)
-  })
-
-  it('rejects a message past four thousand characters', () => {
-    expect(contactSchema.safeParse({ ...valid, message: 'x'.repeat(4001) }).success).toBe(false)
-  })
-
-  it('rejects a malformed email', () => {
-    expect(contactSchema.safeParse({ ...valid, email: 'nope' }).success).toBe(false)
   })
 })
 
