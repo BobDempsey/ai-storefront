@@ -25,8 +25,8 @@ No Supabase migration and no new environment variable. Nothing in this change to
 
 ## 4. Stop the assistant pointing at a page that is gone
 
-- [ ] 4.1 Rewrite the out-of-stock line in the `server/utils/assistant.ts` system prompt so it states the shop does not stock the item and explicitly says there is no request form to point at, keeping the existing prohibition on quoting a price or committing the shop
-- [ ] 4.2 Add an e2e check that asking the assistant for something the catalogue does not carry produces a reply naming no contact page or request form, and verify it passes
+- [x] 4.1 Rewrite the out-of-stock line in the `server/utils/assistant.ts` system prompt so it states the shop does not stock the item and explicitly says there is no request form to point at, keeping the existing prohibition on quoting a price or committing the shop
+- [x] 4.2 Add an e2e check that asking the assistant for something the catalogue does not carry produces a reply naming no contact page or request form, and verify it passes
 
 ## 5. Specs and documentation
 

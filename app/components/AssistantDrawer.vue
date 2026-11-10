@@ -337,6 +337,7 @@ watch(() => [assistant.open, cart.items] as const, ([open]) => {
           <div
             v-for="(message, index) in assistant.messages"
             :key="index"
+            :data-testid="`chat-${message.role}`"
             class="max-w-[90%] rounded-lg px-3 py-2 text-sm"
             :class="message.role === 'user'
               ? 'ml-auto bg-surface-200 dark:bg-surface-700'
