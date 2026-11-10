@@ -112,6 +112,22 @@ test('a term that matches nothing says so and offers to clear', async ({ page })
   await expect(cards(page)).toHaveCount(9)
 })
 
+/**
+ * The empty-search message used to offer a second way out: ask staff about the
+ * term. That offer led to the contact form, which no longer exists, so the only
+ * thing left to offer is the search the visitor already has.
+ */
+test('a term that matches nothing offers no way to ask staff', async ({ page }) => {
+  await page.goto('/')
+  await hydrated(page)
+
+  await searchFromCatalogue(page, 'zzzznothing')
+  await expect(page.getByText('Nothing in the catalogue matches "zzzznothing"')).toBeVisible()
+
+  await expect(page.getByTestId('ask-about-this')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /contact/i })).toHaveCount(0)
+})
+
 test('the navbar control opens the quick search panel over the page', async ({ page }) => {
   const posts = countChatPosts(page)
 

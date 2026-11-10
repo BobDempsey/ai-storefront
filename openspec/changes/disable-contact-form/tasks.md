@@ -18,10 +18,10 @@ No Supabase migration and no new environment variable. Nothing in this change to
 
 ## 3. Remove the custom-order request path
 
-- [ ] 3.1 Remove `askAboutThis`, the custom-order offer in the empty-search state, and the `useCustomOrderStore` import from `app/pages/index.vue`, verifying an empty search still shows the "nothing matched" message and the clear-search control
-- [ ] 3.2 Delete `app/stores/custom-order.ts` and verify no import of `useCustomOrderStore` remains anywhere in `app/`
-- [ ] 3.3 Delete `tests/e2e/custom-order-request.spec.ts` and `tests/unit/custom-order-request.test.ts`, and verify the suites run clean without them
-- [ ] 3.4 Add an e2e assertion that a search matching nothing offers no way to ask staff, and verify it passes
+- [x] 3.1 Remove `askAboutThis`, the custom-order offer in the empty-search state, and the `useCustomOrderStore` import from `app/pages/index.vue`, verifying an empty search still shows the "nothing matched" message and the clear-search control
+- [x] 3.2 Delete `app/stores/custom-order.ts` and verify no import of `useCustomOrderStore` remains anywhere in `app/`
+- [x] 3.3 Delete `tests/e2e/custom-order-request.spec.ts` and `tests/unit/custom-order-request.test.ts`, and verify the suites run clean without them
+- [x] 3.4 Add an e2e assertion that a search matching nothing offers no way to ask staff, and verify it passes
 
 ## 4. Stop the assistant pointing at a page that is gone
 
