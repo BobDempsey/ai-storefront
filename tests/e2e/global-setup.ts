@@ -14,7 +14,7 @@ import { chromium, type FullConfig } from '@playwright/test'
  */
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:3000'
-  const routes = ['/', '/cart', '/checkout', '/contact']
+  const routes = ['/', '/cart', '/checkout']
 
   const browser = await chromium.launch()
   const page = await browser.newPage()

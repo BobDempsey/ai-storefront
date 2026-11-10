@@ -44,8 +44,7 @@ function collect(page: Page) {
 const PAGES: Array<[name: string, path: string]> = [
   ['the catalogue', '/'],
   ['a product page', '/products/articulated-dragon'],
-  ['the cart', '/cart'],
-  ['the contact form', '/contact']
+  ['the cart', '/cart']
 ]
 
 for (const [name, path] of PAGES) {

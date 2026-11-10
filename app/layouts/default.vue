@@ -142,15 +142,6 @@ const themeIcon = computed(() => (colorMode.isDark ? 'pi pi-moon' : 'pi pi-sun')
             </template>
           </ClientOnly>
 
-          <NuxtLink
-            to="/contact"
-            class="inline-flex size-8 items-center justify-center rounded-full text-sm transition-colors hover:bg-surface-200 dark:hover:bg-surface-700"
-            aria-label="Contact us"
-            title="Contact us"
-          >
-            <i class="pi pi-envelope" />
-          </NuxtLink>
-
           <ClientOnly>
             <button
               type="button"

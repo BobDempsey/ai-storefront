@@ -12,9 +12,9 @@ No Supabase migration and no new environment variable. Nothing in this change to
 
 ## 2. Remove the page and the chrome link
 
-- [ ] 2.1 Delete `app/pages/contact.vue` and verify `/contact` renders the 404 page
-- [ ] 2.2 Remove the `/contact` NuxtLink from `app/layouts/default.vue` and verify no envelope control remains in the header on any page using the default layout
-- [ ] 2.3 Drop `/contact` from the route list in `tests/e2e/global-setup.ts` and from the page list in `tests/e2e/console-clean.spec.ts`, then verify `console-clean.spec.ts` passes
+- [x] 2.1 Delete `app/pages/contact.vue` and verify `/contact` renders the 404 page
+- [x] 2.2 Remove the `/contact` NuxtLink from `app/layouts/default.vue` and verify no envelope control remains in the header on any page using the default layout
+- [x] 2.3 Drop `/contact` from the route list in `tests/e2e/global-setup.ts` and from the page list in `tests/e2e/console-clean.spec.ts`, then verify `console-clean.spec.ts` passes
 
 ## 3. Remove the custom-order request path
 
