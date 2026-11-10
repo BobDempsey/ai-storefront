@@ -979,10 +979,10 @@ the promo field at checkout, `create_order` resolves it and prices every line at
 the better of the code and the store-wide sale, never both, then writes a
 `promo_redemptions` row in the order's own transaction. A unique index on
 `(promo_code_id, lower(btrim(email)))` is what stops a second redemption, so two
-simultaneous orders with the same code and address cannot both commit. The
-contact and checkout forms each carry an opt-in checkbox that reuses the email
-already typed, and the opt-in copy names the active code's percentage rather
-than a number written into the page.
+simultaneous orders with the same code and address cannot both commit. Checkout carries an opt-in checkbox that reuses the email already typed, and
+the opt-in copy names the active code's percentage rather than a number written
+into the page. The contact form carried one too until the form was removed on
+2026-11-10.
 
 Verified 2026-09-03 against the live database: fourteen `create_order` checks
 covering no code, a valid code, an unknown code, an inactive code, a
@@ -1308,8 +1308,8 @@ server/
                           that and the generated types cannot express it
   utils/rate-limit.ts     in-memory sliding-window limiter
   utils/schemas.ts        Zod schemas + mergeItems() duplicate collapsing
-  utils/email.ts          Resend sends: order notification, contact message,
-                          newsletter welcome (sendWelcomeEmail)
+  utils/email.ts          Resend sends: order notification, customer
+                          confirmation, newsletter welcome (sendWelcomeEmail)
   utils/pricing.ts         resolveDiscountPercent() (better of sale and code),
                           discountedCents(), salePriceCents(), withSalePricing().
                           The one rounding rule shared with create_order's SQL
@@ -1318,7 +1318,7 @@ server/
                           getActivePromo(). Reading side only; create_order is
                           what actually resolves a code on an order
   utils/subscribe.ts       subscribeEmail() and subscribeQuietly(), shared by the
-                          opt-in form, the contact form and checkout
+                          opt-in form and checkout
   utils/client-address.ts  resolveClientAddress() and rateLimitByCaller(). The one
                           place any route decides who is calling; believes only
                           the header NUXT_TRUSTED_IP_HEADER names
@@ -1332,8 +1332,6 @@ server/
   api/orders.post.ts        read test token -> rate limit -> validate ->
                             create_order -> email. A valid x-test-order-token
                             skips both the limiter and the email
-  api/contact.post.ts       rate limit -> validate -> email. Nothing is stored,
-                            so a failed send is reported to the sender
   api/email-optin.post.ts   rate limit -> validate -> subscribeEmail()
   api/chat.get.ts           whether the assistant is configured, no key shipped
   api/chat.post.ts          rate limit -> validate -> gpt-5-mini tool loop
@@ -1348,7 +1346,6 @@ app/
   pages/cart.vue                 quantities, server-priced subtotal
   pages/checkout.vue             guest details form + summary
   pages/order-received.vue       confirmation, shows order id
-  pages/contact.vue              contact form; replaced the navbar mailto link
   components/AssistantDrawer.vue chat drawer: messages, cart strip, order draft
   components/EmailOptinForm.vue  email field + submit, in the footer
   components/SearchPalette.vue   the quick search panel. Mounted by a v-if, so
@@ -1583,9 +1580,11 @@ NEON_BRANCH                 SET locally — `production`, the Neon branch the
 the `promo_codes` table, so staff can change it and its redemptions can be
 recorded. `WELCOME25` at 25% is the seeded, active row.
 
-`NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link was replaced by
-the `/contact` form, which delivers to `NUXT_ORDER_ADMIN_EMAIL`, so no address
-is rendered into the page or shipped to the browser.
+`NUXT_PUBLIC_CONTACT_EMAIL` is gone. The navbar's mailto link became the
+`/contact` form, and on 2026-11-10 the form went too. No address is rendered
+into the page or shipped to the browser, and there is now no inbound channel at
+all on this shop: the requirement keeping the address out of the page moved to
+`storefront/shop-identity` and still binds.
 ```
 
 Nuxt maps these to `runtimeConfig` automatically via the `NUXT_` prefix. The URL
@@ -1980,7 +1979,7 @@ were re-verified against the code on 2026-08-31.
   can guess codes as fast as the network allows and be told which ones are
   real. `create_order` still refuses a code the buyer may not use, so the worst
   case is a discount reaching someone who was never emailed one, not a free
-  order. The fix is a bucket of its own on that route, the way `contact` and
+  order. The fix is a bucket of its own on that route, the way `orders` and
   `email-optin` have theirs.
 - **The in-memory stores are per-instance, and this deploys to Vercel.** Found
   2026-09-14. `server/utils/rate-limit.ts` and `server/utils/confirmations.ts`
@@ -2270,6 +2269,9 @@ and no price was quoted. The assistant gained a sentence of `SYSTEM_PROMPT` and
 **no tool**, the fifth change in a row to take that shape. The term travels on
 its own store rather than the assistant's, deliberately: a path that avoids the
 model should not hold its state.
+
+**All of that was removed on 2026-11-10**, with the contact form it rode on. See
+"The contact form is gone" below.
 
 **The split is verified, 2026-09-12.** Both shops serve their own name, their
 own catalogue and their own share image, with clean consoles; `test:smoke` is
@@ -2784,7 +2786,7 @@ Known gaps, roughly in the order they were prioritized with the user:
   25-message cap is covered by a test (`tests/db/chat-guards.test.ts`); the
   75-requests-a-day limit was left untested rather than spend 75 provider
   calls, and on 2026-09-10 the user settled that it is not worth proving. It
-  uses the same `rate-limit.ts` module as the order and contact routes, which
+  uses the same `rate-limit.ts` module as the order and opt-in routes, which
   the unit tests do cover, but its own `chat:` bucket on a 24-hour window, so
   it neither spends nor is spent by their allowances.
 - **The assistant has no transcript.** Nothing about a conversation is stored,
@@ -3020,6 +3022,39 @@ Known gaps, roughly in the order they were prioritized with the user:
   way to enumerate codes. Verified live: an order placed through the drawer
   with `WELCOME25` recorded 1600 to 1200 at 25% with one redemption, and the
   same address was then refused that code at checkout.
+
+### The contact form is gone
+
+**Removed 2026-11-10 on `main` only**, through the OpenSpec change
+`disable-contact-form`. Spam was arriving at `orders@bobdempsey83.com` with the
+`[AI Storefront]` subject prefix, which is how the demo was identified as the
+source. The route was unauthenticated and stored nothing, so every submission
+past Zod and the rate limit became an inbox message.
+
+What went: `app/pages/contact.vue`, `server/api/contact.post.ts`,
+`contactSchema`, `sendContactEmail`, the header's envelope link, the
+`useCustomOrderStore` and the "ask us about it" offer on an empty search. The
+custom-order request went with them, because it was the same page and the same
+route with a `kind` flag, and leaving it would have left the hole open.
+
+What stayed: `subscribeQuietly`, which checkout still calls, and the escaping
+and shop-name helpers, which order, customer and welcome mail all use. The
+requirement that the shop's address never reaches a page moved to
+`storefront/shop-identity` rather than being deleted with the rest of
+`contact/contact-message`.
+
+The assistant's prompt now says there is no route for asking staff and that it
+must not name or invent one. Deleting the old sentence alone would have left
+"get in touch" as the obvious thing for a model to say.
+`tests/e2e/assistant-unstocked.spec.ts` is an `@llm` test that asks for an
+unstocked item and asserts the reply names no page, form or address.
+
+**`fif` is untouched and still has its form**, with the same exposure. There is
+no scheduled merge between the branches, so it would take a deliberate
+cherry-pick. The user decided against one for now.
+
+The demo therefore has no inbound channel at all. That is deliberate for a demo
+and would not be acceptable on a real shop.
 
 ---
 

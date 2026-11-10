@@ -30,8 +30,8 @@ No Supabase migration and no new environment variable. Nothing in this change to
 
 ## 5. Specs and documentation
 
-- [ ] 5.1 Update the contact section of `handoff.md` to record that the demo has no contact channel and why, and verify no sentence there still describes a working form
-- [ ] 5.2 Run `openspec validate disable-contact-form --strict` and verify it reports no errors
+- [x] 5.1 Update the contact section of `handoff.md` to record that the demo has no contact channel and why, and verify no sentence there still describes a working form
+- [x] 5.2 Run `openspec validate disable-contact-form --strict` and verify it reports no errors
 
 ## 6. Integration check
 
