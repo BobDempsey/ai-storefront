@@ -882,6 +882,16 @@ document already said was harmless, and it is, with one cost now measured: on
 the Hobby plan the shop's own production build queued behind it for several
 minutes. An Ignored Build Step is the fix if that ever matters.
 
+**Work committed here is not live until `main` is pushed.** On 2026-11-12 the
+demo still served the contact link four commits after the form was removed.
+Nothing was broken and nothing was cached: production was sitting on `45fd257`
+because local `main` was six commits ahead of `origin/main` and Vercel had
+never seen them. Pushing built and promoted `1c4c52e`, after which
+`/contact` answered 404 and the header link was gone. Check
+`git status -sb` against the latest production deploy before concluding a
+change failed to deploy. This is the second time this repo has recorded
+committed-but-not-live work; the other is in section 2.
+
 ---
 
 ## 1. What this is
@@ -3055,6 +3065,11 @@ cherry-pick. The user decided against one for now.
 
 The demo therefore has no inbound channel at all. That is deliberate for a demo
 and would not be acceptable on a real shop.
+
+**Live in production since 2026-11-12**, two days after the removal was
+committed, because the commits sat unpushed until then (see the note at the top
+of this document). `https://ai-storefront.bobdempsey83.com/contact` returns 404
+and the header renders no contact control.
 
 ---
 

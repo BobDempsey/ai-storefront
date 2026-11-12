@@ -6,6 +6,7 @@
 > wants them. Run `git branch --show-current` before you edit anything.
 
 - [ ] Archive move-demo-database-to-neon, 26 of 28 with both open tasks now moot
+- [ ] Restore the demo's `.env` values, run `npm run test:e2e`, then archive disable-contact-form
 - [ ] Rate-limit `/api/cart/preview`, which today answers promo-code guesses freely
 - [ ] Decide what replaces the in-memory rate limiter and draft confirmations on serverless
 - [ ] Make the promo preview normalise a code the way `create_order` does

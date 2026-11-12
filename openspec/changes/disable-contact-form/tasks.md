@@ -36,4 +36,17 @@ No Supabase migration and no new environment variable. Nothing in this change to
 ## 6. Integration check
 
 - [ ] 6.1 Run the full unit and e2e suites and verify both pass with no reference to a contact route
-- [ ] 6.2 Grep the built client bundle for the staff address and verify it appears nowhere, satisfying the privacy requirement moved to `storefront/shop-identity`
+- [x] 6.2 Grep the built client bundle for the staff address and verify it appears nowhere, satisfying the privacy requirement moved to `storefront/shop-identity`
+- [x] 6.3 Verify the removal is live on the demo: `/contact` answers 404 and the header renders no contact control
+
+On 2026-11-12 the unit side of 6.1 ran clean: `npm run check` passes typecheck,
+lint and 266 tests across 20 files, and the only reference to a contact route
+left in the tree was a dead `ContactResponse` type in `shared/types/api.ts`,
+now deleted. The e2e half is blocked rather than failing: `.env` on this
+machine names Forged in Filament, so a dev server started from `main` would
+read the real shop. Restore the demo's values from the commented lines in
+`.env` before running `npm run test:e2e`, then tick 6.1.
+
+6.2 was checked against the deployed demo rather than a local build, for the
+same reason: `@bobdempsey83.com` appears nowhere in the production HTML or in
+any of its 176 `/_nuxt/*.js` assets.
