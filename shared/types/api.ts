@@ -69,11 +69,6 @@ export interface ChatAvailability {
   available: boolean
 }
 
-/** Response of POST /api/contact. Nothing is stored, so this is the receipt. */
-export interface ContactResponse {
-  sent: true
-}
-
 /** Response of POST /api/email-optin. The same for a new and a known address. */
 export interface EmailOptinResponse {
   subscribed: true
