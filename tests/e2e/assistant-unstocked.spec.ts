@@ -39,8 +39,9 @@ test('@llm an item the shop does not stock is refused without pointing anywhere'
 
   const text = (await reply.innerText()).toLowerCase()
 
-  // It said no.
-  expect(text).toMatch(/don't|do not|doesn't|does not|no |sorry|afraid/)
+  // It said no. Either apostrophe, and "no" as a word: gpt-6.1-terra answers
+  // "no, the shop doesn’t sell..." with a curly one and a comma.
+  expect(text).toMatch(/don['’]t|do not|doesn['’]t|does not|\bno\b|sorry|afraid/)
 
   // And it pointed nowhere: no page, no form, no address, no invitation to ask.
   expect(text).not.toContain('/contact')

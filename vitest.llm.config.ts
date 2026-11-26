@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 /**
- * The only tests that spend money. Two real gpt-5-mini calls through the
+ * The only tests that spend money. Two real gpt-6.1-terra calls through the
  * running dev server, checking that the tool loop still works end to end.
  *
  * Kept out of `npm test` for two reasons: it costs a fraction of a cent per
