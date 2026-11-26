@@ -4,7 +4,8 @@ import { chatRequestSchema } from '~~/server/utils/schemas'
 import { SYSTEM_PROMPT, TOOLS, runTool, type ToolContext } from '~~/server/utils/assistant'
 import { mintConfirmation } from '~~/server/utils/confirmations'
 
-const MODEL = 'gpt-5-mini'
+/** OpenAI's named replacement for gpt-5-mini, which shuts down 2026-12-11. */
+const MODEL = 'gpt-6.1-terra'
 
 /** One message costs one request, so 3 conversations of 25 is the day's budget. */
 const REQUESTS_PER_DAY = 75
@@ -13,21 +14,19 @@ const REQUESTS_PER_DAY = 75
 const MAX_TOOL_ROUNDS = 4
 
 /**
- * How much the model deliberates before answering. `gpt-5-mini` is a reasoning
- * model, and left at its default it thinks before every turn: one measured
- * question took 29 seconds over three rounds and spent 896 reasoning tokens,
- * the last round alone burning 768. The same question at `low` answered in 6.4
- * seconds over two rounds, calling the same tool. The extra round is the part
- * worth knowing: thinking harder sent it back to look things up again rather
- * than answer.
+ * How much the model deliberates before answering. `none` is not a tuning
+ * choice: on Chat Completions, `gpt-6.1-terra` rejects function tools with any
+ * other value, its default included, with a 400 that says to use
+ * `/v1/responses` or set `reasoning_effort` to `none`.
  *
- * `minimal` measured no faster than `low` and leaves the model less room to
- * hold to the rules in SYSTEM_PROMPT, several of which exist to stop a visitor
- * talking it out of something. Those rules are checked against this setting by
- * `npm run test:llm` and `npm run test:e2e:llm`; if one of them turns, this is
- * the first thing to put back.
+ * No reasoning leaves the model less room to hold to the rules in
+ * SYSTEM_PROMPT, several of which exist to stop a visitor talking it out of
+ * something. Those rules are checked against this setting by
+ * `npm run test:llm` and `npm run test:e2e:llm`. If one of them turns, the fix
+ * is moving this route to the Responses API, where `reasoning.effort` can be
+ * raised with tools attached.
  */
-const REASONING_EFFORT = 'low' as const
+const REASONING_EFFORT = 'none' as const
 
 export default defineEventHandler(async event => {
   rateLimitByCaller(
@@ -71,8 +70,8 @@ export default defineEventHandler(async event => {
       const completion = await openai.chat.completions.create({
         model: MODEL,
         messages,
-        // On every round, not just the first: the slowest round measured was
-        // the last one, the one that writes the answer.
+        // On every round, the last one included even though it drops the
+        // tools, so the whole turn runs at one setting.
         reasoning_effort: REASONING_EFFORT,
         ...(round < MAX_TOOL_ROUNDS ? { tools: TOOLS } : {})
       })
