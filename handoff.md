@@ -872,7 +872,7 @@ referenced as root-relative paths, so the catalog has no external image host.
 
 **The shopping assistant works.** It runs on `gpt-6.1-terra` since 2026-11-25,
 when `gpt-5-mini` was retired ahead of OpenAI's 2026-12-11 shutdown, and the
-paid suites pass against it. Verified 2026-09-02 against `gpt-5-mini`: it
+`test:llm` passes against it. Verified 2026-09-02 against `gpt-5-mini`: it
 answers from the catalogue, declines off-topic questions, adds items through the
 ordinary cart store, and drafts an order the visitor confirms. A real order was
 placed from the drawer end to end, and the address typed into the draft card is
@@ -2207,7 +2207,7 @@ Known gaps, roughly in the order they were prioritized with the user:
     server, added 2026-09-10. The only script that spends money. **The dollar
     cost of a run was not measured**: the route logs no token usage, so read it
     from the OpenAI dashboard if it matters. What is measured is that a run
-    makes two requests, took about 18 seconds on `gpt-5-mini` (21.5 seconds
+    makes two requests, took about 18 seconds on `gpt-5-mini` (22.8 seconds
     for the eight-request run on `gpt-6.1-terra`, 2026-11-25), and that each
     request is capped
     at five completions by `MAX_TOOL_ROUNDS` in `chat.post.ts`, so ten
@@ -2511,8 +2511,9 @@ Known gaps, roughly in the order they were prioritized with the user:
   other effort, its default included, with a 400 when function tools are
   attached. The figures above were all measured on `gpt-5-mini` and say nothing
   about the new model. Timed through the running route on 2026-11-25, two
-  catalogue questions took 3.0s and 3.3s. `test:llm` passed 8/8 and
-  `test:e2e:llm` 2/2. If a rule in `SYSTEM_PROMPT` starts failing, the way back
+  catalogue questions took 3.3s each. `test:llm` passed 8/8 against this
+  shop's database. `test:e2e:llm` was not run here, because it places an order
+  in the real shop; it passed on `main` against the demo. If a rule in `SYSTEM_PROMPT` starts failing, the way back
   to more reasoning is moving the route to the Responses API, where
   `reasoning.effort` works with tools.
 - **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
