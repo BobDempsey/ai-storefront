@@ -1491,7 +1491,10 @@ address in the example even though `.env` has moved off it, because an adopter
 has no verified domain on their first run.
 
 ```
-NUXT_DATABASE_BACKEND       SET — `supabase` locally, 2026-09-18. Names which
+NUXT_DATABASE_BACKEND       SET — `neon` locally since 2026-11-25, when both
+                            Supabase hosts were found failing DNS
+                            (NXDOMAIN), so `supabase` here could load
+                            nothing. It was `supabase` from 2026-09-18. Names which
                             Postgres this deployment reads and writes:
                             `supabase` or `neon`. It is named rather than
                             guessed from the shape of a connection string, and
@@ -1504,7 +1507,11 @@ NUXT_NEON_DATABASE_URL      SET locally, 2026-09-18 — the `ai-storefront-demo`
                             CREDENTIAL: server-only, and it must never take the
                             NUXT_PUBLIC_ prefix, which would ship the database
                             password to every browser that loads a page. Read
-                            only when NUXT_DATABASE_BACKEND is `neon`
+                            only when NUXT_DATABASE_BACKEND is `neon`.
+                            Found on 2026-11-25 holding the real shop's
+                            string instead, and put back to the demo's.
+                            `tests/db/client.ts` reads this file directly,
+                            so the db and paid suites follow it too
 NUXT_SUPABASE_URL           SET — https://qtzwrwstixqgnuixfajp.supabase.co
                             locally since 2026-09-18, the demo's own project
                             and the rollback for the Neon move. It had been
@@ -2846,6 +2853,14 @@ Known gaps, roughly in the order they were prioritized with the user:
   `test:e2e:llm` 2/2. If a rule in `SYSTEM_PROMPT` starts failing, the way back
   to more reasoning is moving the route to the Responses API, where
   `reasoning.effort` works with tools.
+  **It reached production on 2026-11-26 (UTC) as 4d3c896**, through the
+  merge of PR #1. Checked live the same night: an order placed through the
+  demo's assistant on ai-storefront.bobdempsey83.com, reference
+  `3e8991db-ca5c-43ad-bc83-accfc60b7348`, delivered both the staff email and
+  the buyer's confirmation. It took two messages, because the model tried to
+  draft before its cart change had landed; it said so and drafted on the
+  retry. That proves the production key works with the new model. The same
+  change went to `fif` as PR #2.
 - **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
   ordering does not change it. Briefly prioritised on 2026-09-10, then dropped
   the same day at the user's direction: staff flip the boolean in the Supabase
