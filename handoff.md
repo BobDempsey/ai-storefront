@@ -2516,6 +2516,16 @@ Known gaps, roughly in the order they were prioritized with the user:
   in the real shop; it passed on `main` against the demo. If a rule in `SYSTEM_PROMPT` starts failing, the way back
   to more reasoning is moving the route to the Responses API, where
   `reasoning.effort` works with tools.
+  **It reached production on 2026-11-26 (UTC) as 8664dfb, by hand.** The
+  merge of PR #2 into `fif` never produced a Vercel deployment, preview or
+  production, and nothing showed up queued. After about ten minutes it was
+  deployed through the Vercel API instead (`dpl_BzNgEJWvCe1eUE57R5S2RxqHg3qP`,
+  target production, git ref `fif`), and it took the shop's domains. The cause
+  was not found. If the next push to `fif` does not deploy either, look at the
+  project's Git connection in Vercel before anything else. Checked live
+  afterwards: one question to the assistant on fif.bobdempsey83.com answered
+  from the catalogue in 5.9s, which proves this shop's production key works
+  with the new model. No order was placed on the real shop.
 - **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
   ordering does not change it. Briefly prioritised on 2026-09-10, then dropped
   the same day at the user's direction: staff flip the boolean in the Supabase
