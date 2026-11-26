@@ -916,7 +916,9 @@ chosen by researching what actually sells on Etsy and Printables. Their photos
 are free-licensed Pexels images committed to `public/images/<slug>.jpg` and
 referenced as root-relative paths, so the catalog has no external image host.
 
-**The shopping assistant works.** Verified 2026-09-02 against `gpt-5-mini`: it
+**The shopping assistant works.** It runs on `gpt-6.1-terra` since 2026-11-25,
+when `gpt-5-mini` was retired ahead of OpenAI's 2026-12-11 shutdown, and the
+paid suites pass against it. Verified 2026-09-02 against `gpt-5-mini`: it
 answers from the catalogue, declines off-topic questions, adds items through the
 ordinary cart store, and drafts an order the visitor confirms. A real order was
 placed from the drawer end to end, and the address typed into the draft card is
@@ -1344,7 +1346,7 @@ server/
                             skips both the limiter and the email
   api/email-optin.post.ts   rate limit -> validate -> subscribeEmail()
   api/chat.get.ts           whether the assistant is configured, no key shipped
-  api/chat.post.ts          rate limit -> validate -> gpt-5-mini tool loop
+  api/chat.post.ts          rate limit -> validate -> gpt-6.1-terra tool loop
   utils/assistant.ts        the five tools, their handlers and the system prompt;
                             its own catalogue queries are sale-aware too
   utils/confirmations.ts    one-time draft confirmations, in memory, 15 min TTL
@@ -1399,7 +1401,7 @@ tests/
                             auto-imports Vitest does not
   db/                       against the live Supabase project, needs npm run dev
   e2e/                      Playwright, cart through placed order
-  llm/                      eight real gpt-5-mini calls across two files; costs
+  llm/                      eight real gpt-6.1-terra calls across two files; costs
                             money, as does the one excluded e2e browser test
   smoke/                    against the deployed site
 
@@ -2532,11 +2534,13 @@ Known gaps, roughly in the order they were prioritized with the user:
     them that the live shop renders no deployment banner, and it names a shop
     with `SMOKE_SHOP=demo|fif` rather than an address. Fails when the
     network or the deploy is down, which is why it is not in `npm test`.
-  - `npm run test:llm` — two real `gpt-5-mini` calls through a running dev
+  - `npm run test:llm` — real `gpt-6.1-terra` calls through a running dev
     server, added 2026-09-10. The only script that spends money. **The dollar
     cost of a run was not measured**: the route logs no token usage, so read it
     from the OpenAI dashboard if it matters. What is measured is that a run
-    makes two requests, takes about 18 seconds, and that each request is capped
+    makes two requests, took about 18 seconds on `gpt-5-mini` (21.5 seconds
+    for the eight-request run on `gpt-6.1-terra`, 2026-11-25), and that each
+    request is capped
     at five completions by `MAX_TOOL_ROUNDS` in `chat.post.ts`, so ten
     short-prompt calls is the ceiling. It is eight requests now, not two:
     `tests/llm/assistant-promo.test.ts` added six covering what a real model
@@ -2830,8 +2834,18 @@ Known gaps, roughly in the order they were prioritized with the user:
   `test:e2e:llm`. The failing assertion was not captured before the rerun, so it
   cannot be said for certain whether it was a bad minute at the provider, which
   `vitest.llm.config.ts` warns about in its own docstring, or the lower setting
-  being marginal. If a promo test fails again, put `REASONING_EFFORT` back to
-  the default first and see whether it stops.
+  being marginal. The advice that followed, to put `REASONING_EFFORT` back to
+  the default if a promo test fails again, no longer applies: see below.
+  **Since 2026-11-25 the model is `gpt-6.1-terra`, at `reasoning_effort:
+  'none'`.** OpenAI named it as the replacement for `gpt-5-mini`, which shuts
+  down 2026-12-11. `none` is forced: on Chat Completions the model answers any
+  other effort, its default included, with a 400 when function tools are
+  attached. The figures above were all measured on `gpt-5-mini` and say nothing
+  about the new model. Timed through the running route on 2026-11-25, two
+  catalogue questions took 3.0s and 3.3s. `test:llm` passed 8/8 and
+  `test:e2e:llm` 2/2. If a rule in `SYSTEM_PROMPT` starts failing, the way back
+  to more reasoning is moving the route to the Responses API, where
+  `reasoning.effort` works with tools.
 - **No stock decrementing, and none wanted.** `in_stock` is a manual boolean;
   ordering does not change it. Briefly prioritised on 2026-09-10, then dropped
   the same day at the user's direction: staff flip the boolean in the Supabase
